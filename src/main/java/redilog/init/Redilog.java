@@ -29,7 +29,7 @@ public class Redilog implements ModInitializer {
         // However, some things (like resources) may still be uninitialized.
         // Proceed with mild caution.
 
-        LOGGER.info("Hello Fabric world!");
+        LOGGER.info("redilog init");
     }
 
     private static <T extends Block> T register(T block, String id) {
