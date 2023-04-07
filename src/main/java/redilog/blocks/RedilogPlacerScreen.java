@@ -26,7 +26,7 @@ public class RedilogPlacerScreen extends HandledScreen<RedilogPlacerScreenHandle
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         //bypass pressing 'e' (inventory key) to close screen
         if (this.client.options.inventoryKey.matchesKey(keyCode, scanCode)) {
-            return false;
+            return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
@@ -35,10 +35,10 @@ public class RedilogPlacerScreen extends HandledScreen<RedilogPlacerScreenHandle
     protected void init() {
         super.init();
 
-        inputEditBox = new EditBoxWidget(textRenderer, width / 2 - 150, 50, 300, 100,
+        inputEditBox = new EditBoxWidget(textRenderer, width / 2 - 150, 50, 300, height - 100,
                 Text.translatable("screen.redilog.redilog_placer.placeholder"),
                 Text.translatable("screen.redilog.redilog_placer.name"));
-        inputEditBox.setText("temp");
+        inputEditBox.setText("");
         addDrawableChild(inputEditBox);
         setInitialFocus(inputEditBox);
     }
@@ -51,11 +51,11 @@ public class RedilogPlacerScreen extends HandledScreen<RedilogPlacerScreenHandle
 
     @Override
     protected void drawBackground(MatrixStack matrices, float delta, int mouseX, int mouseY) {
-        // TODO Auto-generated method stub
+        this.renderBackground(matrices);
     }
 
     @Override
     protected void drawForeground(MatrixStack matrices, int mouseX, int mouseY) {
-        // TODO Auto-generated method stub
+        //NO OP
     }
 }
