@@ -4,10 +4,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.api.ModInitializer;
-import net.minecraft.screen.ScreenHandlerType;
+import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
-import redilog.blocks.RedilogPlacerScreenHandler;
+import redilog.blocks.BuilderScreenHandler;
 
 public class Redilog implements ModInitializer {
     // This logger is used to write text to the console and the log file.
@@ -15,9 +15,11 @@ public class Redilog implements ModInitializer {
     // That way, it's clear which mod wrote info, warnings, and errors.
     public static final Logger LOGGER = LoggerFactory.getLogger("redilog");
 
-    public static final ScreenHandlerType<RedilogPlacerScreenHandler> REDILOG_PLACER_SCREEN_HANDLER = Registry
-            .register(Registry.SCREEN_HANDLER, new Identifier("redilog", "redilog_placer"),
-                    new ScreenHandlerType<>(RedilogPlacerScreenHandler::new));
+    public static final ExtendedScreenHandlerType<BuilderScreenHandler> BUILDER_SCREEN_HANDLER = Registry
+            .register(Registry.SCREEN_HANDLER, new Identifier("redilog", "builder"),
+                    new ExtendedScreenHandlerType<>(BuilderScreenHandler::new));
+
+    public static final Identifier BUILDER_SYNC_PACKET = new Identifier("redilog", "builder_sync");
 
     @Override
     public void onInitialize() {

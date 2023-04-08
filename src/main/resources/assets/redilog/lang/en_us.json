@@ -1,4 +1,7 @@
 {
-    "screen.redilog.redilog_placer.placeholder": "Enter Redilog here",
-    "screen.redilog.redilog_placer.name": "Redilog Placer"
+    "block.redilog.builder": "Builder",
+    "screen.redilog.builder.editbox.placeholder": "Enter Redilog here",
+    "screen.redilog.builder.editbox.name": "Redilog Edit Box",
+    "screen.redilog.builder.save.text": "Save",
+    "screen.redilog.builder.build.text": "Build"
 }

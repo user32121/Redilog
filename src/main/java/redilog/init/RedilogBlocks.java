@@ -11,19 +11,20 @@ import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.item.BlockItem;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
-import redilog.blocks.RedilogPlacerBlock;
-import redilog.blocks.RedilogPlacerBlockEntity;
+import redilog.blocks.BuilderBlock;
+import redilog.blocks.BuilderBlockEntity;
 
 public class RedilogBlocks {
 
-    public static final RedilogPlacerBlock REDILOG_PLACER = register(new RedilogPlacerBlock(
+    public static final BuilderBlock BUILDER = register(new BuilderBlock(
             FabricBlockSettings.of(Material.STONE).requiresTool().strength(-1.0f, 3600000.0f).dropsNothing()),
-            "redilog_placer");
+            "builder");
 
-    public static final BlockEntityType<RedilogPlacerBlockEntity> REDILOG_PLACER_ENTITY_TYPE = register(
-            "redilog_placer_entity", RedilogPlacerBlockEntity::new, REDILOG_PLACER);
+    public static final BlockEntityType<BuilderBlockEntity> BUILDER_ENTITY = register(
+            "builder_entity", BuilderBlockEntity::new, BUILDER);
 
     public static void init() {
+        BuilderBlock.RegisterRedilogSyncPacketReceiver();
     }
 
     private static <T extends Block> T register(T block, String id) {
