@@ -1,7 +1,10 @@
 package redilog.synthesis;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 
 import org.apache.commons.lang3.NotImplementedException;
@@ -19,11 +22,12 @@ public class Parser {
      * @return a graph representation of the redilog
      * @throws RedilogParsingException
      */
-    public static Graph parseRedilog(String redilog) throws RedilogParsingException {
+    public static LogicGraph synthesizeRedilog(String redilog) throws RedilogParsingException {
         redilog = stripComments(redilog);
         List<Token> tokens = tokenize(redilog);
         Redilog.LOGGER.info("{}", tokens);
-        return processTokens(tokens);
+        SymbolGraph graph = processTokens(tokens);
+        return convertGraph(graph);
     }
 
     private static String stripComments(String input) {
@@ -89,8 +93,8 @@ public class Parser {
         return res;
     }
 
-    private static Graph processTokens(List<Token> tokens) throws RedilogParsingException {
-        Graph graph = new Graph();
+    private static SymbolGraph processTokens(List<Token> tokens) throws RedilogParsingException {
+        SymbolGraph graph = new SymbolGraph();
         int i = 0;
         while (i < tokens.size() && tokens.get(i).getType() != Token.Type.EOF) {
             String keyword = tokens.get(i).getValue(Token.Type.KEYWORD);
@@ -105,7 +109,7 @@ public class Parser {
         return graph;
     }
 
-    private static int processDeclaration(Graph graph, List<Token> tokens, int i) throws RedilogParsingException {
+    private static int processDeclaration(SymbolGraph graph, List<Token> tokens, int i) throws RedilogParsingException {
         String variableType = tokens.get(i++).getValue(Token.Type.KEYWORD);
 
         //(optional) data range
@@ -130,7 +134,7 @@ public class Parser {
             }
         }
         for (Pair<String, Token> variable : newVariables) {
-            Node node = new Node(range);
+            SymbolGraph.Node node = new SymbolGraph.Node(range);
             String name = variable.getLeft();
             Token declarer = variable.getRight();
             if (graph.nodes.containsKey(name)) {
@@ -149,7 +153,7 @@ public class Parser {
         return i;
     }
 
-    private static int processAssignment(Graph graph, List<Token> tokens, int i) throws RedilogParsingException {
+    private static int processAssignment(SymbolGraph graph, List<Token> tokens, int i) throws RedilogParsingException {
         tokens.get(i++).require(Token.Type.KEYWORD, "assign");
 
         String name = tokens.get(i++).getValue(Token.Type.VARIABLE);
@@ -169,5 +173,47 @@ public class Parser {
         }
         graph.nodes.get(name).value = graph.nodes.get(value);
         return i;
+    }
+
+    private static LogicGraph convertGraph(SymbolGraph sGraph) {
+        sGraph.ResolveRanges();
+
+        LogicGraph lGraph = new LogicGraph();
+        lGraph.nodeDeclarations = sGraph.nodeDeclarations;
+
+        Map<SymbolGraph.Node, String> nodeNames = new HashMap<>();
+        for (Entry<String, SymbolGraph.Node> sNode : sGraph.nodes.entrySet()) {
+            nodeNames.put(sNode.getValue(), sNode.getKey());
+
+            Range<Integer> range = sNode.getValue().range.get();
+            //create a wire for each index
+            for (int i = range.minInclusive(); i <= range.maxInclusive(); i++) {
+                LogicGraph.Node lNode = new LogicGraph.Node();
+                String nodeName = sNode.getKey() + "[" + i + "]";
+                if (sGraph.inputs.containsKey(sNode.getKey())) {
+                    lGraph.inputs.put(nodeName, lNode);
+                } else if (sGraph.outputs.containsKey(sNode.getKey())) {
+                    lGraph.outputs.put(nodeName, lNode);
+                }
+                lGraph.nodes.put(nodeName, lNode);
+            }
+        }
+
+        //connect nodes (this has to occur in a separate loop to ensure all nodes are already generated)
+        for (Entry<String, SymbolGraph.Node> sNode : sGraph.nodes.entrySet()) {
+            if (sNode.getValue().value instanceof SymbolGraph.Node sNodeSource) {
+                Range<Integer> range = sNode.getValue().range.get();
+                Range<Integer> sourceRange = sNodeSource.range.get();
+                for (int i = range.minInclusive(); i <= range.maxInclusive(); i++) {
+                    String lNodeName = sNode.getKey() + "[" + i + "]";
+                    String lNodeSourceName = nodeNames.get(sNodeSource) + "["
+                            + (i - range.minInclusive() + sourceRange.minInclusive()) + "]";
+                    LogicGraph.Node lNode = lGraph.nodes.get(lNodeName);
+                    lNode.value = lGraph.nodes.get(lNodeSourceName);
+                }
+            }
+        }
+
+        return lGraph;
     }
 }

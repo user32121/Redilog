@@ -16,7 +16,7 @@ import redilog.init.Redilog;
 import redilog.init.RedilogBlocks;
 import redilog.routing.Placer;
 import redilog.routing.RedilogPlacementException;
-import redilog.synthesis.Graph;
+import redilog.synthesis.LogicGraph;
 import redilog.synthesis.Parser;
 import redilog.synthesis.RedilogParsingException;
 
@@ -52,10 +52,10 @@ public class BuilderBlockEntity extends BlockEntity implements ExtendedScreenHan
     }
 
     public void build() {
-        Graph graph;
         try {
-            graph = Parser.parseRedilog(redilog);
-            Placer.placeRedilog(graph, world);
+            LogicGraph graph = Parser.synthesizeRedilog(redilog);
+            //TODO detect size from layout planner
+            Placer.placeRedilog(graph, getPos().add(1, 1, 1), getPos().add(64, 64, 64), world);
         } catch (RedilogParsingException e) {
             // TODO notify user
             Redilog.LOGGER.error("An error occurred during parsing", e);
