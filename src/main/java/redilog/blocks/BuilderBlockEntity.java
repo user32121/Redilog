@@ -2,7 +2,6 @@ package redilog.blocks;
 
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -13,7 +12,13 @@ import net.minecraft.screen.ScreenHandlerContext;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
+import redilog.init.Redilog;
 import redilog.init.RedilogBlocks;
+import redilog.routing.Placer;
+import redilog.routing.RedilogPlacementException;
+import redilog.synthesis.Graph;
+import redilog.synthesis.Parser;
+import redilog.synthesis.RedilogParsingException;
 
 public class BuilderBlockEntity extends BlockEntity implements ExtendedScreenHandlerFactory {
     private static final String REDILOG_KEY = "Redilog";
@@ -47,14 +52,23 @@ public class BuilderBlockEntity extends BlockEntity implements ExtendedScreenHan
     }
 
     public void build() {
-        world.setBlockState(pos.add(1, 0, 0), Blocks.REDSTONE_WIRE.getDefaultState());
-        world.setBlockState(pos.add(1, 0, 1), Blocks.REDSTONE_WIRE.getDefaultState());
-        world.setBlockState(pos.add(0, 0, 1), Blocks.REDSTONE_WIRE.getDefaultState());
-        world.setBlockState(pos.add(-1, 0, 1), Blocks.REDSTONE_WIRE.getDefaultState());
-        world.setBlockState(pos.add(-1, 0, 0), Blocks.REDSTONE_WIRE.getDefaultState());
-        world.setBlockState(pos.add(-1, 0, -1), Blocks.REDSTONE_WIRE.getDefaultState());
-        world.setBlockState(pos.add(0, 0, -1), Blocks.REDSTONE_WIRE.getDefaultState());
-        world.setBlockState(pos.add(1, 0, -1), Blocks.REDSTONE_WIRE.getDefaultState());
+        Graph graph;
+        try {
+            graph = Parser.parseRedilog(redilog);
+            Placer.placeRedilog(graph, world);
+        } catch (RedilogParsingException e) {
+            // TODO notify user
+            Redilog.LOGGER.error("An error occurred during parsing", e);
+            return;
+        } catch (RedilogPlacementException e) {
+            //TODO notify user
+            Redilog.LOGGER.error("An error occurred during placement", e);
+            return;
+        } catch (Exception e) {
+            //TODO notify user
+            Redilog.LOGGER.error("An internal error occurred", e);
+            return;
+        }
     }
 
     @Override
