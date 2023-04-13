@@ -5,13 +5,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 
 import org.apache.commons.lang3.NotImplementedException;
 
 import net.minecraft.util.Pair;
 import net.minecraft.util.dynamic.Range;
-import redilog.init.Redilog;
 import redilog.synthesis.Token.Builder;
 import redilog.synthesis.Token.TypeHint;
 
@@ -25,7 +23,6 @@ public class Parser {
     public static LogicGraph synthesizeRedilog(String redilog) throws RedilogParsingException {
         redilog = stripComments(redilog);
         List<Token> tokens = tokenize(redilog);
-        Redilog.LOGGER.info("{}", tokens);
         SymbolGraph graph = processTokens(tokens);
         return convertGraph(graph);
     }
@@ -113,14 +110,14 @@ public class Parser {
         String variableType = tokens.get(i++).getValue(Token.Type.KEYWORD);
 
         //(optional) data range
-        Optional<Range<Integer>> range = Optional.empty();
+        Range<Integer> range = null;
         if (tokens.get(i).getType() == Token.Type.SYMBOL) {
             tokens.get(i++).require(Token.Type.SYMBOL, "[");
             int rangeMax = tokens.get(i++).parseAsInt();
             tokens.get(i++).require(Token.Type.SYMBOL, ":");
             int rangeMin = tokens.get(i++).parseAsInt();
             tokens.get(i++).require(Token.Type.SYMBOL, "]");
-            range = Optional.of(new Range<>(rangeMin, rangeMax));
+            range = new Range<>(rangeMin, rangeMax);
         }
         //variable names <name, token that declared it>
         List<Pair<String, Token>> newVariables = new ArrayList<>();
@@ -175,7 +172,7 @@ public class Parser {
         return i;
     }
 
-    private static LogicGraph convertGraph(SymbolGraph sGraph) {
+    private static LogicGraph convertGraph(SymbolGraph sGraph) throws RedilogParsingException {
         sGraph.ResolveRanges();
 
         LogicGraph lGraph = new LogicGraph();
@@ -185,7 +182,7 @@ public class Parser {
         for (Entry<String, SymbolGraph.Node> sNode : sGraph.nodes.entrySet()) {
             nodeNames.put(sNode.getValue(), sNode.getKey());
 
-            Range<Integer> range = sNode.getValue().range.get();
+            Range<Integer> range = sNode.getValue().range;
             //create a wire for each index
             for (int i = range.minInclusive(); i <= range.maxInclusive(); i++) {
                 LogicGraph.Node lNode = new LogicGraph.Node();
@@ -202,8 +199,8 @@ public class Parser {
         //connect nodes (this has to occur in a separate loop to ensure all nodes are already generated)
         for (Entry<String, SymbolGraph.Node> sNode : sGraph.nodes.entrySet()) {
             if (sNode.getValue().value instanceof SymbolGraph.Node sNodeSource) {
-                Range<Integer> range = sNode.getValue().range.get();
-                Range<Integer> sourceRange = sNodeSource.range.get();
+                Range<Integer> range = sNode.getValue().range;
+                Range<Integer> sourceRange = sNodeSource.range;
                 for (int i = range.minInclusive(); i <= range.maxInclusive(); i++) {
                     String lNodeName = sNode.getKey() + "[" + i + "]";
                     String lNodeSourceName = nodeNames.get(sNodeSource) + "["

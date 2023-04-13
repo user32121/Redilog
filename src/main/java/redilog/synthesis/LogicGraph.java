@@ -2,9 +2,8 @@ package redilog.synthesis;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
-import net.minecraft.util.dynamic.Range;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents all the wires and logic gates in a graph.
@@ -15,6 +14,7 @@ public class LogicGraph {
     }
 
     public static class Node implements Expression {
+        @Nullable
         public Expression value;
 
         public Node() {

@@ -1,8 +1,12 @@
 package redilog.synthesis;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Map.Entry;
+import java.util.Queue;
+
+import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.util.dynamic.Range;
 
@@ -16,10 +20,12 @@ public class SymbolGraph {
     }
 
     public static class Node implements Expression {
-        public Optional<Range<Integer>> range;
+        @Nullable
+        public Range<Integer> range;
+        @Nullable
         public Expression value;
 
-        public Node(Optional<Range<Integer>> range) {
+        public Node(Range<Integer> range) {
             this.range = range;
         }
     }
@@ -32,16 +38,36 @@ public class SymbolGraph {
 
     /**
      * Ensure all {@link Node nodes} have a nonempty value for their {@link Node#range}
+     * @throws RedilogParsingException
      */
-    public void ResolveRanges() {
-        for (Node node : nodes.values()) {
-            if (node.range.isEmpty()) {
-                if (node.value instanceof Node n) {
-                    node.range = n.range;
-                } else {
-                    node.range = Optional.of(new Range<Integer>(0, 0));
-                }
+    public void ResolveRanges() throws RedilogParsingException {
+        //for secondary resolution due to dependencies
+        Queue<Entry<String, Node>> toProcess = new LinkedList<>();
+        toProcess.addAll(nodes.entrySet());
+
+        Entry<String, Node> queueMarker = null;
+        while (!toProcess.isEmpty()) {
+            if (queueMarker == null) {
+                queueMarker = toProcess.peek();
+            } else if (queueMarker == toProcess.peek()) {
+                throw new RedilogParsingException(
+                        String.format("infinite loop detected for \"%s\"", queueMarker.getKey()));
             }
+            Entry<String, Node> entry = toProcess.remove();
+            if (entry.getValue().range != null) {
+                continue;
+            }
+            if (entry.getValue().value instanceof Node source) {
+                if (source.range == null) {
+                    toProcess.add(entry);
+                    continue;
+                } else {
+                    entry.getValue().range = source.range;
+                }
+            } else {
+                entry.getValue().range = new Range<Integer>(0, 0);
+            }
+            queueMarker = null;
         }
     }
 }
