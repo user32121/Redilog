@@ -12,7 +12,10 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.LeverBlock;
 import net.minecraft.block.RepeaterBlock;
+import net.minecraft.block.WallSignBlock;
+import net.minecraft.block.entity.SignBlockEntity;
 import net.minecraft.block.enums.WallMountLocation;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3i;
@@ -35,6 +38,8 @@ public class Placer {
         if (minPos.getX() > maxPos.getX() || minPos.getY() > maxPos.getY() || minPos.getZ() > maxPos.getZ()) {
             throw new IllegalArgumentException(String.format("minPos %s was greater than maxPos %s", minPos, maxPos));
         }
+        //adjust so there is room for signs
+        minPos = minPos.add(0, 0, 1);
 
         Redilog.LOGGER.info("inputs:");
         for (var entry : graph.inputs.entrySet()) {
@@ -131,7 +136,6 @@ public class Placer {
             }
         }
 
-        //TODO label inputs and outputs with signs
         for (Entry<String, Node> entry : graph.inputs.entrySet()) {
             Vec3i pos = placedNodes.get(entry.getValue());
             if (pos == null) {
@@ -141,6 +145,11 @@ public class Placer {
             world.setBlockState(minPos.add(pos.multiply(2)), Blocks.WHITE_CONCRETE.getDefaultState());
             world.setBlockState(minPos.add(pos.multiply(2)).add(0, 1, 0),
                     Blocks.LEVER.getDefaultState().with(LeverBlock.FACE, WallMountLocation.FLOOR));
+            world.setBlockState(minPos.add(pos.multiply(2)).add(0, 0, -1),
+                    Blocks.BIRCH_WALL_SIGN.getDefaultState().with(WallSignBlock.FACING, Direction.NORTH));
+            if (world.getBlockEntity(minPos.add(pos.multiply(2)).add(0, 0, -1)) instanceof SignBlockEntity sbe) {
+                sbe.setTextOnRow(0, Text.of(entry.getKey()));
+            }
         }
         for (Entry<String, Node> entry : graph.outputs.entrySet()) {
             Vec3i pos = placedNodes.get(entry.getValue());
@@ -149,6 +158,10 @@ public class Placer {
                 continue;
             }
             world.setBlockState(minPos.add(pos.multiply(2)), Blocks.REDSTONE_LAMP.getDefaultState());
+            world.setBlockState(minPos.add(pos.multiply(2)).add(0, 1, 0), Blocks.BIRCH_SIGN.getDefaultState());
+            if (world.getBlockEntity(minPos.add(pos.multiply(2)).add(0, 1, 0)) instanceof SignBlockEntity sbe) {
+                sbe.setTextOnRow(0, Text.of(entry.getKey()));
+            }
         }
     }
 
