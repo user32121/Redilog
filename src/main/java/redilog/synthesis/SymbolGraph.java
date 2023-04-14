@@ -51,7 +51,7 @@ public class SymbolGraph {
                 queueMarker = toProcess.peek();
             } else if (queueMarker == toProcess.peek()) {
                 throw new RedilogParsingException(
-                        String.format("infinite loop detected for \"%s\"", queueMarker.getKey()));
+                        String.format("infinite loop detected for \"%s\" while resolving ranges", queueMarker.getKey()));
             }
             Entry<String, Node> entry = toProcess.remove();
             if (entry.getValue().range != null) {

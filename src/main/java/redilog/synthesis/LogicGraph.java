@@ -16,13 +16,6 @@ public class LogicGraph {
     public static class Node implements Expression {
         @Nullable
         public Expression value;
-
-        public Node() {
-        }
-
-        public Node(Expression value) {
-            this.value = value;
-        }
     }
 
     public Map<String, Node> inputs = new HashMap<>();

@@ -6,11 +6,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 
-import org.apache.commons.lang3.NotImplementedException;
-
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.LeverBlock;
+import net.minecraft.block.PistonBlock;
 import net.minecraft.block.RepeaterBlock;
 import net.minecraft.block.WallSignBlock;
 import net.minecraft.block.entity.SignBlockEntity;
@@ -54,7 +53,7 @@ public class Placer {
             Redilog.LOGGER.info("{}: {} = {}", entry.getKey(), entry.getValue(), entry.getValue().value);
         }
 
-        GridLayout grid = new GridLayout((maxPos.getX() - minPos.getX()) / 2, (maxPos.getY() - minPos.getY()) / 2,
+        GridLayout grid = new GridLayout((maxPos.getX() - minPos.getX()) / 2, (maxPos.getY() - minPos.getY()) / 5,
                 (maxPos.getZ() - minPos.getZ()) / 2);
         Map<Node, Vec3i> placedNodes = new HashMap<>();
         {
@@ -83,7 +82,7 @@ public class Placer {
                     queueMarker = toProcess.peek();
                 } else if (queueMarker == toProcess.peek()) {
                     throw new RedilogPlacementException(
-                            String.format("infinite loop detected for \"%s\"", queueMarker.getKey()));
+                            String.format("infinite loop detected for \"%s\" while placing", queueMarker.getKey()));
                 }
 
                 Entry<String, Node> entry = toProcess.remove();
@@ -98,13 +97,32 @@ public class Placer {
                     continue;
                 }
                 queueMarker = null;
-                if (grid.grid[sourcePos.getX()][sourcePos.getY()][sourcePos.getZ() + 1] != null) {
-                    //TODO add branching
-                    throw new NotImplementedException();
+
+                if (grid.grid[sourcePos.getX()][sourcePos.getY()][sourcePos.getZ() + 2] != null) {
+                    //access value from branch
+                    grid.grid[sourcePos.getX()][sourcePos.getY()][sourcePos.getZ() + 1].posY = true;
+                    grid.grid[sourcePos.getX()][sourcePos.getY() + 1][sourcePos.getZ() + 1] = new Connections();
+                    int xDelta = 0;
+                    while (grid.grid[sourcePos.getX() + xDelta][sourcePos.getY()][sourcePos.getZ() + 1] != null) {
+                        ++xDelta;
+                        grid.grid[sourcePos.getX() + xDelta - 1][sourcePos.getY() + 1][sourcePos.getZ()
+                                + 1].posX = true;
+                        grid.grid[sourcePos.getX() + xDelta][sourcePos.getY() + 1][sourcePos.getZ()
+                                + 1] = new Connections();
+                    }
+                    grid.grid[sourcePos.getX() + xDelta][sourcePos.getY() + 1][sourcePos.getZ() + 1].negY = true;
+                    grid.grid[sourcePos.getX() + xDelta][sourcePos.getY()][sourcePos.getZ() + 1] = new Connections();
+                    grid.grid[sourcePos.getX() + xDelta][sourcePos.getY()][sourcePos.getZ() + 1].posZ = true;
+                    grid.grid[sourcePos.getX() + xDelta][sourcePos.getY()][sourcePos.getZ() + 2] = new Connections();
+                    placedNodes.put(entry.getValue(), sourcePos.add(xDelta, 0, 2));
+                } else {
+                    //first node, access value directly after
+                    grid.grid[sourcePos.getX()][sourcePos.getY()][sourcePos.getZ()].posZ = true;
+                    grid.grid[sourcePos.getX()][sourcePos.getY()][sourcePos.getZ() + 1] = new Connections();
+                    grid.grid[sourcePos.getX()][sourcePos.getY()][sourcePos.getZ() + 1].posZ = true;
+                    grid.grid[sourcePos.getX()][sourcePos.getY()][sourcePos.getZ() + 2] = new Connections();
+                    placedNodes.put(entry.getValue(), sourcePos.add(0, 0, 2));
                 }
-                grid.grid[sourcePos.getX()][sourcePos.getY()][sourcePos.getZ() + 1] = new Connections();
-                grid.grid[sourcePos.getX()][sourcePos.getY()][sourcePos.getZ()].posZ = true;
-                placedNodes.put(entry.getValue(), sourcePos.add(0, 0, 1));
             }
         }
 
@@ -112,24 +130,35 @@ public class Placer {
             for (int y = 0; y < grid.grid[x].length; y++) {
                 for (int z = 0; z < grid.grid[x][y].length; z++) {
                     if (grid.grid[x][y][z] != null) {
-                        world.setBlockState(minPos.add(x * 2, y * 2, z * 2), wire());
+                        wire(world, minPos.add(x * 2, y * 5, z * 2));
                         if (grid.grid[x][y][z].posX) {
-                            world.setBlockState(minPos.add(x * 2 + 1, y * 2, z * 2), repeater(Direction.WEST));
+                            repeater(world, minPos.add(x * 2 + 1, y * 5, z * 2), Direction.WEST);
                         }
                         if (grid.grid[x][y][z].negX) {
-                            world.setBlockState(minPos.add(x * 2 - 1, y * 2, z * 2), repeater(Direction.EAST));
+                            repeater(world, minPos.add(x * 2 - 1, y * 5, z * 2), Direction.EAST);
                         }
                         if (grid.grid[x][y][z].posY) {
-                            //TODO torch ladder
+                            concrete(world, minPos.add(x * 2, y * 5, z * 2));
+                            world.setBlockState(minPos.add(x * 2, y * 5 + 1, z * 2),
+                                    Blocks.REDSTONE_TORCH.getDefaultState());
+                            concrete(world, minPos.add(x * 2, y * 5 + 2, z * 2));
+                            world.setBlockState(minPos.add(x * 2, y * 5 + 3, z * 2),
+                                    Blocks.REDSTONE_TORCH.getDefaultState());
+                            concrete(world, minPos.add(x * 2, y * 5 + 4, z * 2));
                         }
                         if (grid.grid[x][y][z].negY) {
-                            //TODO downward piston
+                            world.setBlockState(minPos.add(x * 2, y * 5 - 2, z * 2),
+                                    Blocks.STICKY_PISTON.getDefaultState().with(PistonBlock.FACING, Direction.DOWN));
+                            world.setBlockState(minPos.add(x * 2, y * 5 - 3, z * 2),
+                                    Blocks.REDSTONE_BLOCK.getDefaultState());
+                            world.setBlockState(minPos.add(x * 2, y * 5 - 4, z * 2),
+                                    Blocks.AIR.getDefaultState());
                         }
                         if (grid.grid[x][y][z].posZ) {
-                            world.setBlockState(minPos.add(x * 2, y * 2, z * 2 + 1), repeater(Direction.NORTH));
+                            repeater(world, minPos.add(x * 2, y * 5, z * 2 + 1), Direction.NORTH);
                         }
                         if (grid.grid[x][y][z].negZ) {
-                            world.setBlockState(minPos.add(x * 2, y * 2, z * 2 - 1), repeater(Direction.SOUTH));
+                            repeater(world, minPos.add(x * 2, y * 5, z * 2 - 1), Direction.SOUTH);
                         }
                     }
                 }
@@ -166,11 +195,17 @@ public class Placer {
     }
 
     //shorthands to reduce line length
-    private static BlockState repeater(Direction dir) {
-        return Blocks.REPEATER.getDefaultState().with(RepeaterBlock.FACING, dir);
+    private static void repeater(World world, BlockPos pos, Direction dir) {
+        concrete(world, pos.add(0, -1, 0));
+        world.setBlockState(pos, Blocks.REPEATER.getDefaultState().with(RepeaterBlock.FACING, dir));
     }
 
-    private static BlockState wire() {
-        return Blocks.REDSTONE_WIRE.getDefaultState();
+    private static void wire(World world, BlockPos pos) {
+        concrete(world, pos.add(0, -1, 0));
+        world.setBlockState(pos, Blocks.REDSTONE_WIRE.getDefaultState());
+    }
+
+    private static void concrete(World world, BlockPos pos) {
+        world.setBlockState(pos, Blocks.LIGHT_BLUE_CONCRETE.getDefaultState());
     }
 }

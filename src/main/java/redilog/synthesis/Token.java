@@ -107,7 +107,7 @@ public class Token {
     public String getValue(Token.Type requiredType) throws RedilogParsingException {
         if (type != requiredType) {
             throw new RedilogParsingException(
-                    String.format("Expected token of type %s but got %s", requiredType, this));
+                    String.format("Expected %s but got %s", requiredType, this));
         }
         return value;
     }
