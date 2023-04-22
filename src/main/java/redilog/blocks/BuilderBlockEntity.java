@@ -6,12 +6,14 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerContext;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import redilog.init.Redilog;
 import redilog.init.RedilogBlocks;
 import redilog.routing.Placer;
@@ -22,11 +24,18 @@ import redilog.synthesis.RedilogParsingException;
 
 public class BuilderBlockEntity extends BlockEntity implements ExtendedScreenHandlerFactory {
     private static final String REDILOG_KEY = "Redilog";
+    private static final String BUILD_MIN_KEY = "BuildSpaceMin";
+    private static final String BUILD_MAX_KEY = "BuildSpaceMax";
 
     private String redilog = "";
+    private Box buildSpace = new Box(0, 0, 0, 0, 0, 0);
 
     public BuilderBlockEntity(BlockPos pos, BlockState state) {
         super(RedilogBlocks.BUILDER_ENTITY, pos, state);
+    }
+
+    public void setBuildSpace(Box value) {
+        this.buildSpace = value;
     }
 
     @Override
@@ -55,7 +64,7 @@ public class BuilderBlockEntity extends BlockEntity implements ExtendedScreenHan
         try {
             LogicGraph graph = Parser.synthesizeRedilog(redilog);
             //TODO detect size from layout planner
-            Placer.placeRedilog(graph, getPos().add(1, 1, 1), getPos().add(64, 64, 64), world);
+            Placer.placeRedilog(graph, buildSpace, world);
         } catch (RedilogParsingException e) {
             // TODO notify user
             Redilog.LOGGER.error("An error occurred during parsing", e);
@@ -75,11 +84,15 @@ public class BuilderBlockEntity extends BlockEntity implements ExtendedScreenHan
     public void readNbt(NbtCompound nbt) {
         super.readNbt(nbt);
         redilog = nbt.getString(REDILOG_KEY);
+        buildSpace = new Box(NbtHelper.toBlockPos(nbt.getCompound(BUILD_MIN_KEY)),
+                NbtHelper.toBlockPos(nbt.getCompound(BUILD_MAX_KEY)));
     }
 
     @Override
     protected void writeNbt(NbtCompound nbt) {
         super.writeNbt(nbt);
         nbt.putString(REDILOG_KEY, redilog);
+        nbt.put(BUILD_MIN_KEY, NbtHelper.fromBlockPos(new BlockPos(buildSpace.minX, buildSpace.minY, buildSpace.minZ)));
+        nbt.put(BUILD_MAX_KEY, NbtHelper.fromBlockPos(new BlockPos(buildSpace.maxX, buildSpace.maxY, buildSpace.maxZ)));
     }
 }

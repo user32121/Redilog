@@ -96,10 +96,8 @@ public class LayoutMarkerBlockEntityRenderer implements BlockEntityRenderer<Layo
             VertexConsumer vertexConsumer = spriteIdentifier.getVertexConsumer(vertexConsumers,
                     RenderLayer::getEntityCutout);
             if (!entity.connections.isEmpty() && entity.getPos().equals(Collections.min(entity.connections))) {
-                Box box = new Box(entity.getPos());
-                for (BlockPos connection : entity.connections) {
-                    box = box.union(new Box(connection));
-                }
+                Box box = entity.getLayoutBox();
+
                 //set origin to bottom left of bounding box
                 matrices.push();
                 matrices.translate(box.minX - entity.getPos().getX(), box.minY - entity.getPos().getY(),

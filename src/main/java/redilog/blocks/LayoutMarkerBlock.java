@@ -1,7 +1,5 @@
 package redilog.blocks;
 
-import java.util.Collections;
-
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;

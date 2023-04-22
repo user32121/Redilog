@@ -15,6 +15,7 @@ import net.minecraft.block.entity.SignBlockEntity;
 import net.minecraft.block.enums.WallMountLocation;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
@@ -31,11 +32,14 @@ public class Placer {
      * @param maxPos maximum block position, inclusive
      * @throws RedilogPlacementException
      */
-    public static void placeRedilog(LogicGraph graph, BlockPos minPos, BlockPos maxPos, World world)
+    public static void placeRedilog(LogicGraph graph, Box buildSpace, World world)
             throws RedilogPlacementException {
-        if (minPos.getX() > maxPos.getX() || minPos.getY() > maxPos.getY() || minPos.getZ() > maxPos.getZ()) {
-            throw new IllegalArgumentException(String.format("minPos %s was greater than maxPos %s", minPos, maxPos));
+        if (buildSpace == null || (buildSpace.getAverageSideLength() == 0)) {
+            throw new RedilogPlacementException(
+                    "No build space specified (specify by creating a zone using layout markers, then placing the builder next to one of the markers)");
         }
+        BlockPos minPos = new BlockPos(buildSpace.minX, buildSpace.minY, buildSpace.minZ);
+        BlockPos maxPos = new BlockPos(buildSpace.maxX, buildSpace.maxY, buildSpace.maxZ);
         //adjust so there is room for signs
         minPos = minPos.add(0, 0, 1);
 
