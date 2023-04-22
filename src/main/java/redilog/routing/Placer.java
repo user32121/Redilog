@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 
-import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.LeverBlock;
 import net.minecraft.block.PistonBlock;
@@ -52,6 +51,14 @@ public class Placer {
         for (var entry : graph.nodes.entrySet()) {
             Redilog.LOGGER.info("{}: {} = {}", entry.getKey(), entry.getValue(), entry.getValue().value);
         }
+
+        //TODO new algo
+
+        //place components randomly
+
+        //link wires using greedy
+
+        //reduce
 
         GridLayout grid = new GridLayout((maxPos.getX() - minPos.getX()) / 2, (maxPos.getY() - minPos.getY()) / 5,
                 (maxPos.getZ() - minPos.getZ()) / 2);

@@ -13,15 +13,22 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 import redilog.blocks.BuilderBlock;
 import redilog.blocks.BuilderBlockEntity;
+import redilog.blocks.LayoutMarkerBlock;
+import redilog.blocks.LayoutMarkerBlockEntity;
 
 public class RedilogBlocks {
 
     public static final BuilderBlock BUILDER = register(new BuilderBlock(
             FabricBlockSettings.of(Material.STONE).requiresTool().strength(-1.0f, 3600000.0f).dropsNothing()),
             "builder");
+    public static final LayoutMarkerBlock LAYOUT_MARKER = register(
+            new LayoutMarkerBlock(FabricBlockSettings.of(Material.STONE).nonOpaque()),
+            "layout_marker");
 
     public static final BlockEntityType<BuilderBlockEntity> BUILDER_ENTITY = register(
             "builder_entity", BuilderBlockEntity::new, BUILDER);
+    public static final BlockEntityType<LayoutMarkerBlockEntity> MARKER_ENTITY = register(
+            "layout_marker_entity", LayoutMarkerBlockEntity::new, LAYOUT_MARKER);
 
     public static void init() {
         BuilderBlock.RegisterRedilogSyncPacketReceiver();
