@@ -8,6 +8,7 @@ import net.minecraft.client.model.ModelPartBuilder;
 import net.minecraft.client.model.ModelPartData;
 import net.minecraft.client.model.ModelTransform;
 import net.minecraft.client.model.TexturedModelData;
+import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -34,45 +35,47 @@ public class LayoutMarkerBlockEntityRenderer implements BlockEntityRenderer<Layo
         return TexturedModelData.of(modelData, (int) (B_SIZE * 4), (int) (B_SIZE * 2));
     }
 
-    private final ModelPart model;
+    private final ModelPart beam;
 
     public LayoutMarkerBlockEntityRenderer(Context context) {
-        model = context.getLayerModelPart(RedilogClient.BEAM);
-        model.pivotX = model.pivotY = model.pivotZ = B_POS;
+        beam = context.getLayerModelPart(RedilogClient.BEAM);
+        beam.pivotX = beam.pivotY = beam.pivotZ = B_POS;
     }
 
     @Override
     public void render(LayoutMarkerBlockEntity entity, float tickDelta, MatrixStack matrices,
             VertexConsumerProvider vertexConsumers, int light, int overlay) {
+        light = LightmapTextureManager.MAX_LIGHT_COORDINATE;
+        
         //alignment indicators
         if (entity.getCachedState().get(LayoutMarkerBlock.POWERED)) {
             SpriteIdentifier spriteIdentifier = new SpriteIdentifier(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE,
-                    new Identifier("redilog", "block/layout_marker_beam1"));
+                    new Identifier("redilog", "block/layout_beam1"));
             VertexConsumer vertexConsumer = spriteIdentifier.getVertexConsumer(vertexConsumers,
                     RenderLayer::getEntityCutout);
             //x
-            model.xScale = 16 / B_SIZE * 128 + 1;
-            model.pivotX = B_POS - 64 * 16;
-            model.render(matrices, vertexConsumer, light, overlay);
-            model.xScale = 1;
-            model.pivotX = B_POS;
+            beam.xScale = 16 / B_SIZE * 128 + 1;
+            beam.pivotX = B_POS - 64 * 16;
+            beam.render(matrices, vertexConsumer, light, overlay);
+            beam.xScale = 1;
+            beam.pivotX = B_POS;
             //y
-            model.yScale = 16 / B_SIZE * 128 + 1;
-            model.pivotY = B_POS - 64 * 16;
-            model.render(matrices, vertexConsumer, light, overlay);
-            model.yScale = 1;
-            model.pivotY = B_POS;
+            beam.yScale = 16 / B_SIZE * 128 + 1;
+            beam.pivotY = B_POS - 64 * 16;
+            beam.render(matrices, vertexConsumer, light, overlay);
+            beam.yScale = 1;
+            beam.pivotY = B_POS;
             //z
-            model.zScale = 16 / B_SIZE * 128 + 1;
-            model.pivotZ = B_POS - 64 * 16;
-            model.render(matrices, vertexConsumer, light, overlay);
-            model.zScale = 1;
-            model.pivotZ = B_POS;
+            beam.zScale = 16 / B_SIZE * 128 + 1;
+            beam.pivotZ = B_POS - 64 * 16;
+            beam.render(matrices, vertexConsumer, light, overlay);
+            beam.zScale = 1;
+            beam.pivotZ = B_POS;
         }
         {
             //connections to this block
             SpriteIdentifier spriteIdentifier = new SpriteIdentifier(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE,
-                    new Identifier("redilog", "block/layout_marker_beam2"));
+                    new Identifier("redilog", "block/layout_beam2"));
             VertexConsumer vertexConsumer = spriteIdentifier.getVertexConsumer(vertexConsumers,
                     RenderLayer::getEntityCutout);
             for (BlockPos connection : entity.connections) {
@@ -81,18 +84,18 @@ public class LayoutMarkerBlockEntityRenderer implements BlockEntityRenderer<Layo
                         + (delta.getZ() == 0 ? 1 : 0);
                 //share 2 xyz values, and this is the lower 3rd value
                 if (sharedAxes == 2 && entity.getPos().compareTo(connection) < 0) {
-                    model.xScale = 16 / B_SIZE * delta.getX() + 1;
-                    model.yScale = 16 / B_SIZE * delta.getY() + 1;
-                    model.zScale = 16 / B_SIZE * delta.getZ() + 1;
-                    model.render(matrices, vertexConsumer, light, overlay);
-                    model.xScale = model.yScale = model.zScale = 1;
+                    beam.xScale = 16 / B_SIZE * delta.getX() + 1;
+                    beam.yScale = 16 / B_SIZE * delta.getY() + 1;
+                    beam.zScale = 16 / B_SIZE * delta.getZ() + 1;
+                    beam.render(matrices, vertexConsumer, light, overlay);
+                    beam.xScale = beam.yScale = beam.zScale = 1;
                 }
             }
         }
         {
             //bounding box (only one block needs to render it, so choose "lowest")
             SpriteIdentifier spriteIdentifier = new SpriteIdentifier(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE,
-                    new Identifier("redilog", "block/layout_marker_beam3"));
+                    new Identifier("redilog", "block/layout_beam3"));
             VertexConsumer vertexConsumer = spriteIdentifier.getVertexConsumer(vertexConsumers,
                     RenderLayer::getEntityCutout);
             if (!entity.connections.isEmpty() && entity.getPos().equals(Collections.min(entity.connections))) {
@@ -105,25 +108,25 @@ public class LayoutMarkerBlockEntityRenderer implements BlockEntityRenderer<Layo
                 //this corresponds to the 4 corners of each face, and we draw a beam along the third direction
                 for (int i = 0; i < 2; i++) {
                     for (int j = 0; j < 2; j++) {
-                        model.xScale = 16 / B_SIZE * ((float) box.getXLength() - 1) + 1;
-                        model.pivotY = B_POS + 16 * ((float) box.getYLength() - 1) * i;
-                        model.pivotZ = B_POS + 16 * ((float) box.getZLength() - 1) * j;
-                        model.render(matrices, vertexConsumer, light, overlay);
-                        model.pivotY = B_POS;
-                        model.xScale = 1;
+                        beam.xScale = 16 / B_SIZE * ((float) box.getXLength() - 1) + 1;
+                        beam.pivotY = B_POS + 16 * ((float) box.getYLength() - 1) * i;
+                        beam.pivotZ = B_POS + 16 * ((float) box.getZLength() - 1) * j;
+                        beam.render(matrices, vertexConsumer, light, overlay);
+                        beam.pivotY = B_POS;
+                        beam.xScale = 1;
 
-                        model.pivotX = B_POS + 16 * ((float) box.getXLength() - 1) * i;
-                        model.yScale = 16 / B_SIZE * ((float) box.getYLength() - 1) + 1;
-                        model.render(matrices, vertexConsumer, light, overlay);
-                        model.yScale = 1;
-                        model.pivotZ = B_POS;
+                        beam.pivotX = B_POS + 16 * ((float) box.getXLength() - 1) * i;
+                        beam.yScale = 16 / B_SIZE * ((float) box.getYLength() - 1) + 1;
+                        beam.render(matrices, vertexConsumer, light, overlay);
+                        beam.yScale = 1;
+                        beam.pivotZ = B_POS;
 
-                        model.pivotY = B_POS + 16 * ((float) box.getYLength() - 1) * j;
-                        model.zScale = 16 / B_SIZE * ((float) box.getZLength() - 1) + 1;
-                        model.render(matrices, vertexConsumer, light, overlay);
-                        model.zScale = 1;
-                        model.pivotX = B_POS;
-                        model.pivotY = B_POS;
+                        beam.pivotY = B_POS + 16 * ((float) box.getYLength() - 1) * j;
+                        beam.zScale = 16 / B_SIZE * ((float) box.getZLength() - 1) + 1;
+                        beam.render(matrices, vertexConsumer, light, overlay);
+                        beam.zScale = 1;
+                        beam.pivotX = B_POS;
+                        beam.pivotY = B_POS;
                     }
                 }
                 matrices.pop();

@@ -1,11 +1,18 @@
 package redilog.routing;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Queue;
 
+import org.apache.commons.lang3.NotImplementedException;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Queue;
+import java.util.Set;
+
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.LeverBlock;
 import net.minecraft.block.PistonBlock;
@@ -18,9 +25,11 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3i;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 import redilog.init.Redilog;
-import redilog.routing.GridLayout.Connections;
+import redilog.routing.GridLayout.BLOCK;
+import redilog.routing.GridLayoutOld.Connections;
 import redilog.synthesis.LogicGraph;
 import redilog.synthesis.LogicGraph.Expression;
 import redilog.synthesis.LogicGraph.Node;
@@ -32,16 +41,16 @@ public class Placer {
      * @param maxPos maximum block position, inclusive
      * @throws RedilogPlacementException
      */
-    public static void placeRedilog(LogicGraph graph, Box buildSpace, World world)
+    //TODO split into helper functions
+    public static void placeRedilog(LogicGraph graph, Box buildSpace, World world, @Nullable Random random)
             throws RedilogPlacementException {
         if (buildSpace == null || (buildSpace.getAverageSideLength() == 0)) {
             throw new RedilogPlacementException(
                     "No build space specified (specify by creating a zone using layout markers, then placing the builder next to one of the markers)");
         }
-        BlockPos minPos = new BlockPos(buildSpace.minX, buildSpace.minY, buildSpace.minZ);
-        BlockPos maxPos = new BlockPos(buildSpace.maxX, buildSpace.maxY, buildSpace.maxZ);
-        //adjust so there is room for signs
-        minPos = minPos.add(0, 0, 1);
+        if (random == null) {
+            random = world.random;
+        }
 
         Redilog.LOGGER.info("inputs:");
         for (var entry : graph.inputs.entrySet()) {
@@ -58,165 +67,214 @@ public class Placer {
 
         //TODO new algo
 
+        GridLayout grid = new GridLayout((int) buildSpace.getXLength(), (int) buildSpace.getYLength(),
+                (int) buildSpace.getZLength());
+
+        //place inputs and outputs evenly spaced along x
+        Map<Node, Vec3i> placedNodes = new HashMap<>();
+
+        Iterator<Entry<String, Node>> nodes = graph.inputs.entrySet().iterator();
+        int nodesRemaining = graph.inputs.size();
+        //TODO put inputs in a sorted order
+        for (int x = 0; x < buildSpace.getXLength(); ++x) {
+            if (random.nextDouble() < nodesRemaining / (buildSpace.getXLength() - x) * 2) {
+                Entry<String, Node> node = nodes.next();
+                grid.grid[x][0][1] = BLOCK.BLOCK;
+                grid.grid[x][0][2] = BLOCK.BLOCK;
+                grid.grid[x][1][2] = BLOCK.WIRE;
+                placedNodes.put(node.getValue(), new Vec3i(x, 0, 1));
+                --nodesRemaining;
+                ++x;
+                if (!nodes.hasNext()) {
+                    break;
+                }
+            }
+        }
+        if (nodes.hasNext()) {
+            throw new RedilogPlacementException(
+                    String.format("Insufficient space for inputs (ran out at %s)", nodes.next().getKey()));
+        }
+
         //place components randomly
 
         //link wires using greedy
 
-        //reduce
+        //remove parallel slices
 
-        GridLayout grid = new GridLayout((maxPos.getX() - minPos.getX()) / 2, (maxPos.getY() - minPos.getY()) / 5,
-                (maxPos.getZ() - minPos.getZ()) / 2);
-        Map<Node, Vec3i> placedNodes = new HashMap<>();
-        {
-            //place all inputs (braces for scoping)
-            int x = 0;
-            for (Entry<String, Node> input : graph.inputs.entrySet()) {
-                if (x >= grid.grid.length) {
-                    throw new RedilogPlacementException(
-                            String.format("Insufficient space for inputs (ran out at %s)", input.getKey()));
-                }
-                grid.grid[x][0][0] = new Connections();
-                placedNodes.put(input.getValue(), new Vec3i(x, 0, 0));
-                ++x;
-            }
-        }
-        {
-            //place and route rest of nodes
-            Queue<Entry<String, Node>> toProcess = new LinkedList<>();
-            toProcess.addAll(graph.nodes.entrySet());
-            toProcess.removeAll(graph.inputs.entrySet());
+        //transfer grid to world
 
-            Entry<String, Node> queueMarker = null;
-            while (!toProcess.isEmpty()) {
-                //detect infinite loop
-                if (queueMarker == null) {
-                    queueMarker = toProcess.peek();
-                } else if (queueMarker == toProcess.peek()) {
-                    throw new RedilogPlacementException(
-                            String.format("infinite loop detected for \"%s\" while placing", queueMarker.getKey()));
-                }
+        // GridLayout grid = new GridLayout((maxPos.getX() - minPos.getX()) / 2, (maxPos.getY() - minPos.getY()) / 5,
+        //         (maxPos.getZ() - minPos.getZ()) / 2);
+        // {
+        //     //place all inputs (braces for scoping)
+        //     int x = 0;
+        //     for (Entry<String, Node> input : graph.inputs.entrySet()) {
+        //         if (x >= grid.grid.length) {
+        //             throw new RedilogPlacementException(
+        //                     String.format("Insufficient space for inputs (ran out at %s)", input.getKey()));
+        //         }
+        //         grid.grid[x][0][0] = new Connections();
+        //         placedNodes.put(input.getValue(), new Vec3i(x, 0, 0));
+        //         ++x;
+        //     }
+        // }
+        // {
+        //     //place and route rest of nodes
+        //     Queue<Entry<String, Node>> toProcess = new LinkedList<>();
+        //     toProcess.addAll(graph.nodes.entrySet());
+        //     toProcess.removeAll(graph.inputs.entrySet());
 
-                Entry<String, Node> entry = toProcess.remove();
-                Expression source = entry.getValue().value;
-                if (source == null) {
-                    Redilog.LOGGER.warn("non-input \"{}\" has no value", entry.getKey());
-                    continue;
-                }
-                Vec3i sourcePos = placedNodes.get(source);
-                if (sourcePos == null) {
-                    toProcess.add(entry);
-                    continue;
-                }
-                queueMarker = null;
+        //     Entry<String, Node> queueMarker = null;
+        //     while (!toProcess.isEmpty()) {
+        //         //detect infinite loop
+        //         if (queueMarker == null) {
+        //             queueMarker = toProcess.peek();
+        //         } else if (queueMarker == toProcess.peek()) {
+        //             throw new RedilogPlacementException(
+        //                     String.format("infinite loop detected for \"%s\" while placing", queueMarker.getKey()));
+        //         }
 
-                if (grid.grid[sourcePos.getX()][sourcePos.getY()][sourcePos.getZ() + 2] != null) {
-                    //access value from branch
-                    grid.grid[sourcePos.getX()][sourcePos.getY()][sourcePos.getZ() + 1].posY = true;
-                    grid.grid[sourcePos.getX()][sourcePos.getY() + 1][sourcePos.getZ() + 1] = new Connections();
-                    int xDelta = 0;
-                    while (grid.grid[sourcePos.getX() + xDelta][sourcePos.getY()][sourcePos.getZ() + 1] != null) {
-                        ++xDelta;
-                        grid.grid[sourcePos.getX() + xDelta - 1][sourcePos.getY() + 1][sourcePos.getZ()
-                                + 1].posX = true;
-                        grid.grid[sourcePos.getX() + xDelta][sourcePos.getY() + 1][sourcePos.getZ()
-                                + 1] = new Connections();
+        //         Entry<String, Node> entry = toProcess.remove();
+        //         Expression source = entry.getValue().value;
+        //         if (source == null) {
+        //             Redilog.LOGGER.warn("non-input \"{}\" has no value", entry.getKey());
+        //             continue;
+        //         }
+        //         Vec3i sourcePos = placedNodes.get(source);
+        //         if (sourcePos == null) {
+        //             toProcess.add(entry);
+        //             continue;
+        //         }
+        //         queueMarker = null;
+
+        //         if (grid.grid[sourcePos.getX()][sourcePos.getY()][sourcePos.getZ() + 2] != null) {
+        //             //access value from branch
+        //             grid.grid[sourcePos.getX()][sourcePos.getY()][sourcePos.getZ() + 1].posY = true;
+        //             grid.grid[sourcePos.getX()][sourcePos.getY() + 1][sourcePos.getZ() + 1] = new Connections();
+        //             int xDelta = 0;
+        //             while (grid.grid[sourcePos.getX() + xDelta][sourcePos.getY()][sourcePos.getZ() + 1] != null) {
+        //                 ++xDelta;
+        //                 grid.grid[sourcePos.getX() + xDelta - 1][sourcePos.getY() + 1][sourcePos.getZ()
+        //                         + 1].posX = true;
+        //                 grid.grid[sourcePos.getX() + xDelta][sourcePos.getY() + 1][sourcePos.getZ()
+        //                         + 1] = new Connections();
+        //             }
+        //             grid.grid[sourcePos.getX() + xDelta][sourcePos.getY() + 1][sourcePos.getZ() + 1].negY = true;
+        //             grid.grid[sourcePos.getX() + xDelta][sourcePos.getY()][sourcePos.getZ() + 1] = new Connections();
+        //             grid.grid[sourcePos.getX() + xDelta][sourcePos.getY()][sourcePos.getZ() + 1].posZ = true;
+        //             grid.grid[sourcePos.getX() + xDelta][sourcePos.getY()][sourcePos.getZ() + 2] = new Connections();
+        //             placedNodes.put(entry.getValue(), sourcePos.add(xDelta, 0, 2));
+        //         } else {
+        //             //first node, access value directly after
+        //             grid.grid[sourcePos.getX()][sourcePos.getY()][sourcePos.getZ()].posZ = true;
+        //             grid.grid[sourcePos.getX()][sourcePos.getY()][sourcePos.getZ() + 1] = new Connections();
+        //             grid.grid[sourcePos.getX()][sourcePos.getY()][sourcePos.getZ() + 1].posZ = true;
+        //             grid.grid[sourcePos.getX()][sourcePos.getY()][sourcePos.getZ() + 2] = new Connections();
+        //             placedNodes.put(entry.getValue(), sourcePos.add(0, 0, 2));
+        //         }
+        //     }
+        // }
+
+        // for (int x = 0; x < grid.grid.length; x++) {
+        //     for (int y = 0; y < grid.grid[x].length; y++) {
+        //         for (int z = 0; z < grid.grid[x][y].length; z++) {
+        //             if (grid.grid[x][y][z] != null) {
+        //                 wire(world, minPos.add(x * 2, y * 5, z * 2));
+        //                 if (grid.grid[x][y][z].posX) {
+        //                     repeater(world, minPos.add(x * 2 + 1, y * 5, z * 2), Direction.WEST);
+        //                 }
+        //                 if (grid.grid[x][y][z].negX) {
+        //                     repeater(world, minPos.add(x * 2 - 1, y * 5, z * 2), Direction.EAST);
+        //                 }
+        //                 if (grid.grid[x][y][z].posY) {
+        //                     concrete(world, minPos.add(x * 2, y * 5, z * 2));
+        //                     world.setBlockState(minPos.add(x * 2, y * 5 + 1, z * 2),
+        //                             Blocks.REDSTONE_TORCH.getDefaultState());
+        //                     concrete(world, minPos.add(x * 2, y * 5 + 2, z * 2));
+        //                     world.setBlockState(minPos.add(x * 2, y * 5 + 3, z * 2),
+        //                             Blocks.REDSTONE_TORCH.getDefaultState());
+        //                     concrete(world, minPos.add(x * 2, y * 5 + 4, z * 2));
+        //                 }
+        //                 if (grid.grid[x][y][z].negY) {
+        //                     world.setBlockState(minPos.add(x * 2, y * 5 - 2, z * 2),
+        //                             Blocks.STICKY_PISTON.getDefaultState().with(PistonBlock.FACING, Direction.DOWN));
+        //                     world.setBlockState(minPos.add(x * 2, y * 5 - 3, z * 2),
+        //                             Blocks.REDSTONE_BLOCK.getDefaultState());
+        //                     world.setBlockState(minPos.add(x * 2, y * 5 - 4, z * 2),
+        //                             Blocks.AIR.getDefaultState());
+        //                 }
+        //                 if (grid.grid[x][y][z].posZ) {
+        //                     repeater(world, minPos.add(x * 2, y * 5, z * 2 + 1), Direction.NORTH);
+        //                 }
+        //                 if (grid.grid[x][y][z].negZ) {
+        //                     repeater(world, minPos.add(x * 2, y * 5, z * 2 - 1), Direction.SOUTH);
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+        BlockPos minPos = new BlockPos(buildSpace.minX, buildSpace.minY, buildSpace.minZ);
+        for (int x = 0; x < buildSpace.getXLength(); ++x) {
+            for (int y = 0; y < buildSpace.getYLength(); ++y) {
+                for (int z = 0; z < buildSpace.getZLength(); ++z) {
+                    BlockState state = Blocks.AIR.getDefaultState();
+                    switch (grid.grid[x][y][z]) {
+                        case AIR:
+                            break;
+                        case BLOCK:
+                            state = Blocks.LIGHT_BLUE_CONCRETE.getDefaultState();
+                            break;
+                        case WIRE:
+                            state = Blocks.REDSTONE_WIRE.getDefaultState();
+                            break;
+                        default:
+                            throw new NotImplementedException(grid.grid[x][y][z] + " not implemented");
                     }
-                    grid.grid[sourcePos.getX() + xDelta][sourcePos.getY() + 1][sourcePos.getZ() + 1].negY = true;
-                    grid.grid[sourcePos.getX() + xDelta][sourcePos.getY()][sourcePos.getZ() + 1] = new Connections();
-                    grid.grid[sourcePos.getX() + xDelta][sourcePos.getY()][sourcePos.getZ() + 1].posZ = true;
-                    grid.grid[sourcePos.getX() + xDelta][sourcePos.getY()][sourcePos.getZ() + 2] = new Connections();
-                    placedNodes.put(entry.getValue(), sourcePos.add(xDelta, 0, 2));
-                } else {
-                    //first node, access value directly after
-                    grid.grid[sourcePos.getX()][sourcePos.getY()][sourcePos.getZ()].posZ = true;
-                    grid.grid[sourcePos.getX()][sourcePos.getY()][sourcePos.getZ() + 1] = new Connections();
-                    grid.grid[sourcePos.getX()][sourcePos.getY()][sourcePos.getZ() + 1].posZ = true;
-                    grid.grid[sourcePos.getX()][sourcePos.getY()][sourcePos.getZ() + 2] = new Connections();
-                    placedNodes.put(entry.getValue(), sourcePos.add(0, 0, 2));
+                    world.setBlockState(minPos.add(x, y, z), state);
                 }
             }
         }
-
-        for (int x = 0; x < grid.grid.length; x++) {
-            for (int y = 0; y < grid.grid[x].length; y++) {
-                for (int z = 0; z < grid.grid[x][y].length; z++) {
-                    if (grid.grid[x][y][z] != null) {
-                        wire(world, minPos.add(x * 2, y * 5, z * 2));
-                        if (grid.grid[x][y][z].posX) {
-                            repeater(world, minPos.add(x * 2 + 1, y * 5, z * 2), Direction.WEST);
-                        }
-                        if (grid.grid[x][y][z].negX) {
-                            repeater(world, minPos.add(x * 2 - 1, y * 5, z * 2), Direction.EAST);
-                        }
-                        if (grid.grid[x][y][z].posY) {
-                            concrete(world, minPos.add(x * 2, y * 5, z * 2));
-                            world.setBlockState(minPos.add(x * 2, y * 5 + 1, z * 2),
-                                    Blocks.REDSTONE_TORCH.getDefaultState());
-                            concrete(world, minPos.add(x * 2, y * 5 + 2, z * 2));
-                            world.setBlockState(minPos.add(x * 2, y * 5 + 3, z * 2),
-                                    Blocks.REDSTONE_TORCH.getDefaultState());
-                            concrete(world, minPos.add(x * 2, y * 5 + 4, z * 2));
-                        }
-                        if (grid.grid[x][y][z].negY) {
-                            world.setBlockState(minPos.add(x * 2, y * 5 - 2, z * 2),
-                                    Blocks.STICKY_PISTON.getDefaultState().with(PistonBlock.FACING, Direction.DOWN));
-                            world.setBlockState(minPos.add(x * 2, y * 5 - 3, z * 2),
-                                    Blocks.REDSTONE_BLOCK.getDefaultState());
-                            world.setBlockState(minPos.add(x * 2, y * 5 - 4, z * 2),
-                                    Blocks.AIR.getDefaultState());
-                        }
-                        if (grid.grid[x][y][z].posZ) {
-                            repeater(world, minPos.add(x * 2, y * 5, z * 2 + 1), Direction.NORTH);
-                        }
-                        if (grid.grid[x][y][z].negZ) {
-                            repeater(world, minPos.add(x * 2, y * 5, z * 2 - 1), Direction.SOUTH);
-                        }
-                    }
-                }
-            }
-        }
-
         for (Entry<String, Node> entry : graph.inputs.entrySet()) {
             Vec3i pos = placedNodes.get(entry.getValue());
             if (pos == null) {
                 Redilog.LOGGER.warn("Failed to label input {}", entry.getKey());
                 continue;
             }
-            world.setBlockState(minPos.add(pos.multiply(2)), Blocks.WHITE_CONCRETE.getDefaultState());
-            world.setBlockState(minPos.add(pos.multiply(2)).add(0, 1, 0),
+            world.setBlockState(minPos.add(pos), Blocks.WHITE_CONCRETE.getDefaultState());
+            world.setBlockState(minPos.add(pos).add(0, 1, 0),
                     Blocks.LEVER.getDefaultState().with(LeverBlock.FACE, WallMountLocation.FLOOR));
-            world.setBlockState(minPos.add(pos.multiply(2)).add(0, 0, -1),
+            world.setBlockState(minPos.add(pos).add(0, 0, -1),
                     Blocks.BIRCH_WALL_SIGN.getDefaultState().with(WallSignBlock.FACING, Direction.NORTH));
-            if (world.getBlockEntity(minPos.add(pos.multiply(2)).add(0, 0, -1)) instanceof SignBlockEntity sbe) {
+            if (world.getBlockEntity(minPos.add(pos).add(0, 0, -1)) instanceof SignBlockEntity sbe) {
                 sbe.setTextOnRow(0, Text.of(entry.getKey()));
             }
         }
-        for (Entry<String, Node> entry : graph.outputs.entrySet()) {
-            Vec3i pos = placedNodes.get(entry.getValue());
-            if (pos == null) {
-                Redilog.LOGGER.warn("Failed to label output {}", entry.getKey());
-                continue;
-            }
-            world.setBlockState(minPos.add(pos.multiply(2)), Blocks.REDSTONE_LAMP.getDefaultState());
-            world.setBlockState(minPos.add(pos.multiply(2)).add(0, 1, 0), Blocks.BIRCH_SIGN.getDefaultState());
-            if (world.getBlockEntity(minPos.add(pos.multiply(2)).add(0, 1, 0)) instanceof SignBlockEntity sbe) {
-                sbe.setTextOnRow(0, Text.of(entry.getKey()));
-            }
-        }
+        // for (Entry<String, Node> entry : graph.outputs.entrySet()) {
+        //     Vec3i pos = placedNodes.get(entry.getValue());
+        //     if (pos == null) {
+        //         Redilog.LOGGER.warn("Failed to label output {}", entry.getKey());
+        //         continue;
+        //     }
+        //     world.setBlockState(minPos.add(pos.multiply(2)), Blocks.REDSTONE_LAMP.getDefaultState());
+        //     world.setBlockState(minPos.add(pos.multiply(2)).add(0, 1, 0), Blocks.BIRCH_SIGN.getDefaultState());
+        //     if (world.getBlockEntity(minPos.add(pos.multiply(2)).add(0, 1, 0)) instanceof SignBlockEntity sbe) {
+        //         sbe.setTextOnRow(0, Text.of(entry.getKey()));
+        //     }
+        // }
     }
 
-    //shorthands to reduce line length
-    private static void repeater(World world, BlockPos pos, Direction dir) {
-        concrete(world, pos.add(0, -1, 0));
-        world.setBlockState(pos, Blocks.REPEATER.getDefaultState().with(RepeaterBlock.FACING, dir));
-    }
+    // //shorthands to reduce line length
+    // private static void repeater(World world, BlockPos pos, Direction dir) {
+    //     concrete(world, pos.add(0, -1, 0));
+    //     world.setBlockState(pos, Blocks.REPEATER.getDefaultState().with(RepeaterBlock.FACING, dir));
+    // }
 
-    private static void wire(World world, BlockPos pos) {
-        concrete(world, pos.add(0, -1, 0));
-        world.setBlockState(pos, Blocks.REDSTONE_WIRE.getDefaultState());
-    }
+    // private static void wire(World world, BlockPos pos) {
+    //     concrete(world, pos.add(0, -1, 0));
+    //     world.setBlockState(pos, Blocks.REDSTONE_WIRE.getDefaultState());
+    // }
 
-    private static void concrete(World world, BlockPos pos) {
-        world.setBlockState(pos, Blocks.LIGHT_BLUE_CONCRETE.getDefaultState());
-    }
+    // private static void concrete(World world, BlockPos pos) {
+    //     world.setBlockState(pos, Blocks.LIGHT_BLUE_CONCRETE.getDefaultState());
+    // }
 }

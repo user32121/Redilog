@@ -8,6 +8,7 @@ import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
 import net.minecraft.client.render.entity.model.EntityModelLayer;
 import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.util.Identifier;
+import redilog.blocks.BuilderBlockEntityRenderer;
 import redilog.blocks.BuilderScreen;
 import redilog.blocks.LayoutMarkerBlockEntityRenderer;
 
@@ -20,14 +21,16 @@ public class RedilogClient implements ClientModInitializer {
         HandledScreens.register(Redilog.BUILDER_SCREEN_HANDLER, BuilderScreen::new);
 
         BlockEntityRendererFactories.register(RedilogBlocks.MARKER_ENTITY, LayoutMarkerBlockEntityRenderer::new);
+        BlockEntityRendererFactories.register(RedilogBlocks.BUILDER_ENTITY, BuilderBlockEntityRenderer::new);
 
         EntityModelLayerRegistry.registerModelLayer(BEAM, LayoutMarkerBlockEntityRenderer::createModelData);
 
         ClientSpriteRegistryCallback.event(PlayerScreenHandler.BLOCK_ATLAS_TEXTURE)
                 .register(((atlasTexture, registry) -> {
-                    registry.register(new Identifier("redilog", "block/layout_marker_beam1"));
-                    registry.register(new Identifier("redilog", "block/layout_marker_beam2"));
-                    registry.register(new Identifier("redilog", "block/layout_marker_beam3"));
+                    registry.register(new Identifier("redilog", "block/layout_beam1"));
+                    registry.register(new Identifier("redilog", "block/layout_beam2"));
+                    registry.register(new Identifier("redilog", "block/layout_beam3"));
+                    registry.register(new Identifier("redilog", "block/layout_beam4"));
                 }));
     }
 }

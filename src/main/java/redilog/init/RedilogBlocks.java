@@ -19,10 +19,10 @@ import redilog.blocks.LayoutMarkerBlockEntity;
 public class RedilogBlocks {
 
     public static final BuilderBlock BUILDER = register(new BuilderBlock(
-            FabricBlockSettings.of(Material.STONE).requiresTool().strength(-1.0f, 3600000.0f).dropsNothing()),
+            FabricBlockSettings.of(Material.STONE).requiresTool().strength(-1.0f, 3600000.0f)),
             "builder");
     public static final LayoutMarkerBlock LAYOUT_MARKER = register(
-            new LayoutMarkerBlock(FabricBlockSettings.of(Material.STONE).nonOpaque()),
+            new LayoutMarkerBlock(FabricBlockSettings.of(Material.STONE)),
             "layout_marker");
 
     public static final BlockEntityType<BuilderBlockEntity> BUILDER_ENTITY = register(

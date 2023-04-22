@@ -7,7 +7,10 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
+import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.network.listener.ClientPlayPacketListener;
+import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerContext;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -28,6 +31,7 @@ public class BuilderBlockEntity extends BlockEntity implements ExtendedScreenHan
     private static final String BUILD_MAX_KEY = "BuildSpaceMax";
 
     private String redilog = "";
+    //TODO render build space
     private Box buildSpace = new Box(0, 0, 0, 0, 0, 0);
 
     public BuilderBlockEntity(BlockPos pos, BlockState state) {
@@ -64,7 +68,7 @@ public class BuilderBlockEntity extends BlockEntity implements ExtendedScreenHan
         try {
             LogicGraph graph = Parser.synthesizeRedilog(redilog);
             //TODO detect size from layout planner
-            Placer.placeRedilog(graph, buildSpace, world);
+            Placer.placeRedilog(graph, buildSpace, world, world.random);
         } catch (RedilogParsingException e) {
             // TODO notify user
             Redilog.LOGGER.error("An error occurred during parsing", e);
@@ -86,6 +90,20 @@ public class BuilderBlockEntity extends BlockEntity implements ExtendedScreenHan
         redilog = nbt.getString(REDILOG_KEY);
         buildSpace = new Box(NbtHelper.toBlockPos(nbt.getCompound(BUILD_MIN_KEY)),
                 NbtHelper.toBlockPos(nbt.getCompound(BUILD_MAX_KEY)));
+    }
+
+    public Box getBuildSpace() {
+        return this.buildSpace;
+    }
+
+    @Override
+    public Packet<ClientPlayPacketListener> toUpdatePacket() {
+        return BlockEntityUpdateS2CPacket.create(this);
+    }
+
+    @Override
+    public NbtCompound toInitialChunkDataNbt() {
+        return createNbt();
     }
 
     @Override
