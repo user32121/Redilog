@@ -68,7 +68,7 @@ public class BuilderBlockEntity extends BlockEntity implements ExtendedScreenHan
         try {
             LogicGraph graph = Parser.synthesizeRedilog(redilog);
             //TODO detect size from layout planner
-            Placer.placeRedilog(graph, buildSpace, world, world.random);
+            Placer.placeRedilog(graph, buildSpace, world);
         } catch (RedilogParsingException e) {
             // TODO notify user
             Redilog.LOGGER.error("An error occurred during parsing", e);
