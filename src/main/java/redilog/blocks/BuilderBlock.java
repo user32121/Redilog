@@ -36,7 +36,7 @@ public class BuilderBlock extends BlockWithEntity {
                         if (world.getBlockEntity(pos) instanceof BuilderBlockEntity bbe) {
                             bbe.setRedilog(redilog);
                             if (shouldBuild) {
-                                bbe.build();
+                                bbe.build(player);
                             }
                         }
                     });

@@ -31,7 +31,6 @@ public class BuilderBlockEntity extends BlockEntity implements ExtendedScreenHan
     private static final String BUILD_MAX_KEY = "BuildSpaceMax";
 
     private String redilog = "";
-    //TODO render build space
     private Box buildSpace = new Box(0, 0, 0, 0, 0, 0);
 
     public BuilderBlockEntity(BlockPos pos, BlockState state) {
@@ -64,21 +63,20 @@ public class BuilderBlockEntity extends BlockEntity implements ExtendedScreenHan
         markDirty();
     }
 
-    public void build() {
+    public void build(ServerPlayerEntity player) {
         try {
             LogicGraph graph = Parser.synthesizeRedilog(redilog);
-            //TODO detect size from layout planner
             Placer.placeRedilog(graph, buildSpace, world);
         } catch (RedilogParsingException e) {
-            // TODO notify user
+            player.sendMessage(Text.of("An error ocurred during parsing. See server log for more details."));
             Redilog.LOGGER.error("An error occurred during parsing", e);
             return;
         } catch (RedilogPlacementException e) {
-            //TODO notify user
+            player.sendMessage(Text.of("An error ocurred during placement. See server log for more details."));
             Redilog.LOGGER.error("An error occurred during placement", e);
             return;
         } catch (Exception e) {
-            //TODO notify user
+            player.sendMessage(Text.of("An internal error occurred. See server log for more details."));
             Redilog.LOGGER.error("An internal error occurred", e);
             return;
         }

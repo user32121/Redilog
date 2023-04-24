@@ -98,7 +98,7 @@ public class Placer {
     }
 
     private static void sliceWires() {
-        //TODO
+        //TODO implement
         // remove slices of layout where redundant (such as reducing all x-ward wires from 4 to 3)
     }
 
