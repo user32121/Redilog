@@ -23,6 +23,7 @@ import net.minecraft.world.World;
 import redilog.init.Redilog;
 import redilog.routing.GridLayout.BLOCK;
 import redilog.synthesis.LogicGraph;
+import redilog.synthesis.LogicGraph.Expression;
 import redilog.synthesis.LogicGraph.Node;
 
 public class Placer {
@@ -52,17 +53,23 @@ public class Placer {
 
         GridLayout grid = new GridLayout((int) buildSpace.getXLength(), (int) buildSpace.getYLength(),
                 (int) buildSpace.getZLength());
-        Map<Node, WireDescriptor> nodes = new HashMap<>();
+        Map<Expression, WireDescriptor> nodes = new HashMap<>();
         for (Node node : graph.nodes.values()) {
             nodes.put(node, new WireDescriptor());
         }
 
         placeIO(buildSpace, graph, grid, nodes, world.random);
         placeNodes();
-        routeWires();
+        routeWires(grid, nodes);
         sliceWires();
         transferGridToWorld(buildSpace, world, grid);
         labelIO(buildSpace, graph, world, nodes);
+        warnUnused(graph);
+        //TODO attempt to place even if an error occurs
+    }
+
+    private static void warnUnused(LogicGraph graph) {
+        //TODO implement
     }
 
     private static void transferGridToWorld(Box buildSpace, World world, GridLayout grid) {
@@ -93,8 +100,41 @@ public class Placer {
         //TODO for each node, if not placed (wireDesc.input==null), place in random pos
     }
 
-    private static void routeWires() {
-        //TODO for each node, try to place a wire from input to input block
+    private static void routeWires(GridLayout grid, Map<Expression, WireDescriptor> graphNodes) {
+        for (Entry<Expression, WireDescriptor> entry : graphNodes.entrySet()) {
+            if (entry.getKey() instanceof Node node) {
+                if (node.value == null) {
+                    continue;
+                }
+                Vec3i end = entry.getValue().input;
+                Vec3i start = graphNodes.get(node.value).wires.stream()
+                        .min(((v1, v2) -> (end.getManhattanDistance(v1) - end.getManhattanDistance(v2))))
+                        .orElseGet(() -> entry.getValue().input);
+                Vec3i cur = start;
+                while (!cur.equals(end)) {
+                    if (cur.getZ() < end.getZ() && grid.get(cur.add(0, 0, 1)) == BLOCK.AIR) {
+                        cur = cur.add(0, 0, 1);
+                    } else if (cur.getZ() > end.getZ() && grid.get(cur.add(0, 0, -1)) == BLOCK.AIR) {
+                        cur = cur.add(0, 0, -1);
+                    } else if (cur.getX() < end.getX() && grid.get(cur.add(1, 0, 0)) == BLOCK.AIR) {
+                        cur = cur.add(1, 0, 0);
+                    } else if (cur.getX() > end.getX() && grid.get(cur.add(-1, 0, 0)) == BLOCK.AIR) {
+                        cur = cur.add(-1, 0, 0);
+                    } else if (end.getManhattanDistance(cur) <= 1) {
+                        break;
+                    } else {
+                        //TODO vertical movement
+                        Redilog.LOGGER.error(String.format("unable to reach %s from %s", end, cur));
+                        break;
+                    }
+                    grid.set(cur, BLOCK.WIRE);
+                    grid.set(cur.add(0, -1, 0), BLOCK.BLOCK);
+                    entry.getValue().wires.add(cur);
+                }
+            } else {
+                throw new NotImplementedException(entry.getKey().getClass().getName() + " not implemented");
+            }
+        }
     }
 
     private static void sliceWires() {
@@ -103,7 +143,7 @@ public class Placer {
     }
 
     private static void placeIO(Box buildSpace, LogicGraph graph, GridLayout grid,
-            Map<Node, WireDescriptor> graphNodes, Random random) throws RedilogPlacementException {
+            Map<Expression, WireDescriptor> graphNodes, Random random) throws RedilogPlacementException {
         //place inputs and outputs evenly spaced along x
         //TODO put inputs in a sorted order
         //inputs
@@ -115,7 +155,7 @@ public class Placer {
                 grid.grid[x][0][1] = BLOCK.BLOCK;
                 grid.grid[x][0][2] = BLOCK.BLOCK;
                 grid.grid[x][1][2] = BLOCK.WIRE;
-                graphNodes.get(node.getValue()).input = new Vec3i(x, 0, 1);
+                graphNodes.get(node.getValue()).input = new Vec3i(x, 1, 1);
                 graphNodes.get(node.getValue()).wires.add(new Vec3i(x, 1, 2));
                 --nodesRemaining;
                 ++x;
@@ -152,7 +192,7 @@ public class Placer {
     }
 
     private static void labelIO(Box buildSpace, LogicGraph graph, World world,
-            Map<Node, WireDescriptor> nodes) {
+            Map<Expression, WireDescriptor> nodes) {
         BlockPos minPos = new BlockPos(buildSpace.minX, buildSpace.minY, buildSpace.minZ);
         for (Entry<String, Node> entry : graph.inputs.entrySet()) {
             Vec3i pos = nodes.get(entry.getValue()).input;
@@ -160,12 +200,12 @@ public class Placer {
                 Redilog.LOGGER.warn("Failed to label input {}", entry.getKey());
                 continue;
             }
-            world.setBlockState(minPos.add(pos), Blocks.WHITE_CONCRETE.getDefaultState());
-            world.setBlockState(minPos.add(pos).add(0, 1, 0),
+            world.setBlockState(minPos.add(pos.add(0, -1, 0)), Blocks.WHITE_CONCRETE.getDefaultState());
+            world.setBlockState(minPos.add(pos),
                     Blocks.LEVER.getDefaultState().with(LeverBlock.FACE, WallMountLocation.FLOOR));
-            world.setBlockState(minPos.add(pos).add(0, 0, -1),
+            world.setBlockState(minPos.add(pos).add(0, -1, -1),
                     Blocks.BIRCH_WALL_SIGN.getDefaultState().with(WallSignBlock.FACING, Direction.NORTH));
-            if (world.getBlockEntity(minPos.add(pos).add(0, 0, -1)) instanceof SignBlockEntity sbe) {
+            if (world.getBlockEntity(minPos.add(pos).add(0, -1, -1)) instanceof SignBlockEntity sbe) {
                 sbe.setTextOnRow(0, Text.of(entry.getKey()));
             }
         }

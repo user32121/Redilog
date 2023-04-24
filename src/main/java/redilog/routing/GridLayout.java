@@ -1,5 +1,7 @@
 package redilog.routing;
 
+import net.minecraft.util.math.Vec3i;
+
 /**
  * A simplified representation of the world that should be easier to route in
  */
@@ -23,5 +25,13 @@ public class GridLayout {
                 }
             }
         }
+    }
+
+    public BLOCK get(Vec3i v) {
+        return grid[v.getX()][v.getY()][v.getZ()];
+    }
+
+    public void set(Vec3i v, BLOCK block) {
+        grid[v.getX()][v.getY()][v.getZ()] = block;
     }
 }
