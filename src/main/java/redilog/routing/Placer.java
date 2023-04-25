@@ -2,8 +2,10 @@ package redilog.routing;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Queue;
 
 import org.apache.commons.lang3.NotImplementedException;
 
@@ -21,12 +23,19 @@ import net.minecraft.util.math.Vec3i;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 import redilog.init.Redilog;
-import redilog.routing.GridLayout.BLOCK;
 import redilog.synthesis.LogicGraph;
 import redilog.synthesis.LogicGraph.Expression;
 import redilog.synthesis.LogicGraph.Node;
+import redilog.utils.Array3D;
+import redilog.utils.ConstantSupplier;
 
 public class Placer {
+    private enum BLOCK {
+        AIR,
+        WIRE,
+        BLOCK,
+    }
+
     /**
      * Place redstone according to the logic graph in the specified cuboid region
      * @throws RedilogPlacementException
@@ -51,8 +60,8 @@ public class Placer {
             Redilog.LOGGER.info("{}: {} = {}", entry.getKey(), entry.getValue(), entry.getValue().value);
         }
 
-        GridLayout grid = new GridLayout((int) buildSpace.getXLength(), (int) buildSpace.getYLength(),
-                (int) buildSpace.getZLength());
+        Array3D<BLOCK> grid = new Array3D<>((int) buildSpace.getXLength(), (int) buildSpace.getYLength(),
+                (int) buildSpace.getZLength(), new ConstantSupplier<>(BLOCK.AIR));
         Map<Expression, WireDescriptor> nodes = new HashMap<>();
         for (Node node : graph.nodes.values()) {
             nodes.put(node, new WireDescriptor());
@@ -72,24 +81,16 @@ public class Placer {
         //TODO implement
     }
 
-    private static void transferGridToWorld(Box buildSpace, World world, GridLayout grid) {
+    private static void transferGridToWorld(Box buildSpace, World world, Array3D<BLOCK> grid) {
         BlockPos minPos = new BlockPos(buildSpace.minX, buildSpace.minY, buildSpace.minZ);
         for (int x = 0; x < buildSpace.getXLength(); ++x) {
             for (int y = 0; y < buildSpace.getYLength(); ++y) {
                 for (int z = 0; z < buildSpace.getZLength(); ++z) {
-                    BlockState state = Blocks.AIR.getDefaultState();
-                    switch (grid.grid[x][y][z]) {
-                        case AIR:
-                            break;
-                        case BLOCK:
-                            state = Blocks.LIGHT_BLUE_CONCRETE.getDefaultState();
-                            break;
-                        case WIRE:
-                            state = Blocks.REDSTONE_WIRE.getDefaultState();
-                            break;
-                        default:
-                            throw new NotImplementedException(grid.grid[x][y][z] + " not implemented");
-                    }
+                    BlockState state = switch (grid.data[x][y][z]) {
+                        case AIR -> Blocks.AIR.getDefaultState();
+                        case BLOCK -> Blocks.LIGHT_BLUE_CONCRETE.getDefaultState();
+                        default -> throw new NotImplementedException(grid.data[x][y][z] + " not implemented");
+                    };
                     world.setBlockState(minPos.add(x, y, z), state);
                 }
             }
@@ -100,7 +101,7 @@ public class Placer {
         //TODO for each node, if not placed (wireDesc.input==null), place in random pos
     }
 
-    private static void routeWires(GridLayout grid, Map<Expression, WireDescriptor> graphNodes) {
+    private static void routeWires(Array3D<BLOCK> grid, Map<Expression, WireDescriptor> graphNodes) {
         for (Entry<Expression, WireDescriptor> entry : graphNodes.entrySet()) {
             if (entry.getKey() instanceof Node node) {
                 if (node.value == null) {
@@ -110,27 +111,18 @@ public class Placer {
                 Vec3i start = graphNodes.get(node.value).wires.stream()
                         .min(((v1, v2) -> (end.getManhattanDistance(v1) - end.getManhattanDistance(v2))))
                         .orElseGet(() -> entry.getValue().input);
-                Vec3i cur = start;
-                while (!cur.equals(end)) {
-                    if (cur.getZ() < end.getZ() && grid.get(cur.add(0, 0, 1)) == BLOCK.AIR) {
-                        cur = cur.add(0, 0, 1);
-                    } else if (cur.getZ() > end.getZ() && grid.get(cur.add(0, 0, -1)) == BLOCK.AIR) {
-                        cur = cur.add(0, 0, -1);
-                    } else if (cur.getX() < end.getX() && grid.get(cur.add(1, 0, 0)) == BLOCK.AIR) {
-                        cur = cur.add(1, 0, 0);
-                    } else if (cur.getX() > end.getX() && grid.get(cur.add(-1, 0, 0)) == BLOCK.AIR) {
-                        cur = cur.add(-1, 0, 0);
-                    } else if (end.getManhattanDistance(cur) <= 1) {
-                        break;
-                    } else {
-                        //TODO vertical movement
-                        Redilog.LOGGER.error(String.format("unable to reach %s from %s", end, cur));
-                        break;
-                    }
-                    grid.set(cur, BLOCK.WIRE);
-                    grid.set(cur.add(0, -1, 0), BLOCK.BLOCK);
-                    entry.getValue().wires.add(cur);
-                }
+
+                //bfs
+                Queue<Vec3i> toProcess = new LinkedList<>();
+                Array3D<Vec3i> visitedFrom = new Array3D<>(grid.getSize());
+                //NOTE: since bfs does not store state, it may be possible for the wire to loop on itself and override its path,
+                //      but this is unlikely to occur considering a loop would be longer than the original path
+
+                //trace path
+
+                // grid.set(cur, BLOCK.WIRE);
+                // grid.set(cur.add(0, -1, 0), BLOCK.BLOCK);
+                // entry.getValue().wires.add(cur);
             } else {
                 throw new NotImplementedException(entry.getKey().getClass().getName() + " not implemented");
             }
@@ -142,7 +134,7 @@ public class Placer {
         // remove slices of layout where redundant (such as reducing all x-ward wires from 4 to 3)
     }
 
-    private static void placeIO(Box buildSpace, LogicGraph graph, GridLayout grid,
+    private static void placeIO(Box buildSpace, LogicGraph graph, Array3D<BLOCK> grid,
             Map<Expression, WireDescriptor> graphNodes, Random random) throws RedilogPlacementException {
         //place inputs and outputs evenly spaced along x
         //TODO put inputs in a sorted order
@@ -152,9 +144,9 @@ public class Placer {
         for (int x = 0; x < buildSpace.getXLength(); ++x) {
             if (random.nextDouble() < nodesRemaining / (buildSpace.getXLength() - x) * 2) {
                 Entry<String, Node> node = nodes.next();
-                grid.grid[x][0][1] = BLOCK.BLOCK;
-                grid.grid[x][0][2] = BLOCK.BLOCK;
-                grid.grid[x][1][2] = BLOCK.WIRE;
+                grid.data[x][0][1] = BLOCK.BLOCK;
+                grid.data[x][0][2] = BLOCK.BLOCK;
+                grid.data[x][1][2] = BLOCK.WIRE;
                 graphNodes.get(node.getValue()).input = new Vec3i(x, 1, 1);
                 graphNodes.get(node.getValue()).wires.add(new Vec3i(x, 1, 2));
                 --nodesRemaining;
@@ -174,9 +166,9 @@ public class Placer {
         for (int x = 0; x < buildSpace.getXLength(); ++x) {
             if (random.nextDouble() < nodesRemaining / (buildSpace.getXLength() - x) * 2) {
                 Entry<String, Node> node = nodes.next();
-                int z = grid.grid[x][1].length - 2;
-                grid.grid[x][0][z] = BLOCK.BLOCK;
-                grid.grid[x][1][z] = BLOCK.BLOCK;
+                int z = grid.data[x][1].length - 2;
+                grid.data[x][0][z] = BLOCK.BLOCK;
+                grid.data[x][1][z] = BLOCK.BLOCK;
                 graphNodes.get(node.getValue()).input = new Vec3i(x, 1, z);
                 --nodesRemaining;
                 ++x;
