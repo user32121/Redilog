@@ -6,7 +6,7 @@ import net.minecraft.util.math.Vec3i;
 
 public class Array3D<T> {
 
-    public T[][][] data;
+    private Object[][][] data;
 
     public Array3D(Vec3i size) {
         this(size.getX(), size.getY(), size.getZ());
@@ -20,13 +20,12 @@ public class Array3D<T> {
         this(sizeX, sizeY, sizeZ, new ConstantSupplier<>(value));
     }
 
-    @SuppressWarnings("unchecked")
     public Array3D(int sizeX, int sizeY, int sizeZ, Supplier<T> supplier) {
-        data = (T[][][]) new Object[sizeX][][];
+        data = new Object[sizeX][][];
         for (int i = 0; i < data.length; i++) {
-            data[i] = (T[][]) new Object[sizeY][];
+            data[i] = new Object[sizeY][];
             for (int j = 0; j < data[i].length; j++) {
-                data[i][j] = (T[]) new Object[sizeZ];
+                data[i][j] = new Object[sizeZ];
                 for (int k = 0; k < data[i][j].length; k++) {
                     data[i][j][k] = supplier.get();
                 }
@@ -38,8 +37,9 @@ public class Array3D<T> {
         return get(v.getX(), v.getY(), v.getZ());
     }
 
+    @SuppressWarnings("unchecked")
     public T get(int x, int y, int z) {
-        return data[x][y][z];
+        return (T) data[x][y][z];
     }
 
     public void set(Vec3i v, T value) {
@@ -50,10 +50,37 @@ public class Array3D<T> {
         data[x][y][z] = value;
     }
 
+    public int getXLength() {
+        return data.length;
+    }
+
+    public int getYLength() {
+        //avoid exceptions on degenerate cases
+        return data.length > 0 ? data[0].length : 0;
+    }
+
+    public int getZLength() {
+        //avoid exceptions on degenerate cases
+        return data.length > 0 && data[0].length > 0 ? data[0][0].length : 0;
+    }
+
     public Vec3i getSize() {
-        return new Vec3i(data.length,
-                //avoid exceptions on degenerate cases
-                data.length > 0 ? data[0].length : 0,
-                data.length > 0 && data[0].length > 0 ? data[0][0].length : 0);
+        return new Vec3i(getXLength(), getYLength(), getZLength());
+    }
+
+    public boolean inBounds(Vec3i v) {
+        return v.getX() >= 0 && v.getY() >= 0 && v.getZ() >= 0 &&
+                v.getX() < getXLength() && v.getY() < getYLength() && v.getZ() < getZLength();
+    }
+
+    public boolean isValue(Vec3i v, T value) {
+        if (!inBounds(v)) {
+            return false;
+        }
+        if (value == null) {
+            return get(v) == null;
+        } else {
+            return value.equals(get(v));
+        }
     }
 }

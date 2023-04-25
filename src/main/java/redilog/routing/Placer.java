@@ -15,7 +15,11 @@ import net.minecraft.block.LeverBlock;
 import net.minecraft.block.WallSignBlock;
 import net.minecraft.block.entity.SignBlockEntity;
 import net.minecraft.block.enums.WallMountLocation;
+import net.minecraft.item.AutomaticItemPlacementContext;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -86,10 +90,13 @@ public class Placer {
         for (int x = 0; x < buildSpace.getXLength(); ++x) {
             for (int y = 0; y < buildSpace.getYLength(); ++y) {
                 for (int z = 0; z < buildSpace.getZLength(); ++z) {
-                    BlockState state = switch (grid.data[x][y][z]) {
+                    ItemPlacementContext ipc = new AutomaticItemPlacementContext(world, minPos.add(x, y, z),
+                            Direction.DOWN, ItemStack.EMPTY, Direction.UP);
+                    BlockState state = switch (grid.get(x, y, z)) {
                         case AIR -> Blocks.AIR.getDefaultState();
-                        case BLOCK -> Blocks.LIGHT_BLUE_CONCRETE.getDefaultState();
-                        default -> throw new NotImplementedException(grid.data[x][y][z] + " not implemented");
+                        case WIRE -> Blocks.REDSTONE_WIRE.getPlacementState(ipc);
+                        case BLOCK -> Blocks.LIGHT_BLUE_CONCRETE.getPlacementState(ipc);
+                        default -> throw new NotImplementedException(grid.get(x, y, z) + " not implemented");
                     };
                     world.setBlockState(minPos.add(x, y, z), state);
                 }
@@ -100,6 +107,15 @@ public class Placer {
     private static void placeNodes() {
         //TODO for each node, if not placed (wireDesc.input==null), place in random pos
     }
+
+    private static final Vec3i[] WIRE_DIRS = new Vec3i[] {
+            new Vec3i(0, -1, 1), new Vec3i(0, -1, -1),
+            new Vec3i(0, 0, 1), new Vec3i(0, 0, -1),
+            new Vec3i(0, 1, 1), new Vec3i(0, 1, -1),
+            new Vec3i(1, -1, 0), new Vec3i(-1, -1, 0),
+            new Vec3i(1, 0, 0), new Vec3i(-1, 0, 0),
+            new Vec3i(1, 1, 0), new Vec3i(-1, 1, 0), };
+    private static final Vec3i DOWN = new Vec3i(0, -1, 0);
 
     private static void routeWires(Array3D<BLOCK> grid, Map<Expression, WireDescriptor> graphNodes) {
         for (Entry<Expression, WireDescriptor> entry : graphNodes.entrySet()) {
@@ -117,12 +133,31 @@ public class Placer {
                 Array3D<Vec3i> visitedFrom = new Array3D<>(grid.getSize());
                 //NOTE: since bfs does not store state, it may be possible for the wire to loop on itself and override its path,
                 //      but this is unlikely to occur considering a loop would be longer than the original path
+                toProcess.add(start);
+                while (!toProcess.isEmpty()) {
+                    Vec3i cur = toProcess.remove();
+                    for (Vec3i dir : WIRE_DIRS) {
+                        if ((grid.isValue(cur.add(dir), BLOCK.AIR) && grid.isValue(cur.add(dir).add(DOWN), BLOCK.AIR)
+                                || cur.add(dir).equals(end))
+                                && visitedFrom.isValue(cur.add(dir), null)) {
+                            visitedFrom.set(cur.add(dir), cur);
+                            toProcess.add(cur.add(dir));
+                        }
+                    }
+                }
 
                 //trace path
-
-                // grid.set(cur, BLOCK.WIRE);
-                // grid.set(cur.add(0, -1, 0), BLOCK.BLOCK);
-                // entry.getValue().wires.add(cur);
+                if (visitedFrom.isValue(end, null)) {
+                    Redilog.LOGGER.error("unable to path {} to {}", start, end);
+                } else {
+                    Vec3i cur = visitedFrom.get(end);
+                    while (!cur.equals(start)) {
+                        grid.set(cur, BLOCK.WIRE);
+                        grid.set(cur.add(DOWN), BLOCK.BLOCK);
+                        entry.getValue().wires.add(cur);
+                        cur = visitedFrom.get(cur);
+                    }
+                }
             } else {
                 throw new NotImplementedException(entry.getKey().getClass().getName() + " not implemented");
             }
@@ -144,9 +179,9 @@ public class Placer {
         for (int x = 0; x < buildSpace.getXLength(); ++x) {
             if (random.nextDouble() < nodesRemaining / (buildSpace.getXLength() - x) * 2) {
                 Entry<String, Node> node = nodes.next();
-                grid.data[x][0][1] = BLOCK.BLOCK;
-                grid.data[x][0][2] = BLOCK.BLOCK;
-                grid.data[x][1][2] = BLOCK.WIRE;
+                grid.set(x, 0, 1, BLOCK.BLOCK);
+                grid.set(x, 0, 2, BLOCK.BLOCK);
+                grid.set(x, 1, 2, BLOCK.WIRE);
                 graphNodes.get(node.getValue()).input = new Vec3i(x, 1, 1);
                 graphNodes.get(node.getValue()).wires.add(new Vec3i(x, 1, 2));
                 --nodesRemaining;
@@ -166,9 +201,9 @@ public class Placer {
         for (int x = 0; x < buildSpace.getXLength(); ++x) {
             if (random.nextDouble() < nodesRemaining / (buildSpace.getXLength() - x) * 2) {
                 Entry<String, Node> node = nodes.next();
-                int z = grid.data[x][1].length - 2;
-                grid.data[x][0][z] = BLOCK.BLOCK;
-                grid.data[x][1][z] = BLOCK.BLOCK;
+                int z = grid.getZLength() - 2;
+                grid.set(x, 0, z, BLOCK.BLOCK);
+                grid.set(x, 1, z, BLOCK.BLOCK);
                 graphNodes.get(node.getValue()).input = new Vec3i(x, 1, z);
                 --nodesRemaining;
                 ++x;
