@@ -15,11 +15,7 @@ import net.minecraft.block.LeverBlock;
 import net.minecraft.block.WallSignBlock;
 import net.minecraft.block.entity.SignBlockEntity;
 import net.minecraft.block.enums.WallMountLocation;
-import net.minecraft.item.AutomaticItemPlacementContext;
-import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
-import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -39,6 +35,59 @@ public class Placer {
         WIRE,
         BLOCK,
     }
+
+    //locations a wire can travel to
+    private static final Vec3i[] WIRE_DIRS;
+    //locations that must be air for corresponding wire in WIRE_DIRS to be valid (relative to WIRE_DIR)
+    private static final Vec3i[][] REQUIRED_AIR;
+
+    static {
+        WIRE_DIRS = new Vec3i[12];
+        REQUIRED_AIR = new Vec3i[12][];
+
+        //posz
+        WIRE_DIRS[0] = new Vec3i(0, 0, 1);
+        REQUIRED_AIR[0] = new Vec3i[] { new Vec3i(0, 0, 0), new Vec3i(0, -1, 0),
+                new Vec3i(0, -1, 1), new Vec3i(0, 0, 1),
+                new Vec3i(1, -1, 0), new Vec3i(1, 0, 0),
+                new Vec3i(-1, -1, 0), new Vec3i(-1, 0, 0), };
+        WIRE_DIRS[1] = new Vec3i(0, -1, 1);
+        REQUIRED_AIR[1] = REQUIRED_AIR[0];
+        WIRE_DIRS[2] = new Vec3i(0, 1, 1);
+        REQUIRED_AIR[2] = REQUIRED_AIR[0];
+        //negz
+        WIRE_DIRS[3] = new Vec3i(0, 0, -1);
+        REQUIRED_AIR[3] = new Vec3i[] { new Vec3i(0, 0, 0), new Vec3i(0, -1, 0),
+                new Vec3i(0, -1, -1), new Vec3i(0, 0, -1),
+                new Vec3i(1, -1, 0), new Vec3i(1, 0, 0),
+                new Vec3i(-1, -1, 0), new Vec3i(-1, 0, 0), };
+        WIRE_DIRS[4] = new Vec3i(0, -1, -1);
+        REQUIRED_AIR[4] = REQUIRED_AIR[3];
+        WIRE_DIRS[5] = new Vec3i(0, 1, -1);
+        REQUIRED_AIR[5] = REQUIRED_AIR[3];
+        //posx
+        WIRE_DIRS[6] = new Vec3i(1, 0, 0);
+        REQUIRED_AIR[6] = new Vec3i[] { new Vec3i(0, 0, 0), new Vec3i(0, -1, 0),
+                new Vec3i(1, -1, 0), new Vec3i(1, 0, 0),
+                new Vec3i(0, -1, 1), new Vec3i(0, 0, 1),
+                new Vec3i(0, -1, -1), new Vec3i(0, 0, -1), };
+        WIRE_DIRS[7] = new Vec3i(1, -1, 0);
+        REQUIRED_AIR[7] = REQUIRED_AIR[6];
+        WIRE_DIRS[8] = new Vec3i(1, 1, 0);
+        REQUIRED_AIR[8] = REQUIRED_AIR[6];
+        //negx
+        WIRE_DIRS[9] = new Vec3i(-1, 0, 0);
+        REQUIRED_AIR[9] = new Vec3i[] { new Vec3i(0, 0, 0), new Vec3i(0, -1, 0),
+                new Vec3i(-1, -1, 0), new Vec3i(-1, 0, 0),
+                new Vec3i(0, -1, 1), new Vec3i(0, 0, 1),
+                new Vec3i(0, -1, -1), new Vec3i(0, 0, -1), };
+        WIRE_DIRS[10] = new Vec3i(-1, -1, 0);
+        REQUIRED_AIR[10] = REQUIRED_AIR[9];
+        WIRE_DIRS[11] = new Vec3i(-1, 1, 0);
+        REQUIRED_AIR[11] = REQUIRED_AIR[9];
+    }
+
+    private static final Vec3i DOWN = new Vec3i(0, -1, 0);
 
     /**
      * Place redstone according to the logic graph in the specified cuboid region
@@ -78,7 +127,6 @@ public class Placer {
         transferGridToWorld(buildSpace, world, grid);
         labelIO(buildSpace, graph, world, nodes);
         warnUnused(graph);
-        //TODO attempt to place even if an error occurs
     }
 
     private static void warnUnused(LogicGraph graph) {
@@ -90,15 +138,15 @@ public class Placer {
         for (int x = 0; x < buildSpace.getXLength(); ++x) {
             for (int y = 0; y < buildSpace.getYLength(); ++y) {
                 for (int z = 0; z < buildSpace.getZLength(); ++z) {
-                    ItemPlacementContext ipc = new AutomaticItemPlacementContext(world, minPos.add(x, y, z),
-                            Direction.DOWN, ItemStack.EMPTY, Direction.UP);
                     BlockState state = switch (grid.get(x, y, z)) {
                         case AIR -> Blocks.AIR.getDefaultState();
-                        case WIRE -> Blocks.REDSTONE_WIRE.getPlacementState(ipc);
-                        case BLOCK -> Blocks.LIGHT_BLUE_CONCRETE.getPlacementState(ipc);
+                        case WIRE -> Blocks.REDSTONE_WIRE.getDefaultState();
+                        case BLOCK -> Blocks.LIGHT_BLUE_CONCRETE.getDefaultState();
                         default -> throw new NotImplementedException(grid.get(x, y, z) + " not implemented");
                     };
-                    world.setBlockState(minPos.add(x, y, z), state);
+                    if (state != null) {
+                        world.setBlockState(minPos.add(x, y, z), state);
+                    }
                 }
             }
         }
@@ -107,15 +155,6 @@ public class Placer {
     private static void placeNodes() {
         //TODO for each node, if not placed (wireDesc.input==null), place in random pos
     }
-
-    private static final Vec3i[] WIRE_DIRS = new Vec3i[] {
-            new Vec3i(0, -1, 1), new Vec3i(0, -1, -1),
-            new Vec3i(0, 0, 1), new Vec3i(0, 0, -1),
-            new Vec3i(0, 1, 1), new Vec3i(0, 1, -1),
-            new Vec3i(1, -1, 0), new Vec3i(-1, -1, 0),
-            new Vec3i(1, 0, 0), new Vec3i(-1, 0, 0),
-            new Vec3i(1, 1, 0), new Vec3i(-1, 1, 0), };
-    private static final Vec3i DOWN = new Vec3i(0, -1, 0);
 
     private static void routeWires(Array3D<BLOCK> grid, Map<Expression, WireDescriptor> graphNodes) {
         for (Entry<Expression, WireDescriptor> entry : graphNodes.entrySet()) {
@@ -136,10 +175,20 @@ public class Placer {
                 toProcess.add(start);
                 while (!toProcess.isEmpty()) {
                     Vec3i cur = toProcess.remove();
-                    for (Vec3i dir : WIRE_DIRS) {
-                        if ((grid.isValue(cur.add(dir), BLOCK.AIR) && grid.isValue(cur.add(dir).add(DOWN), BLOCK.AIR)
-                                || cur.add(dir).equals(end))
-                                && visitedFrom.isValue(cur.add(dir), null)) {
+                    for (int i = 0; i < WIRE_DIRS.length; ++i) {
+                        Vec3i dir = WIRE_DIRS[i];
+                        boolean valid = true;
+                        if (!cur.add(dir).equals(end)) {
+                            for (Vec3i dir2 : REQUIRED_AIR[i]) {
+                                if (cur.add(dir).add(dir2).equals(end)) {
+                                    continue;
+                                }
+                                if (!grid.isValue(cur.add(dir).add(dir2), BLOCK.AIR)) {
+                                    valid = false;
+                                }
+                            }
+                        }
+                        if (valid && visitedFrom.isValue(cur.add(dir), null) && grid.inBounds(cur.add(dir).add(DOWN))) {
                             visitedFrom.set(cur.add(dir), cur);
                             toProcess.add(cur.add(dir));
                         }
@@ -202,8 +251,8 @@ public class Placer {
             if (random.nextDouble() < nodesRemaining / (buildSpace.getXLength() - x) * 2) {
                 Entry<String, Node> node = nodes.next();
                 int z = grid.getZLength() - 2;
-                grid.set(x, 0, z, BLOCK.BLOCK);
-                grid.set(x, 1, z, BLOCK.BLOCK);
+                // grid.set(x, 0, z, BLOCK.BLOCK);
+                grid.set(x, 1, z, BLOCK.WIRE);
                 graphNodes.get(node.getValue()).input = new Vec3i(x, 1, z);
                 --nodesRemaining;
                 ++x;
@@ -242,10 +291,11 @@ public class Placer {
                 Redilog.LOGGER.warn("Failed to label output {}", entry.getKey());
                 continue;
             }
-            world.setBlockState(minPos.add(pos), Blocks.REDSTONE_LAMP.getDefaultState());
-            world.setBlockState(minPos.add(pos).add(0, 0, 1),
+            world.setBlockState(minPos.add(pos.add(0, -1, 0)), Blocks.REDSTONE_LAMP.getDefaultState());
+            world.setBlockState(minPos.add(pos), Blocks.REDSTONE_WIRE.getDefaultState());
+            world.setBlockState(minPos.add(pos).add(0, -1, 1),
                     Blocks.BIRCH_WALL_SIGN.getDefaultState().with(WallSignBlock.FACING, Direction.SOUTH));
-            if (world.getBlockEntity(minPos.add(pos).add(0, 0, 1)) instanceof SignBlockEntity sbe) {
+            if (world.getBlockEntity(minPos.add(pos).add(0, -1, 1)) instanceof SignBlockEntity sbe) {
                 sbe.setTextOnRow(0, Text.of(entry.getKey()));
             }
         }
