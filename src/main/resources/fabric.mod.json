@@ -20,6 +20,9 @@
   "entrypoints": {
     "main": [
       "redilog.init.Redilog"
+    ],
+    "client":[
+      "redilog.init.RedilogClient"
     ]
   },
   "mixins": [

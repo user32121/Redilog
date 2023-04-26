@@ -1,0 +1,10 @@
+{
+    "variants": {
+        "powered=false": {
+            "model": "redilog:block/layout_marker"
+        },
+        "powered=true": {
+            "model": "redilog:block/layout_marker_powered"
+        }
+    }
+}
