@@ -10,7 +10,6 @@ import org.apache.commons.lang3.NotImplementedException;
 
 import net.minecraft.util.Pair;
 import net.minecraft.util.dynamic.Range;
-import redilog.init.Redilog;
 import redilog.synthesis.Token.Builder;
 import redilog.synthesis.Token.TypeHint;
 
