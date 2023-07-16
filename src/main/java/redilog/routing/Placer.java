@@ -203,7 +203,7 @@ public class Placer {
                     while (!cur.equals(start)) {
                         grid.set(cur, BLOCK.WIRE);
                         grid.set(cur.add(DOWN), BLOCK.BLOCK);
-                        entry.getValue().wires.add(cur);
+                        graphNodes.get(node.value).wires.add(cur);
                         cur = visitedFrom.get(cur);
                     }
                 }
@@ -223,7 +223,8 @@ public class Placer {
         //place inputs and outputs evenly spaced along x
         //TODO put inputs in a sorted order
         //inputs
-        Iterator<Entry<String, Node>> nodes = graph.inputs.entrySet().iterator();
+        Iterator<Entry<String, Node>> nodes = graph.inputs.entrySet().stream()
+                .sorted((lhs, rhs) -> lhs.getKey().compareTo(rhs.getKey())).iterator();
         int nodesRemaining = graph.inputs.size();
         for (int x = 0; x < buildSpace.getXLength(); ++x) {
             if (random.nextDouble() < nodesRemaining / (buildSpace.getXLength() - x) * 2) {
@@ -245,7 +246,7 @@ public class Placer {
                     String.format("Insufficient space for inputs (ran out at %s)", nodes.next().getKey()));
         }
         //outputs
-        nodes = graph.outputs.entrySet().iterator();
+        nodes = graph.outputs.entrySet().stream().sorted((lhs, rhs) -> lhs.getKey().compareTo(rhs.getKey())).iterator();
         nodesRemaining = graph.outputs.size();
         for (int x = 0; x < buildSpace.getXLength(); ++x) {
             if (random.nextDouble() < nodesRemaining / (buildSpace.getXLength() - x) * 2) {
