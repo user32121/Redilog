@@ -10,6 +10,7 @@ import org.apache.commons.lang3.NotImplementedException;
 
 import net.minecraft.util.Pair;
 import net.minecraft.util.dynamic.Range;
+import redilog.init.Redilog;
 import redilog.synthesis.Token.Builder;
 import redilog.synthesis.Token.TypeHint;
 
@@ -28,6 +29,20 @@ public class Parser {
     }
 
     private static String stripComments(String input) {
+        //slash star
+        while (true) {
+            int start = input.indexOf("/*");
+            if (start == -1) {
+                break;
+            }
+            int end = input.indexOf("*/", start);
+            if (end == -1) {
+                end = input.length();
+            }
+            end += "*/".length();
+            input = input.substring(0, start) + input.substring(end);
+        }
+        //double slash
         while (true) {
             int start = input.indexOf("//");
             if (start == -1) {
@@ -37,6 +52,7 @@ public class Parser {
             if (end == -1) {
                 end = input.length();
             }
+            end += "\n".length();
             input = input.substring(0, start) + input.substring(end);
         }
         return input;
@@ -131,20 +147,26 @@ public class Parser {
             }
         }
         for (Pair<String, Token> variable : newVariables) {
-            SymbolGraph.Node node = new SymbolGraph.Node(range);
+            SymbolGraph.Expression expression;
             String name = variable.getLeft();
             Token declarer = variable.getRight();
-            if (graph.nodes.containsKey(name)) {
+            if (graph.expressions.containsKey(name)) {
                 throw new RedilogParsingException(
-                        String.format("%s already defined at %s", declarer, graph.nodeDeclarations.get(name)));
+                        String.format("%s already defined at %s", declarer, graph.expressionDeclarations.get(name)));
             }
             if (variableType.equals("input")) {
-                graph.inputs.put(name, node);
+                SymbolGraph.InputExpression ie = new SymbolGraph.InputExpression(range);
+                graph.inputs.put(name, ie);
+                expression = ie;
             } else if (variableType.equals("output")) {
-                graph.outputs.put(name, node);
+                SymbolGraph.OutputExpression oe = new SymbolGraph.OutputExpression(range);
+                graph.outputs.put(name, oe);
+                expression = oe;
+            } else {
+                throw new NotImplementedException(variableType + " not implemented");
             }
-            graph.nodes.put(name, node);
-            graph.nodeDeclarations.put(name, declarer);
+            graph.expressions.put(name, expression);
+            graph.expressionDeclarations.put(name, declarer);
         }
 
         return i;
@@ -159,16 +181,21 @@ public class Parser {
         String value = tokens.get(i++).getValue(Token.Type.VARIABLE);
         tokens.get(i++).require(Token.Type.SYMBOL, ";");
 
-        if (!graph.nodes.containsKey(name)) {
+        if (!graph.expressions.containsKey(name)) {
             throw new RedilogParsingException(String.format("\"%s\" not defined", name));
         }
-        if (!graph.nodes.containsKey(value)) {
+        if (!graph.expressions.containsKey(value)) {
             throw new RedilogParsingException(String.format("\"%s\" not defined", value));
         }
         if (graph.inputs.containsKey(name)) {
             throw new RedilogParsingException(String.format("input \"%s\" cannot be assigned", name));
         }
-        graph.nodes.get(name).value = graph.nodes.get(value);
+        if (graph.expressions.get(name) instanceof SymbolGraph.OutputExpression oe) {
+            oe.value = graph.expressions.get(value);
+        } else {
+            throw new RedilogParsingException(String.format("expression \"%s\" (%s) cannot be assigned", name,
+                    graph.expressions.get(name).getClass()));
+        }
         return i;
     }
 
@@ -176,37 +203,47 @@ public class Parser {
         sGraph.ResolveRanges();
 
         LogicGraph lGraph = new LogicGraph();
-        lGraph.nodeDeclarations = sGraph.nodeDeclarations;
+        lGraph.expressionDeclarations = sGraph.expressionDeclarations;
 
-        Map<SymbolGraph.Node, String> nodeNames = new HashMap<>();
-        for (Entry<String, SymbolGraph.Node> sNode : sGraph.nodes.entrySet()) {
-            nodeNames.put(sNode.getValue(), sNode.getKey());
+        Map<SymbolGraph.Expression, String> names = new HashMap<>();
+        for (Entry<String, SymbolGraph.Expression> symbol : sGraph.expressions.entrySet()) {
+            names.put(symbol.getValue(), symbol.getKey());
 
-            Range<Integer> range = sNode.getValue().range;
+            Range<Integer> range = symbol.getValue().range;
             //create a wire for each index
             for (int i = range.minInclusive(); i <= range.maxInclusive(); i++) {
-                LogicGraph.Node lNode = new LogicGraph.Node();
-                String nodeName = sNode.getKey() + "[" + i + "]";
-                if (sGraph.inputs.containsKey(sNode.getKey())) {
-                    lGraph.inputs.put(nodeName, lNode);
-                } else if (sGraph.outputs.containsKey(sNode.getKey())) {
-                    lGraph.outputs.put(nodeName, lNode);
+                LogicGraph.Expression wire;
+                String name = symbol.getKey() + "[" + i + "]";
+                if (sGraph.inputs.containsKey(symbol.getKey())) {
+                    LogicGraph.InputExpression ie = new LogicGraph.InputExpression();
+                    lGraph.inputs.put(name, ie);
+                    wire = ie;
+                } else if (sGraph.outputs.containsKey(symbol.getKey())) {
+                    LogicGraph.OutputExpression oe = new LogicGraph.OutputExpression();
+                    lGraph.outputs.put(name, oe);
+                    wire = oe;
+                } else {
+                    throw new NotImplementedException(symbol.getValue() + "not implemented");
                 }
-                lGraph.nodes.put(nodeName, lNode);
+                lGraph.expressions.put(name, wire);
             }
         }
 
-        //connect nodes (this has to occur in a separate loop to ensure all nodes are already generated)
-        for (Entry<String, SymbolGraph.Node> sNode : sGraph.nodes.entrySet()) {
-            if (sNode.getValue().value instanceof SymbolGraph.Node sNodeSource) {
-                Range<Integer> range = sNode.getValue().range;
-                Range<Integer> sourceRange = sNodeSource.range;
+        //connect subexpressions (wires) (this has to occur in a separate loop to ensure all wires are already generated)
+        for (Entry<String, SymbolGraph.Expression> symbol : sGraph.expressions.entrySet()) {
+            if (symbol.getValue() instanceof SymbolGraph.OutputExpression soe) {
+                Range<Integer> range = symbol.getValue().range;
+                Range<Integer> sourceRange = soe.value.range;
                 for (int i = range.minInclusive(); i <= range.maxInclusive(); i++) {
-                    String lNodeName = sNode.getKey() + "[" + i + "]";
-                    String lNodeSourceName = nodeNames.get(sNodeSource) + "["
+                    String name = symbol.getKey() + "[" + i + "]";
+                    String sourceName = names.get(soe.value) + "["
                             + (i - range.minInclusive() + sourceRange.minInclusive()) + "]";
-                    LogicGraph.Node lNode = lGraph.nodes.get(lNodeName);
-                    lNode.value = lGraph.nodes.get(lNodeSourceName);
+                    LogicGraph.Expression wire = lGraph.expressions.get(name);
+                    if (wire instanceof LogicGraph.OutputExpression loe) {
+                        loe.value = lGraph.expressions.get(sourceName);
+                    } else {
+                        throw new NotImplementedException(wire + "not implemented");
+                    }
                 }
             }
         }

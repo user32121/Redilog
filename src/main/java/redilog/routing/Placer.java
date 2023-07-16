@@ -20,12 +20,12 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3i;
-import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 import redilog.init.Redilog;
 import redilog.synthesis.LogicGraph;
 import redilog.synthesis.LogicGraph.Expression;
-import redilog.synthesis.LogicGraph.Node;
+import redilog.synthesis.LogicGraph.InputExpression;
+import redilog.synthesis.LogicGraph.OutputExpression;
 import redilog.utils.Array3D;
 import redilog.utils.ConstantSupplier;
 
@@ -102,30 +102,36 @@ public class Placer {
 
         Redilog.LOGGER.info("inputs:");
         for (var entry : graph.inputs.entrySet()) {
-            Redilog.LOGGER.info("{}: {} = {}", entry.getKey(), entry.getValue(), entry.getValue().value);
+            Redilog.LOGGER.info("{}: {}", entry.getKey(), entry.getValue());
         }
         Redilog.LOGGER.info("outputs:");
         for (var entry : graph.outputs.entrySet()) {
             Redilog.LOGGER.info("{}: {} = {}", entry.getKey(), entry.getValue(), entry.getValue().value);
         }
-        Redilog.LOGGER.info("nodes:");
-        for (var entry : graph.nodes.entrySet()) {
-            Redilog.LOGGER.info("{}: {} = {}", entry.getKey(), entry.getValue(), entry.getValue().value);
+        Redilog.LOGGER.info("expressions:");
+        for (var entry : graph.expressions.entrySet()) {
+            if (entry.getValue() instanceof InputExpression ie) {
+                Redilog.LOGGER.info("{}: {}", entry.getKey(), ie);
+            } else if (entry.getValue() instanceof OutputExpression oe) {
+                Redilog.LOGGER.info("{}: {} = {}", entry.getKey(), oe, oe.value);
+            } else {
+                throw new NotImplementedException(entry.getValue().getClass() + " not implemented");
+            }
         }
 
         Array3D<BLOCK> grid = new Array3D<>((int) buildSpace.getXLength(), (int) buildSpace.getYLength(),
                 (int) buildSpace.getZLength(), new ConstantSupplier<>(BLOCK.AIR));
-        Map<Expression, WireDescriptor> nodes = new HashMap<>();
-        for (Node node : graph.nodes.values()) {
-            nodes.put(node, new WireDescriptor());
+        Map<Expression, WireDescriptor> wires = new HashMap<>();
+        for (Expression expression : graph.expressions.values()) {
+            wires.put(expression, new WireDescriptor());
         }
 
-        placeIO(buildSpace, graph, grid, nodes, world.random);
-        placeNodes();
-        routeWires(grid, nodes);
+        placeIO(buildSpace, graph, grid, wires);
+        placeComponents();
+        routeWires(grid, wires);
         sliceWires();
         transferGridToWorld(buildSpace, world, grid);
-        labelIO(buildSpace, graph, world, nodes);
+        labelIO(buildSpace, graph, world, wires);
         warnUnused(graph);
     }
 
@@ -152,20 +158,22 @@ public class Placer {
         }
     }
 
-    private static void placeNodes() {
-        //TODO for each node, if not placed (wireDesc.input==null), place in random pos
+    private static void placeComponents() {
+        //TODO for each component, if not placed (wireDesc.input==null), place in random pos
     }
 
-    private static void routeWires(Array3D<BLOCK> grid, Map<Expression, WireDescriptor> graphNodes) {
-        for (Entry<Expression, WireDescriptor> entry : graphNodes.entrySet()) {
-            if (entry.getKey() instanceof Node node) {
-                if (node.value == null) {
+    private static void routeWires(Array3D<BLOCK> grid, Map<Expression, WireDescriptor> wires) {
+        for (Entry<Expression, WireDescriptor> entry : wires.entrySet()) {
+            if (entry.getKey() instanceof InputExpression) {
+                //NO OP
+            } else if (entry.getKey() instanceof OutputExpression oe) {
+                if (oe.value == null) {
                     continue;
                 }
-                Vec3i end = entry.getValue().input;
-                Vec3i start = graphNodes.get(node.value).wires.stream()
+                Vec3i end = entry.getValue().source;
+                Vec3i start = wires.get(oe.value).wires.stream()
                         .min(((v1, v2) -> (end.getManhattanDistance(v1) - end.getManhattanDistance(v2))))
-                        .orElseGet(() -> entry.getValue().input);
+                        .orElseGet(() -> entry.getValue().source);
 
                 //bfs
                 Queue<Vec3i> toProcess = new LinkedList<>();
@@ -203,12 +211,12 @@ public class Placer {
                     while (!cur.equals(start)) {
                         grid.set(cur, BLOCK.WIRE);
                         grid.set(cur.add(DOWN), BLOCK.BLOCK);
-                        graphNodes.get(node.value).wires.add(cur);
+                        wires.get(oe.value).wires.add(cur);
                         cur = visitedFrom.get(cur);
                     }
                 }
             } else {
-                throw new NotImplementedException(entry.getKey().getClass().getName() + " not implemented");
+                throw new NotImplementedException(entry.getKey().getClass() + " not implemented");
             }
         }
     }
@@ -219,60 +227,37 @@ public class Placer {
     }
 
     private static void placeIO(Box buildSpace, LogicGraph graph, Array3D<BLOCK> grid,
-            Map<Expression, WireDescriptor> graphNodes, Random random) throws RedilogPlacementException {
+            Map<Expression, WireDescriptor> wires) throws RedilogPlacementException {
         //place inputs and outputs evenly spaced along x
-        //TODO put inputs in a sorted order
         //inputs
-        Iterator<Entry<String, Node>> nodes = graph.inputs.entrySet().stream()
+        Iterator<Entry<String, InputExpression>> inputs = graph.inputs.entrySet().stream()
                 .sorted((lhs, rhs) -> lhs.getKey().compareTo(rhs.getKey())).iterator();
-        int nodesRemaining = graph.inputs.size();
-        for (int x = 0; x < buildSpace.getXLength(); ++x) {
-            if (random.nextDouble() < nodesRemaining / (buildSpace.getXLength() - x) * 2) {
-                Entry<String, Node> node = nodes.next();
-                grid.set(x, 0, 1, BLOCK.BLOCK);
-                grid.set(x, 0, 2, BLOCK.BLOCK);
-                grid.set(x, 1, 2, BLOCK.WIRE);
-                graphNodes.get(node.getValue()).input = new Vec3i(x, 1, 1);
-                graphNodes.get(node.getValue()).wires.add(new Vec3i(x, 1, 2));
-                --nodesRemaining;
-                ++x;
-                if (!nodes.hasNext()) {
-                    break;
-                }
-            }
-        }
-        if (nodes.hasNext()) {
-            throw new RedilogPlacementException(
-                    String.format("Insufficient space for inputs (ran out at %s)", nodes.next().getKey()));
+        for (int i = 0; i < graph.inputs.size(); ++i) {
+            InputExpression input = inputs.next().getValue();
+            int x = (int) (i * (buildSpace.getXLength() - 1) / (graph.inputs.size() - 1));
+            grid.set(x, 0, 1, BLOCK.BLOCK);
+            grid.set(x, 0, 2, BLOCK.BLOCK);
+            grid.set(x, 1, 2, BLOCK.WIRE);
+            wires.get(input).source = new Vec3i(x, 1, 1);
+            wires.get(input).wires.add(new Vec3i(x, 1, 2));
         }
         //outputs
-        nodes = graph.outputs.entrySet().stream().sorted((lhs, rhs) -> lhs.getKey().compareTo(rhs.getKey())).iterator();
-        nodesRemaining = graph.outputs.size();
-        for (int x = 0; x < buildSpace.getXLength(); ++x) {
-            if (random.nextDouble() < nodesRemaining / (buildSpace.getXLength() - x) * 2) {
-                Entry<String, Node> node = nodes.next();
-                int z = grid.getZLength() - 2;
-                // grid.set(x, 0, z, BLOCK.BLOCK);
-                grid.set(x, 1, z, BLOCK.WIRE);
-                graphNodes.get(node.getValue()).input = new Vec3i(x, 1, z);
-                --nodesRemaining;
-                ++x;
-                if (!nodes.hasNext()) {
-                    break;
-                }
-            }
-        }
-        if (nodes.hasNext()) {
-            throw new RedilogPlacementException(
-                    String.format("Insufficient space for outputs (ran out at %s)", nodes.next().getKey()));
+        Iterator<Entry<String, OutputExpression>> outputs = graph.outputs.entrySet().stream()
+                .sorted((lhs, rhs) -> lhs.getKey().compareTo(rhs.getKey())).iterator();
+        for (int i = 0; i < graph.outputs.size(); ++i) {
+            int x = (int) (i * (buildSpace.getXLength() - 1) / (graph.outputs.size() - 1));
+            OutputExpression output = outputs.next().getValue();
+            int z = grid.getZLength() - 2;
+            grid.set(x, 1, z, BLOCK.WIRE);
+            wires.get(output).source = new Vec3i(x, 1, z);
         }
     }
 
     private static void labelIO(Box buildSpace, LogicGraph graph, World world,
-            Map<Expression, WireDescriptor> nodes) {
+            Map<Expression, WireDescriptor> wires) {
         BlockPos minPos = new BlockPos(buildSpace.minX, buildSpace.minY, buildSpace.minZ);
-        for (Entry<String, Node> entry : graph.inputs.entrySet()) {
-            Vec3i pos = nodes.get(entry.getValue()).input;
+        for (Entry<String, InputExpression> entry : graph.inputs.entrySet()) {
+            Vec3i pos = wires.get(entry.getValue()).source;
             if (pos == null) {
                 Redilog.LOGGER.warn("Failed to label input {}", entry.getKey());
                 continue;
@@ -286,8 +271,8 @@ public class Placer {
                 sbe.setTextOnRow(0, Text.of(entry.getKey()));
             }
         }
-        for (Entry<String, Node> entry : graph.outputs.entrySet()) {
-            Vec3i pos = nodes.get(entry.getValue()).input;
+        for (Entry<String, OutputExpression> entry : graph.outputs.entrySet()) {
+            Vec3i pos = wires.get(entry.getValue()).source;
             if (pos == null) {
                 Redilog.LOGGER.warn("Failed to label output {}", entry.getKey());
                 continue;
