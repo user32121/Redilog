@@ -10,6 +10,7 @@ import org.apache.commons.lang3.NotImplementedException;
 
 import net.minecraft.util.Pair;
 import net.minecraft.util.dynamic.Range;
+import redilog.init.Redilog;
 import redilog.synthesis.Token.Builder;
 import redilog.synthesis.Token.TypeHint;
 
@@ -37,8 +38,9 @@ public class Parser {
             int end = input.indexOf("*/", start);
             if (end == -1) {
                 end = input.length();
+            } else {
+                end += "*/".length();
             }
-            end += "*/".length();
             input = input.substring(0, start) + input.substring(end);
         }
         //double slash
@@ -50,8 +52,9 @@ public class Parser {
             int end = input.indexOf("\n", start);
             if (end == -1) {
                 end = input.length();
+            } else {
+                end += "\n".length();
             }
-            end += "\n".length();
             input = input.substring(0, start) + input.substring(end);
         }
         return input;
@@ -232,6 +235,10 @@ public class Parser {
         for (Entry<String, SymbolGraph.Expression> symbol : sGraph.expressions.entrySet()) {
             if (symbol.getValue() instanceof SymbolGraph.OutputExpression soe) {
                 Range<Integer> range = symbol.getValue().range;
+                if (soe.value == null) {
+                    Redilog.LOGGER.warn(String.format("symbol %s does not have a value", symbol.getKey()));
+                    continue;
+                }
                 Range<Integer> sourceRange = soe.value.range;
                 for (int i = range.minInclusive(); i <= range.maxInclusive(); i++) {
                     String name = symbol.getKey() + "[" + i + "]";

@@ -191,7 +191,8 @@ public class Placer {
                                 if (cur.add(dir).add(dir2).equals(end)) {
                                     continue;
                                 }
-                                if (!grid.isValue(cur.add(dir).add(dir2), BLOCK.AIR)) {
+                                if (grid.inBounds(cur.add(dir).add(dir2))
+                                        && !grid.isValue(cur.add(dir).add(dir2), BLOCK.AIR)) {
                                     valid = false;
                                 }
                             }
