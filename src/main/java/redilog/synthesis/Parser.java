@@ -28,6 +28,7 @@ public class Parser {
         return convertGraph(graph);
     }
 
+    //TODO preserve line information for easier error messages
     private static String stripComments(String input) {
         //slash star
         while (true) {
@@ -236,7 +237,7 @@ public class Parser {
             if (symbol.getValue() instanceof SymbolGraph.OutputExpression soe) {
                 Range<Integer> range = symbol.getValue().range;
                 if (soe.value == null) {
-                    Redilog.LOGGER.warn(String.format("symbol %s does not have a value", symbol.getKey()));
+                    Redilog.LOGGER.warn("symbol {} does not have a value", symbol.getKey());
                     continue;
                 }
                 Range<Integer> sourceRange = soe.value.range;

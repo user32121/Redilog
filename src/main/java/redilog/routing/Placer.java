@@ -3,9 +3,11 @@ package redilog.routing;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
+import java.util.Set;
 
 import org.apache.commons.lang3.NotImplementedException;
 
@@ -30,64 +32,11 @@ import redilog.utils.Array3D;
 import redilog.utils.ConstantSupplier;
 
 public class Placer {
-    private enum BLOCK {
+    public enum BLOCK {
         AIR,
         WIRE,
         BLOCK,
     }
-
-    //locations a wire can travel to
-    private static final Vec3i[] WIRE_DIRS;
-    //locations that must be air for corresponding wire in WIRE_DIRS to be valid (relative to WIRE_DIR)
-    private static final Vec3i[][] REQUIRED_AIR;
-
-    static {
-        WIRE_DIRS = new Vec3i[12];
-        REQUIRED_AIR = new Vec3i[12][];
-
-        //posz
-        WIRE_DIRS[0] = new Vec3i(0, 0, 1);
-        REQUIRED_AIR[0] = new Vec3i[] { new Vec3i(0, 0, 0), new Vec3i(0, -1, 0),
-                new Vec3i(0, -1, 1), new Vec3i(0, 0, 1),
-                new Vec3i(1, -1, 0), new Vec3i(1, 0, 0),
-                new Vec3i(-1, -1, 0), new Vec3i(-1, 0, 0), };
-        WIRE_DIRS[1] = new Vec3i(0, -1, 1);
-        REQUIRED_AIR[1] = REQUIRED_AIR[0];
-        WIRE_DIRS[2] = new Vec3i(0, 1, 1);
-        REQUIRED_AIR[2] = REQUIRED_AIR[0];
-        //negz
-        WIRE_DIRS[3] = new Vec3i(0, 0, -1);
-        REQUIRED_AIR[3] = new Vec3i[] { new Vec3i(0, 0, 0), new Vec3i(0, -1, 0),
-                new Vec3i(0, -1, -1), new Vec3i(0, 0, -1),
-                new Vec3i(1, -1, 0), new Vec3i(1, 0, 0),
-                new Vec3i(-1, -1, 0), new Vec3i(-1, 0, 0), };
-        WIRE_DIRS[4] = new Vec3i(0, -1, -1);
-        REQUIRED_AIR[4] = REQUIRED_AIR[3];
-        WIRE_DIRS[5] = new Vec3i(0, 1, -1);
-        REQUIRED_AIR[5] = REQUIRED_AIR[3];
-        //posx
-        WIRE_DIRS[6] = new Vec3i(1, 0, 0);
-        REQUIRED_AIR[6] = new Vec3i[] { new Vec3i(0, 0, 0), new Vec3i(0, -1, 0),
-                new Vec3i(1, -1, 0), new Vec3i(1, 0, 0),
-                new Vec3i(0, -1, 1), new Vec3i(0, 0, 1),
-                new Vec3i(0, -1, -1), new Vec3i(0, 0, -1), };
-        WIRE_DIRS[7] = new Vec3i(1, -1, 0);
-        REQUIRED_AIR[7] = REQUIRED_AIR[6];
-        WIRE_DIRS[8] = new Vec3i(1, 1, 0);
-        REQUIRED_AIR[8] = REQUIRED_AIR[6];
-        //negx
-        WIRE_DIRS[9] = new Vec3i(-1, 0, 0);
-        REQUIRED_AIR[9] = new Vec3i[] { new Vec3i(0, 0, 0), new Vec3i(0, -1, 0),
-                new Vec3i(-1, -1, 0), new Vec3i(-1, 0, 0),
-                new Vec3i(0, -1, 1), new Vec3i(0, 0, 1),
-                new Vec3i(0, -1, -1), new Vec3i(0, 0, -1), };
-        WIRE_DIRS[10] = new Vec3i(-1, -1, 0);
-        REQUIRED_AIR[10] = REQUIRED_AIR[9];
-        WIRE_DIRS[11] = new Vec3i(-1, 1, 0);
-        REQUIRED_AIR[11] = REQUIRED_AIR[9];
-    }
-
-    private static final Vec3i DOWN = new Vec3i(0, -1, 0);
 
     /**
      * Place redstone according to the logic graph in the specified cuboid region
@@ -128,7 +77,7 @@ public class Placer {
 
         placeIO(buildSpace, graph, grid, wires);
         placeComponents();
-        routeWires(grid, wires);
+        routeWires(grid, wires); //TODO supply a view that can't access the first or last row to prevent routing in sign space
         sliceWires();
         transferGridToWorld(buildSpace, world, grid);
         labelIO(buildSpace, graph, world, wires);
@@ -171,47 +120,43 @@ public class Placer {
                     continue;
                 }
                 Vec3i end = entry.getValue().source;
-                Vec3i start = wires.get(oe.value).wires.stream()
-                        .min(((v1, v2) -> (end.getManhattanDistance(v1) - end.getManhattanDistance(v2))))
-                        .orElseGet(() -> entry.getValue().source);
+                Set<Vec3i> starts = wires.get(oe.value).wires;
 
                 //bfs
                 Queue<Vec3i> toProcess = new LinkedList<>();
                 Array3D<Vec3i> visitedFrom = new Array3D<>(grid.getSize());
+                Array3D<Integer> depth = new Array3D<>(grid.getXLength(), grid.getYLength(), grid.getZLength(),
+                        Integer.MAX_VALUE);
                 //NOTE: since bfs does not store state, it may be possible for the wire to loop on itself and override its path,
                 //      but this is unlikely to occur considering a loop would be longer than the original path
-                toProcess.add(start);
+                toProcess.addAll(starts);
+                starts.forEach(pos -> depth.set(pos, 0));
                 while (!toProcess.isEmpty()) {
                     Vec3i cur = toProcess.remove();
-                    for (int i = 0; i < WIRE_DIRS.length; ++i) {
-                        Vec3i dir = WIRE_DIRS[i];
-                        boolean valid = true;
-                        if (!cur.add(dir).equals(end)) {
-                            for (Vec3i dir2 : REQUIRED_AIR[i]) {
-                                if (cur.add(dir).add(dir2).equals(end)) {
-                                    continue;
+                    for (RoutingBFSStep step : RoutingBFSStep.STEPS) {
+                        List<Vec3i[]> validMoves = step.getValidMoves(grid, cur, end);
+                        for (Vec3i[] moves : validMoves) {
+                            Vec3i prev = cur;
+                            for (Vec3i move : moves) {
+                                if (depth.get(cur) + 1 < depth.get(move)) {
+                                    visitedFrom.set(move, prev);
+                                    depth.set(move, depth.get(cur) + 1);
+                                    toProcess.add(move);
                                 }
-                                if (grid.inBounds(cur.add(dir).add(dir2))
-                                        && !grid.isValue(cur.add(dir).add(dir2), BLOCK.AIR)) {
-                                    valid = false;
-                                }
+                                prev = move;
                             }
-                        }
-                        if (valid && visitedFrom.isValue(cur.add(dir), null) && grid.inBounds(cur.add(dir).add(DOWN))) {
-                            visitedFrom.set(cur.add(dir), cur);
-                            toProcess.add(cur.add(dir));
                         }
                     }
                 }
 
                 //trace path
                 if (visitedFrom.isValue(end, null)) {
-                    Redilog.LOGGER.error("unable to path {} to {}", start, end);
+                    Redilog.LOGGER.error("unable to path {} to {}", starts, end);
                 } else {
                     Vec3i cur = visitedFrom.get(end);
-                    while (!cur.equals(start)) {
+                    while (!starts.contains(cur)) {
                         grid.set(cur, BLOCK.WIRE);
-                        grid.set(cur.add(DOWN), BLOCK.BLOCK);
+                        grid.set(cur.add(0, -1, 0), BLOCK.BLOCK);
                         wires.get(oe.value).wires.add(cur);
                         cur = visitedFrom.get(cur);
                     }
