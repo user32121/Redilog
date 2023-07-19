@@ -50,20 +50,22 @@ public class Placer {
                     "No build space specified (specify by creating a zone using layout markers, then placing the builder next to one of the markers)");
         }
 
+        Map<Expression, String> symbolNames = new HashMap<>();
+        for (Map.Entry<String, Expression> entry : graph.expressions.entrySet()) {
+            symbolNames.put(entry.getValue(), entry.getKey());
+        }
         Redilog.LOGGER.info("inputs:");
         for (var entry : graph.inputs.entrySet()) {
-            Redilog.LOGGER.info("{}: {}", entry.getKey(), entry.getValue());
+            Redilog.LOGGER.info("{}", entry.getKey());
         }
         Redilog.LOGGER.info("outputs:");
         for (var entry : graph.outputs.entrySet()) {
-            Redilog.LOGGER.info("{}: {} = {}", entry.getKey(), entry.getValue(), entry.getValue().value);
+            Redilog.LOGGER.info("{} = {}", entry.getKey(), symbolNames.get(entry.getValue().value));
         }
-        Redilog.LOGGER.info("expressions:");
+        Redilog.LOGGER.info("other expressions:");
         for (var entry : graph.expressions.entrySet()) {
-            if (entry.getValue() instanceof InputExpression ie) {
-                Redilog.LOGGER.info("{}: {}", entry.getKey(), ie);
-            } else if (entry.getValue() instanceof OutputExpression oe) {
-                Redilog.LOGGER.info("{}: {} = {}", entry.getKey(), oe, oe.value);
+            if (entry.getValue() instanceof InputExpression ie || entry.getValue() instanceof OutputExpression oe) {
+                //NO OP
             } else {
                 throw new NotImplementedException(entry.getValue().getClass() + " not implemented");
             }

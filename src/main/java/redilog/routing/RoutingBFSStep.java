@@ -16,6 +16,7 @@ public interface RoutingBFSStep {
     public static final Vec3i[] EMPTY_PATH = new Vec3i[0];
 
     public static final RoutingBFSStep[] STEPS = {
+            //TODO extract repeated code into a common class
             //standard horizontal
             new DirectionalRoutingBFSStep() {
                 @Override
@@ -42,9 +43,62 @@ public interface RoutingBFSStep {
                     }
                     return new Vec3i[] { next };
                 }
-            }
-            //TODO horizontal up
-            //TODO horizontal down
+            },
+            //horizontal up
+            new DirectionalRoutingBFSStep() {
+                @Override
+                public Vec3i[] getValidMove(Array3D<BLOCK> grid, Vec3i pos, Vec3i target, Direction direction) {
+                    Vec3i next = pos.offset(direction).add(0, 1, 0);
+                    //check if already at target
+                    if (next.equals(target)) {
+                        return new Vec3i[] { target };
+                    }
+                    //next cannot already have something there
+                    if (!grid.isValue(next, BLOCK.AIR) || !grid.isValue(next.add(0, -1, 0), BLOCK.AIR)) {
+                        return EMPTY_PATH;
+                    }
+                    //make sure not adjacent to other wires
+                    for (Direction dir : new Direction[] { direction, direction.rotateYClockwise(),
+                            direction.rotateYCounterclockwise() }) {
+                        for (int y = -1; y <= 1; ++y) {
+                            Vec3i adjacent = next.offset(dir).add(0, y, 0);
+                            if (!adjacent.equals(target) //ok to be adjacent to target
+                                    && grid.isValue(adjacent, BLOCK.WIRE)) {
+                                return EMPTY_PATH;
+                            }
+                        }
+                    }
+                    return new Vec3i[] { next };
+                }
+            },
+            //horizontal down
+            new DirectionalRoutingBFSStep() {
+                @Override
+                public Vec3i[] getValidMove(Array3D<BLOCK> grid, Vec3i pos, Vec3i target, Direction direction) {
+                    Vec3i next = pos.offset(direction).add(0, -1, 0);
+                    //check if already at target
+                    if (next.equals(target)) {
+                        return new Vec3i[] { target };
+                    }
+                    //next cannot already have something there
+                    if (!grid.isValue(next, BLOCK.AIR) || !grid.isValue(next.add(0, -1, 0), BLOCK.AIR)) {
+                        return EMPTY_PATH;
+                    }
+                    //make sure not adjacent to other wires
+                    for (Direction dir : new Direction[] { direction, direction.rotateYClockwise(),
+                            direction.rotateYCounterclockwise() }) {
+                        for (int y = -1; y <= 1; ++y) {
+                            Vec3i adjacent = next.offset(dir).add(0, y, 0);
+                            if (!adjacent.equals(target) //ok to be adjacent to target
+                                    && grid.isValue(adjacent, BLOCK.WIRE)) {
+                                return EMPTY_PATH;
+                            }
+                        }
+                    }
+                    return new Vec3i[] { next };
+                }
+            },
+            //TODO optimized horizontal up/down by detecting when a wire can go up or down more tightly around a wire
     };
 
     /**
