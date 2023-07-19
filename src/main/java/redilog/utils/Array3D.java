@@ -8,6 +8,13 @@ public class Array3D<T> {
 
     private Object[][][] data;
 
+    /**
+     * Make a shallow copy.
+     */
+    protected Array3D(Array3D<T> other) {
+        this.data = other.data;
+    }
+
     public Array3D(Vec3i size) {
         this(size.getX(), size.getY(), size.getZ());
     }
@@ -69,8 +76,11 @@ public class Array3D<T> {
     }
 
     public boolean inBounds(Vec3i v) {
-        return v.getX() >= 0 && v.getY() >= 0 && v.getZ() >= 0 &&
-                v.getX() < getXLength() && v.getY() < getYLength() && v.getZ() < getZLength();
+        return inBounds(v.getX(), v.getY(), v.getZ());
+    }
+
+    public boolean inBounds(int x, int y, int z) {
+        return x >= 0 && y >= 0 && z >= 0 && x < getXLength() && y < getYLength() && z < getZLength();
     }
 
     public boolean isValue(Vec3i v, T value) {

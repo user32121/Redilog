@@ -29,6 +29,7 @@ import redilog.synthesis.LogicGraph.Expression;
 import redilog.synthesis.LogicGraph.InputExpression;
 import redilog.synthesis.LogicGraph.OutputExpression;
 import redilog.utils.Array3D;
+import redilog.utils.Array3DView;
 import redilog.utils.ConstantSupplier;
 
 public class Placer {
@@ -77,7 +78,9 @@ public class Placer {
 
         placeIO(buildSpace, graph, grid, wires);
         placeComponents();
-        routeWires(grid, wires); //TODO supply a view that can't access the first or last row to prevent routing in sign space
+        //view prevents routing wires in sign space
+        routeWires(new Array3DView<>(grid,
+                0, 0, 1, grid.getXLength(), grid.getYLength(), grid.getZLength() - 1), wires);
         sliceWires();
         transferGridToWorld(buildSpace, world, grid);
         labelIO(buildSpace, graph, world, wires);
