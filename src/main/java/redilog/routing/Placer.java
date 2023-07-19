@@ -24,6 +24,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
 import redilog.init.Redilog;
+import redilog.routing.bfs.BFSStep;
 import redilog.synthesis.LogicGraph;
 import redilog.synthesis.LogicGraph.Expression;
 import redilog.synthesis.LogicGraph.InputExpression;
@@ -138,7 +139,7 @@ public class Placer {
                 starts.forEach(pos -> depth.set(pos, 0));
                 while (!toProcess.isEmpty()) {
                     Vec3i cur = toProcess.remove();
-                    for (RoutingBFSStep step : RoutingBFSStep.STEPS) {
+                    for (BFSStep step : BFSStep.STEPS) {
                         List<Vec3i[]> validMoves = step.getValidMoves(grid, cur, end);
                         for (Vec3i[] moves : validMoves) {
                             Vec3i prev = cur;
