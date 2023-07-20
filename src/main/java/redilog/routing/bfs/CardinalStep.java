@@ -8,17 +8,17 @@ import net.minecraft.util.math.Vec3i;
 import redilog.routing.Placer.BLOCK;
 import redilog.utils.Array3D;
 
-public abstract class DirectionalStep implements BFSStep {
+public class CardinalStep implements BFSStep {
     public final static Direction[] HORIZONTAL = new Direction[] { Direction.NORTH, Direction.SOUTH, Direction.WEST,
             Direction.EAST };
 
     final Direction[] directions;
 
-    public DirectionalStep() {
+    public CardinalStep() {
         this(HORIZONTAL);
     }
 
-    public DirectionalStep(Direction... directions) {
+    public CardinalStep(Direction... directions) {
         this.directions = directions;
     }
 
