@@ -87,11 +87,23 @@ public class Placer {
         sliceWires();
         transferGridToWorld(buildSpace, world, grid);
         labelIO(buildSpace, graph, world, wires);
-        warnUnused(graph);
+        warnUnused(graph, wires);
     }
 
-    private static void warnUnused(LogicGraph graph) {
-        //TODO implement
+    private static void warnUnused(LogicGraph graph, Map<Expression, WireDescriptor> wires) {
+        for (Entry<String, Expression> entry : graph.expressions.entrySet()) {
+            if (entry.getValue() instanceof InputExpression) {
+                if (wires.get(entry.getValue()).wires.size() <= 1) {
+                    Redilog.LOGGER.warn("Unused input {}", entry.getKey());
+                }
+            } else if (entry.getValue() instanceof OutputExpression oe) {
+                if (oe.value == null) {
+                    Redilog.LOGGER.warn("Unassigned output {}", entry.getKey());
+                }
+            } else {
+                Redilog.LOGGER.warn(String.format("%s not implemented", entry.getValue().getClass()));
+            }
+        }
     }
 
     private static void transferGridToWorld(Box buildSpace, World world, Array3D<BLOCK> grid) {

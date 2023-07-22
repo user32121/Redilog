@@ -193,6 +193,9 @@ public class Parser {
         if (graph.inputs.containsKey(name)) {
             throw new RedilogParsingException(String.format("input \"%s\" cannot be assigned", name));
         }
+        if (graph.outputs.containsKey(value)) {
+            throw new RedilogParsingException(String.format("output \"%s\" cannot be used as source", value));
+        }
         if (graph.expressions.get(name) instanceof SymbolGraph.OutputExpression oe) {
             oe.value = graph.expressions.get(value);
         } else {
