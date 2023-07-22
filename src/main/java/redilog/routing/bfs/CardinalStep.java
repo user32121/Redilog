@@ -23,7 +23,7 @@ public class CardinalStep implements BFSStep {
     }
 
     @Override
-    public List<Vec3i[]> getValidMoves(Array3D<BLOCK> grid, Vec3i pos, Vec3i target) {
+    public final List<Vec3i[]> getValidMoves(Array3D<BLOCK> grid, Vec3i pos, Vec3i target) {
         List<Vec3i[]> res = new ArrayList<>();
         for (Direction direction : directions) {
             Vec3i[] validMove = getValidMove(grid, pos, target, direction);
@@ -40,12 +40,8 @@ public class CardinalStep implements BFSStep {
      */
     public Vec3i[] getValidMove(Array3D<BLOCK> grid, Vec3i pos, Vec3i target, Direction direction) {
         Vec3i next = getNextPosition(pos, direction);
-        //check if already at target
-        if (next.equals(target)) {
-            return new Vec3i[] { target };
-        }
-        //next cannot already have something there
-        if (!grid.isValue(next, BLOCK.AIR) || !grid.isValue(next.add(0, -1, 0), BLOCK.AIR)) {
+        //next cannot already have something there (unless it's the target)
+        if (!next.equals(target) && (!grid.isValue(next, BLOCK.AIR) || !grid.isValue(next.add(0, -1, 0), BLOCK.AIR))) {
             return EMPTY_PATH;
         }
         //make sure not adjacent to other wires

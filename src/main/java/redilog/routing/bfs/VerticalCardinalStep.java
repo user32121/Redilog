@@ -14,4 +14,9 @@ public class VerticalCardinalStep extends CardinalStep {
         return pos.offset(direction).add(0, verticalOffset, 0);
     }
 
+    @Override
+    public int getCost() {
+        return 15;
+    }
+
 }
