@@ -9,8 +9,8 @@ import redilog.routing.Placer.BLOCK;
 import redilog.utils.Array3D;
 
 public class CardinalStep implements BFSStep {
-    public final static Direction[] HORIZONTAL = new Direction[] { Direction.NORTH, Direction.SOUTH, Direction.WEST,
-            Direction.EAST };
+    public final static Direction[] HORIZONTAL = new Direction[] { Direction.WEST, Direction.EAST, Direction.NORTH,
+            Direction.SOUTH };
 
     final Direction[] directions;
 

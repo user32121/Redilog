@@ -16,7 +16,7 @@ public class VerticalCardinalStep extends CardinalStep {
 
     @Override
     public int getCost() {
-        return 15;
+        return 20;
     }
 
 }

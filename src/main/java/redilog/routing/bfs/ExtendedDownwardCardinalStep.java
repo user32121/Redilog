@@ -5,7 +5,7 @@ import net.minecraft.util.math.Vec3i;
 import redilog.routing.Placer.BLOCK;
 import redilog.utils.Array3D;
 
-public class ExtendedUpwardCardinalStep extends CardinalStep {
+public class ExtendedDownwardCardinalStep extends CardinalStep {
 
     @Override
     public Vec3i[] getValidMove(Array3D<BLOCK> grid, Vec3i pos, Vec3i target, Direction direction) {
@@ -16,7 +16,8 @@ public class ExtendedUpwardCardinalStep extends CardinalStep {
             return EMPTY_PATH;
         }
         //make sure next not adjacent to other wires
-        for (Direction dir : new Direction[] { direction.rotateYClockwise(), direction.rotateYCounterclockwise() }) {
+        for (Direction dir : new Direction[] { direction, direction.rotateYClockwise(),
+                direction.rotateYCounterclockwise() }) {
             for (int y = -1; y <= 1; ++y) {
                 Vec3i adjacent = next.offset(dir).add(0, y, 0);
                 if (!adjacent.equals(target) //ok to be adjacent to target
@@ -27,7 +28,7 @@ public class ExtendedUpwardCardinalStep extends CardinalStep {
         }
         //cannot cut wire below
         if (grid.isValue(next.add(0, -2, 0), BLOCK.WIRE)
-                && grid.isValue(nextNext.offset(direction).add(0, -2, 0), BLOCK.WIRE)) {
+                && grid.isValue(pos.add(0, -2, 0), BLOCK.WIRE)) {
             return EMPTY_PATH;
         }
         //nextNext not adjacent to wires
@@ -46,11 +47,11 @@ public class ExtendedUpwardCardinalStep extends CardinalStep {
 
     @Override
     public Vec3i getNextPosition(Vec3i pos, Direction direction) {
-        return super.getNextPosition(pos, direction).add(0, 1, 0);
+        return super.getNextPosition(pos, direction).add(0, -1, 0);
     }
 
     @Override
     public int getCost() {
-        return 15;
+        return 30;
     }
 }
