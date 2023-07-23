@@ -28,7 +28,6 @@ public class Parser {
         return convertGraph(graph);
     }
 
-    //TODO preserve line information for easier error messages
     private static String stripComments(String input) {
         //slash star
         while (true) {
@@ -42,7 +41,9 @@ public class Parser {
             } else {
                 end += "*/".length();
             }
-            input = input.substring(0, start) + input.substring(end);
+            input = input.substring(0, start)
+                    + input.substring(start, end).replaceAll(".", "") //preserve line info (replace all nonline chars)
+                    + input.substring(end);
         }
         //double slash
         while (true) {
@@ -53,8 +54,6 @@ public class Parser {
             int end = input.indexOf("\n", start);
             if (end == -1) {
                 end = input.length();
-            } else {
-                end += "\n".length();
             }
             input = input.substring(0, start) + input.substring(end);
         }
