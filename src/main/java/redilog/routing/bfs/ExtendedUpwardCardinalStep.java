@@ -12,7 +12,8 @@ public class ExtendedUpwardCardinalStep extends CardinalStep {
         Vec3i next = getNextPosition(pos, direction);
         Vec3i nextNext = getNextPosition(next, direction);
         //next cannot already have something there (unless it's the target)
-        if (!next.equals(target) && (!grid.isValue(next, BLOCK.AIR) || !grid.isValue(next.add(0, -1, 0), BLOCK.AIR))) {
+        if (!next.equals(target) && (!grid.isValue(next, BLOCK.AIR) || !grid.isValue(next.add(0, -1, 0), BLOCK.AIR)
+                || !grid.isValue(nextNext, BLOCK.AIR) || !grid.isValue(nextNext.add(0, -1, 0), BLOCK.AIR))) {
             return EMPTY_PATH;
         }
         //make sure next not adjacent to other wires

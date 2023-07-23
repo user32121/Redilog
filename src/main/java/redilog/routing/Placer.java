@@ -83,7 +83,7 @@ public class Placer {
         placeComponents();
         //view prevents routing wires in sign space
         routeWires(new Array3DView<>(grid,
-                0, 0, 1, grid.getXLength(), grid.getYLength(), grid.getZLength() - 1), wires);
+                0, 0, 2, grid.getXLength(), grid.getYLength(), grid.getZLength() - 1), wires);
         transferGridToWorld(buildSpace, world, grid);
         labelIO(buildSpace, graph, world, wires);
         warnUnused(graph, wires);
@@ -145,8 +145,7 @@ public class Placer {
                 Array3D<Vec3i> visitedFrom = new Array3D<>(grid.getSize());
                 Array3D<Integer> cost = new Array3D<>(grid.getXLength(), grid.getYLength(), grid.getZLength(),
                         Integer.MAX_VALUE);
-                //NOTE: since bfs does not store state, it may be possible for the wire to loop on itself and override its path,
-                //      but this is unlikely to occur considering a loop would be longer than the original path
+                //NOTE: since bfs does not store state, it may be possible for the wire to loop on itself and override its path
                 toProcess.addAll(starts);
                 starts.forEach(pos -> cost.set(pos, 0));
                 while (!toProcess.isEmpty()) {
