@@ -84,10 +84,10 @@ public class Placer {
         //view prevents routing wires in sign space
         routeWires(new Array3DView<>(grid,
                 0, 0, 1, grid.getXLength(), grid.getYLength(), grid.getZLength() - 1), wires);
-        sliceWires();
         transferGridToWorld(buildSpace, world, grid);
         labelIO(buildSpace, graph, world, wires);
         warnUnused(graph, wires);
+        //TODO repeat while adjusting buildSpace and layout to fine tune
     }
 
     private static void warnUnused(LogicGraph graph, Map<Expression, WireDescriptor> wires) {
@@ -183,11 +183,6 @@ public class Placer {
                 throw new NotImplementedException(entry.getKey().getClass() + " not implemented");
             }
         }
-    }
-
-    private static void sliceWires() {
-        //TODO implement
-        // remove slices of layout where redundant (such as reducing all x-ward wires from 4 to 3)
     }
 
     private static void placeIO(Box buildSpace, LogicGraph graph, Array3D<BLOCK> grid,
