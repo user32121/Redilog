@@ -67,7 +67,7 @@ public class SymbolGraph {
             if (entry.getValue().range != null) {
                 continue;
             }
-            if (entry.getValue() instanceof OutputExpression oe) {
+            if (entry.getValue() instanceof OutputExpression oe && oe.value != null) {
                 if (oe.value.range == null) {
                     toProcess.add(entry);
                     continue;

@@ -65,7 +65,9 @@ public class BuilderBlockEntity extends BlockEntity implements ExtendedScreenHan
 
     public void build(ServerPlayerEntity player) {
         try {
+            Redilog.LOGGER.info("Begin parsing stage");
             LogicGraph graph = Parser.synthesizeRedilog(redilog);
+            Redilog.LOGGER.info("Begin placing stage");
             Placer.placeRedilog(graph, buildSpace, world);
         } catch (RedilogParsingException e) {
             player.sendMessage(Text.of("An error occurred during parsing.\n" + e));

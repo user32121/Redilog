@@ -24,8 +24,10 @@ public class Parser {
     public static LogicGraph synthesizeRedilog(String redilog) throws RedilogParsingException {
         redilog = stripComments(redilog);
         List<Token> tokens = tokenize(redilog);
-        SymbolGraph graph = processTokens(tokens);
-        return convertGraph(graph);
+        SymbolGraph sGraph = processTokens(tokens);
+        LogicGraph lGraph = convertGraph(sGraph);
+        warnUnused(lGraph);
+        return lGraph;
     }
 
     private static String stripComments(String input) {
@@ -250,6 +252,7 @@ public class Parser {
                     LogicGraph.Expression wire = lGraph.expressions.get(name);
                     if (wire instanceof LogicGraph.OutputExpression loe) {
                         loe.value = lGraph.expressions.get(sourceName);
+                        lGraph.expressions.get(sourceName).used = true;
                     } else {
                         throw new NotImplementedException(wire + "not implemented");
                     }
@@ -259,4 +262,22 @@ public class Parser {
 
         return lGraph;
     }
+
+    private static void warnUnused(LogicGraph graph) {
+        //TODO move to parser
+        for (Entry<String, LogicGraph.Expression> entry : graph.expressions.entrySet()) {
+            if (entry.getValue() instanceof LogicGraph.InputExpression ie) {
+                if (!ie.used) {
+                    Redilog.LOGGER.warn("Value of input {} is not used", entry.getKey());
+                }
+            } else if (entry.getValue() instanceof LogicGraph.OutputExpression oe) {
+                if (oe.value == null) {
+                    Redilog.LOGGER.warn("Output {} has no value", entry.getKey());
+                }
+            } else {
+                Redilog.LOGGER.warn("unused check for {} not implemented", entry.getValue().getClass());
+            }
+        }
+    }
+
 }
