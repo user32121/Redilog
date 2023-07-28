@@ -62,6 +62,8 @@ public class Parser {
         return input;
     }
 
+    //TODO process negative numbers correctly (or add expression evaluation)
+    //TODO underscores are variables not symbols
     private static List<Token> tokenize(String input) {
         List<Token> res = new ArrayList<>();
 
@@ -185,6 +187,7 @@ public class Parser {
         String value = tokens.get(i++).getValue(Token.Type.VARIABLE);
         tokens.get(i++).require(Token.Type.SYMBOL, ";");
 
+        //TODO line numbers
         if (!graph.expressions.containsKey(name)) {
             throw new RedilogParsingException(String.format("\"%s\" not defined", name));
         }

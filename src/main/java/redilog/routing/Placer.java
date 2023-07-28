@@ -176,6 +176,7 @@ public class Placer {
         for (int i = 0; i < graph.inputs.size(); ++i) {
             InputExpression input = inputs.next().getValue();
             int x = (int) (i * (buildSpace.getXLength() - 1) / (graph.inputs.size() - 1));
+            //TODO check if region too small
             grid.set(x, 0, 1, BLOCK.BLOCK);
             grid.set(x, 0, 2, BLOCK.BLOCK);
             grid.set(x, 1, 2, BLOCK.WIRE);

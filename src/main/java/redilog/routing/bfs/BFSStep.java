@@ -19,6 +19,7 @@ public interface BFSStep {
             new VerticalCardinalStep(-1),
             new ExtendedUpwardCardinalStep(),
             new ExtendedDownwardCardinalStep(),
+            //TODO repeaters
     };
 
     /**
