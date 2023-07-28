@@ -264,7 +264,6 @@ public class Parser {
     }
 
     private static void warnUnused(LogicGraph graph) {
-        //TODO move to parser
         for (Entry<String, LogicGraph.Expression> entry : graph.expressions.entrySet()) {
             if (entry.getValue() instanceof LogicGraph.InputExpression ie) {
                 if (!ie.used) {
