@@ -21,7 +21,7 @@ public class Parser {
      * @return a graph representation of the redilog
      * @throws RedilogParsingException
      */
-    public static LogicGraph synthesizeRedilog(String redilog) throws RedilogParsingException {
+    public static LogicGraph parseRedilog(String redilog) throws RedilogParsingException {
         redilog = stripComments(redilog);
         List<Token> tokens = tokenize(redilog);
         SymbolGraph sGraph = processTokens(tokens);
@@ -255,7 +255,8 @@ public class Parser {
                     LogicGraph.Expression wire = lGraph.expressions.get(name);
                     if (wire instanceof LogicGraph.OutputExpression loe) {
                         loe.value = lGraph.expressions.get(sourceName);
-                        lGraph.expressions.get(sourceName).used = true;
+                        if (lGraph.expressions.get(sourceName) != null)
+                            lGraph.expressions.get(sourceName).used = true;
                     } else {
                         throw new NotImplementedException(wire + "not implemented");
                     }

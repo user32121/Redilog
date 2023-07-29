@@ -169,6 +169,19 @@ public class Placer {
 
     private static void placeIO(Box buildSpace, LogicGraph graph, Array3D<BLOCK> grid,
             Map<Expression, WireDescriptor> wires) throws RedilogPlacementException {
+        if (buildSpace.getZLength() < 3) {
+            throw new RedilogPlacementException("Not enough space for I/O. Need z length >= 3.");
+        } else if (buildSpace.getYLength() < 2) {
+            throw new RedilogPlacementException("Not enough space for I/O. Need height >= 2.");
+        }
+        if (buildSpace.getZLength() < 5) {
+            Redilog.LOGGER.warn("Limited space for I/O; potentially degenerate layout. Recommended z length >= 5.");
+        }
+        if (buildSpace.getXLength() < Math.max(graph.inputs.size(), graph.outputs.size()) * 2 - 1) {
+            Redilog.LOGGER.warn(
+                    String.format("Limited space for I/O; potentially degenerate layout. Recommended x length >= %s.",
+                            Math.max(graph.inputs.size(), graph.outputs.size()) * 2 - 1));
+        }
         //place inputs and outputs evenly spaced along x
         //inputs
         Iterator<Entry<String, InputExpression>> inputs = graph.inputs.entrySet().stream()
