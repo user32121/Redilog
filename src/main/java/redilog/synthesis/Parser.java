@@ -63,7 +63,7 @@ public class Parser {
     }
 
     //TODO process negative numbers correctly (or add expression evaluation)
-    //TODO underscores are variables not symbols
+    //TODO convert to a FSM
     private static List<Token> tokenize(String input) {
         List<Token> res = new ArrayList<>();
 
@@ -84,7 +84,7 @@ public class Parser {
                     column = 1;
                 }
                 continue;
-            } else if (Character.isLetterOrDigit(c)) {
+            } else if (Character.isLetterOrDigit(c) || c == '_') {
                 if (token == null) {
                     token = new Builder(TypeHint.LETTERS_DIGITS, line, column);
                 } else if (token.getType() != TypeHint.LETTERS_DIGITS) {
@@ -93,12 +93,10 @@ public class Parser {
                 }
                 token.addChar(c);
             } else {
-                if (token == null) {
-                    token = new Builder(TypeHint.SYMBOL, line, column);
-                } else if (token.getType() != TypeHint.SYMBOL) {
+                if (token != null) {
                     res.add(token.build());
-                    token = new Builder(TypeHint.SYMBOL, line, column);
                 }
+                token = new Builder(TypeHint.SYMBOL, line, column);
                 token.addChar(c);
             }
             ++column;

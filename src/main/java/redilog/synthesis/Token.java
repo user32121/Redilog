@@ -74,14 +74,14 @@ public class Token {
         this.column = column;
         switch (hint) {
             case LETTERS_DIGITS:
-                if (Character.isLetter(value.charAt(0))) {
+                if (Character.isDigit(value.charAt(0))) {
+                    type = Type.NUMBER;
+                } else {
                     if (KEYWORDS.contains(value)) {
                         type = Type.KEYWORD;
                     } else {
                         type = Type.VARIABLE;
                     }
-                } else {
-                    type = Type.NUMBER;
                 }
                 break;
             case SYMBOL:
