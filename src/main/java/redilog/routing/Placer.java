@@ -17,7 +17,9 @@ import net.minecraft.block.LeverBlock;
 import net.minecraft.block.WallSignBlock;
 import net.minecraft.block.entity.SignBlockEntity;
 import net.minecraft.block.enums.WallMountLocation;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -42,9 +44,10 @@ public class Placer {
 
     /**
      * Place redstone according to the logic graph in the specified cuboid region
+     * @param feedback the function will add messages that should be relayed to the user
      * @throws RedilogPlacementException
      */
-    public static void placeRedilog(LogicGraph graph, Box buildSpace, World world)
+    public static void placeRedilog(LogicGraph graph, Box buildSpace, World world, List<Text> feedback)
             throws RedilogPlacementException {
         if (buildSpace == null || (buildSpace.getAverageSideLength() == 0)) {
             throw new RedilogPlacementException(
@@ -79,13 +82,13 @@ public class Placer {
             wires.put(expression, new WireDescriptor());
         }
 
-        placeIO(buildSpace, graph, grid, wires);
+        placeIO(buildSpace, graph, grid, wires, feedback);
         placeComponents();
         //view prevents routing wires in sign space
-        routeWires(new Array3DView<>(grid,
-                0, 0, 2, grid.getXLength(), grid.getYLength(), grid.getZLength() - 1), wires);
+        routeWires(new Array3DView<>(grid, 0, 0, 2, grid.getXLength(), grid.getYLength(), grid.getZLength() - 1),
+                wires, feedback);
         transferGridToWorld(buildSpace, world, grid);
-        labelIO(buildSpace, graph, world, wires);
+        labelIO(buildSpace, graph, world, wires, feedback);
         //TODO repeat while adjusting buildSpace and layout to fine tune
     }
 
@@ -112,7 +115,7 @@ public class Placer {
         //TODO for each component, if not placed (wireDesc.input==null), place in random pos
     }
 
-    private static void routeWires(Array3D<BLOCK> grid, Map<Expression, WireDescriptor> wires) {
+    private static void routeWires(Array3D<BLOCK> grid, Map<Expression, WireDescriptor> wires, List<Text> feedback) {
         for (Entry<Expression, WireDescriptor> entry : wires.entrySet()) {
             if (entry.getKey() instanceof InputExpression) {
                 //NO OP
@@ -151,7 +154,7 @@ public class Placer {
 
                 //trace path
                 if (visitedFrom.isValue(end, null)) {
-                    Redilog.LOGGER.error("unable to path {} to {}", starts, end);
+                    logErrorAndCreateMessage(feedback, String.format("unable to path %s to %s", starts, end));
                 } else {
                     Vec3i cur = visitedFrom.get(end);
                     while (!starts.contains(cur)) {
@@ -168,17 +171,18 @@ public class Placer {
     }
 
     private static void placeIO(Box buildSpace, LogicGraph graph, Array3D<BLOCK> grid,
-            Map<Expression, WireDescriptor> wires) throws RedilogPlacementException {
+            Map<Expression, WireDescriptor> wires, List<Text> feedback) throws RedilogPlacementException {
         if (buildSpace.getZLength() < 3) {
             throw new RedilogPlacementException("Not enough space for I/O. Need z length >= 3.");
         } else if (buildSpace.getYLength() < 2) {
             throw new RedilogPlacementException("Not enough space for I/O. Need height >= 2.");
         }
         if (buildSpace.getZLength() < 5) {
-            Redilog.LOGGER.warn("Limited space for I/O; potentially degenerate layout. Recommended z length >= 5.");
+            logWarnAndCreateMessage(feedback,
+                    "Limited space for I/O; potentially degenerate layout. Recommended z length >= 5.");
         }
         if (buildSpace.getXLength() < Math.max(graph.inputs.size(), graph.outputs.size()) * 2 - 1) {
-            Redilog.LOGGER.warn(
+            logWarnAndCreateMessage(feedback,
                     String.format("Limited space for I/O; potentially degenerate layout. Recommended x length >= %s.",
                             Math.max(graph.inputs.size(), graph.outputs.size()) * 2 - 1));
         }
@@ -208,12 +212,12 @@ public class Placer {
     }
 
     private static void labelIO(Box buildSpace, LogicGraph graph, World world,
-            Map<Expression, WireDescriptor> wires) {
+            Map<Expression, WireDescriptor> wires, List<Text> feedback) {
         BlockPos minPos = new BlockPos(buildSpace.minX, buildSpace.minY, buildSpace.minZ);
         for (Entry<String, InputExpression> entry : graph.inputs.entrySet()) {
             Vec3i pos = wires.get(entry.getValue()).source;
             if (pos == null) {
-                Redilog.LOGGER.warn("Failed to label input {}", entry.getKey());
+                logWarnAndCreateMessage(feedback, String.format("Failed to label input %s", entry.getKey()));
                 continue;
             }
             world.setBlockState(minPos.add(pos.add(0, -1, 0)), Blocks.WHITE_CONCRETE.getDefaultState());
@@ -228,7 +232,7 @@ public class Placer {
         for (Entry<String, OutputExpression> entry : graph.outputs.entrySet()) {
             Vec3i pos = wires.get(entry.getValue()).source;
             if (pos == null) {
-                Redilog.LOGGER.warn("Failed to label output {}", entry.getKey());
+                logWarnAndCreateMessage(feedback, String.format("Failed to label output %s", entry.getKey()));
                 continue;
             }
             world.setBlockState(minPos.add(pos.add(0, -1, 0)), Blocks.REDSTONE_LAMP.getDefaultState());
@@ -239,5 +243,15 @@ public class Placer {
                 sbe.setTextOnRow(0, Text.of(entry.getKey()));
             }
         }
+    }
+
+    private static void logWarnAndCreateMessage(List<Text> feedback, String message) {
+        Redilog.LOGGER.warn(message);
+        feedback.add(Text.literal(message).setStyle(Style.EMPTY.withColor(Formatting.YELLOW)));
+    }
+
+    private static void logErrorAndCreateMessage(List<Text> feedback, String message) {
+        Redilog.LOGGER.error(message);
+        feedback.add(Text.literal(message).setStyle(Style.EMPTY.withColor(Formatting.RED)));
     }
 }

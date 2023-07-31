@@ -8,6 +8,9 @@ import java.util.Map.Entry;
 
 import org.apache.commons.lang3.NotImplementedException;
 
+import net.minecraft.text.Style;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Pair;
 import net.minecraft.util.dynamic.Range;
 import redilog.init.Redilog;
@@ -18,15 +21,16 @@ public class Parser {
 
     /**
      * Converts redilog code into a graph that relates the outputs to the inputs, similar to verilog synthesis.
+     * @param feedback the function will add messages that should be relayed to the user
      * @return a graph representation of the redilog
      * @throws RedilogParsingException
      */
-    public static LogicGraph parseRedilog(String redilog) throws RedilogParsingException {
+    public static LogicGraph parseRedilog(String redilog, List<Text> feedback) throws RedilogParsingException {
         redilog = stripComments(redilog);
         List<Token> tokens = tokenize(redilog);
         SymbolGraph sGraph = processTokens(tokens);
-        LogicGraph lGraph = convertGraph(sGraph);
-        warnUnused(lGraph);
+        LogicGraph lGraph = convertGraph(sGraph, feedback);
+        warnUnused(lGraph, feedback);
         return lGraph;
     }
 
@@ -207,7 +211,7 @@ public class Parser {
         return i;
     }
 
-    private static LogicGraph convertGraph(SymbolGraph sGraph) throws RedilogParsingException {
+    private static LogicGraph convertGraph(SymbolGraph sGraph, List<Text> feedback) throws RedilogParsingException {
         sGraph.ResolveRanges();
 
         LogicGraph lGraph = new LogicGraph();
@@ -242,7 +246,8 @@ public class Parser {
             if (symbol.getValue() instanceof SymbolGraph.OutputExpression soe) {
                 Range<Integer> range = symbol.getValue().range;
                 if (soe.value == null) {
-                    Redilog.LOGGER.warn("symbol {} does not have a value", symbol.getKey());
+                    logWarnAndCreateMessage(feedback,
+                            String.format("Symbol %s does not have a value", symbol.getKey()));
                     continue;
                 }
                 Range<Integer> sourceRange = soe.value.range;
@@ -265,20 +270,25 @@ public class Parser {
         return lGraph;
     }
 
-    private static void warnUnused(LogicGraph graph) {
+    private static void warnUnused(LogicGraph graph, List<Text> feedback) {
         for (Entry<String, LogicGraph.Expression> entry : graph.expressions.entrySet()) {
             if (entry.getValue() instanceof LogicGraph.InputExpression ie) {
                 if (!ie.used) {
-                    Redilog.LOGGER.warn("Value of input {} is not used", entry.getKey());
+                    logWarnAndCreateMessage(feedback, String.format("Value of input %s is not used", entry.getKey()));
                 }
             } else if (entry.getValue() instanceof LogicGraph.OutputExpression oe) {
                 if (oe.value == null) {
-                    Redilog.LOGGER.warn("Output {} has no value", entry.getKey());
+                    logWarnAndCreateMessage(feedback, String.format("Output %s has no value", entry.getKey()));
                 }
             } else {
-                Redilog.LOGGER.warn("unused check for {} not implemented", entry.getValue().getClass());
+                logWarnAndCreateMessage(feedback,
+                        String.format("unused check for %s not implemented", entry.getValue().getClass()));
             }
         }
     }
 
+    private static void logWarnAndCreateMessage(List<Text> feedback, String message) {
+        Redilog.LOGGER.warn(message);
+        feedback.add(Text.literal(message).setStyle(Style.EMPTY.withColor(Formatting.YELLOW)));
+    }
 }
