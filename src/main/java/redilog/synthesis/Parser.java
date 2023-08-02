@@ -67,7 +67,6 @@ public class Parser {
     }
 
     //TODO process negative numbers correctly (or add expression evaluation)
-    //TODO convert to a FSM
     private static List<Token> tokenize(String input) {
         List<Token> res = new ArrayList<>();
 
