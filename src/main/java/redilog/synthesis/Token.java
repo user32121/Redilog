@@ -145,10 +145,20 @@ public class Token {
     public int parseAsInt() throws RedilogParsingException {
         String s = getValue(Type.NUMBER);
         try {
-            //TODO handle radix
-            return Integer.parseInt(s);
+            int radix = 10;
+            if (s.startsWith("0b")) {
+                radix = 2;
+            } else if (s.startsWith("0o")) {
+                radix = 8;
+            } else if (s.startsWith("0x")) {
+                radix = 16;
+            }
+            if (radix != 10) {
+                s = s.substring(2);
+            }
+            return Integer.parseInt(s, radix);
         } catch (NumberFormatException e) {
-            throw new RedilogParsingException(String.format("Could not parse integer \"%s\"", s), e);
+            throw new RedilogParsingException(e);
         }
     }
 
