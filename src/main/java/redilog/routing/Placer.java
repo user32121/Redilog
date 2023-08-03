@@ -33,7 +33,8 @@ import redilog.synthesis.LogicGraph.InputExpression;
 import redilog.synthesis.LogicGraph.OutputExpression;
 import redilog.utils.Array3D;
 import redilog.utils.Array3DView;
-import redilog.utils.ConstantSupplier;
+import redilog.utils.Array4D;
+import redilog.utils.Vec4i;
 
 public class Placer {
     public enum BLOCK {
@@ -75,8 +76,9 @@ public class Placer {
             }
         }
 
-        Array3D<BLOCK> grid = new Array3D<>((int) buildSpace.getXLength(), (int) buildSpace.getYLength(),
-                (int) buildSpace.getZLength(), new ConstantSupplier<>(BLOCK.AIR));
+        Array3D<BLOCK> grid = new Array3D.Builder<BLOCK>()
+                .size((int) buildSpace.getXLength(), (int) buildSpace.getYLength(), (int) buildSpace.getZLength())
+                .fill(BLOCK.AIR).build();
         Map<Expression, WireDescriptor> wires = new HashMap<>();
         for (Expression expression : graph.expressions.values()) {
             wires.put(expression, new WireDescriptor());
@@ -124,24 +126,28 @@ public class Placer {
                     continue;
                 }
                 Vec3i end = entry.getValue().source;
-                Set<Vec3i> starts = wires.get(oe.value).wires;
+                Set<Vec4i> starts = wires.get(oe.value).wires;
 
-                //bfs
-                Queue<Vec3i> toProcess = new LinkedList<>();
-                Array3D<Vec3i> visitedFrom = new Array3D<>(grid.getSize());
-                Array3D<Integer> cost = new Array3D<>(grid.getXLength(), grid.getYLength(), grid.getZLength(),
-                        Integer.MAX_VALUE);
-                //NOTE: since bfs does not store state, it may be possible for the wire to loop on itself and override its path
-                toProcess.addAll(starts);
-                starts.forEach(pos -> cost.set(pos, 0));
+                //bfs (4th dimension represents signal strength)
+                Queue<Vec4i> toProcess = new LinkedList<>();
+                Array4D<Vec4i> visitedFrom = new Array4D.Builder<Vec4i>().size(new Vec4i(grid.getSize(), 16)).build();
+                Array4D<Integer> cost = new Array4D.Builder<Integer>().size(new Vec4i(grid.getSize(), 16))
+                        .fill(Integer.MAX_VALUE).build();
+
+                //NOTE: since bfs stores limited state, it may be possible for the wire to loop on itself and override its path
+                for (Vec4i pos : starts) {
+                    toProcess.add(pos);
+                    cost.set(pos, 0);
+                }
                 while (!toProcess.isEmpty()) {
-                    Vec3i cur = toProcess.remove();
+                    Vec4i cur = toProcess.remove();
                     for (BFSStep step : BFSStep.STEPS) {
-                        List<Vec3i[]> validMoves = step.getValidMoves(grid, cur, end);
-                        for (Vec3i[] moves : validMoves) {
-                            Vec3i prev = cur;
-                            for (Vec3i move : moves) {
-                                if (cost.inBounds(move) && cost.get(cur) + step.getCost() < cost.get(move)) {
+                        List<Vec4i[]> validMoves = step.getValidMoves(grid, cur, end);
+                        for (Vec4i[] moves : validMoves) {
+                            Vec4i prev = cur;
+                            for (Vec4i move : moves) {
+                                if (move.getW() > 0 && cost.inBounds(move)
+                                        && cost.get(cur) + step.getCost() < cost.get(move)) {
                                     visitedFrom.set(move, prev);
                                     cost.set(move, cost.get(cur) + step.getCost());
                                     toProcess.add(move);
@@ -152,14 +158,23 @@ public class Placer {
                     }
                 }
 
-                //trace path
-                if (visitedFrom.isValue(end, null)) {
+                //check if path exists
+                int bestPathCost = Integer.MAX_VALUE;
+                int bestPathEnd = -1;
+                for (int i = 1; i < 16; ++i) {
+                    if (cost.get(new Vec4i(end, i)) < bestPathCost) {
+                        bestPathCost = cost.get(new Vec4i(end, i));
+                        bestPathEnd = i;
+                    }
+                }
+                if (bestPathEnd == -1) {
                     logErrorAndCreateMessage(feedback, String.format("unable to path %s to %s", starts, end));
                 } else {
-                    Vec3i cur = visitedFrom.get(end);
+                    //trace path
+                    Vec4i cur = visitedFrom.get(new Vec4i(end, bestPathEnd));
                     while (!starts.contains(cur)) {
-                        grid.set(cur, BLOCK.WIRE);
-                        grid.set(cur.add(0, -1, 0), BLOCK.BLOCK);
+                        grid.set(cur.to3i(), BLOCK.WIRE);
+                        grid.set(cur.to3i().add(0, -1, 0), BLOCK.BLOCK);
                         wires.get(oe.value).wires.add(cur);
                         cur = visitedFrom.get(cur);
                     }
@@ -197,7 +212,7 @@ public class Placer {
             grid.set(x, 0, 2, BLOCK.BLOCK);
             grid.set(x, 1, 2, BLOCK.WIRE);
             wires.get(input).source = new Vec3i(x, 1, 1);
-            wires.get(input).wires.add(new Vec3i(x, 1, 2));
+            wires.get(input).wires.add(new Vec4i(x, 1, 2, 15));
         }
         //outputs
         Iterator<Entry<String, OutputExpression>> outputs = graph.outputs.entrySet().stream()

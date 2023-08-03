@@ -5,13 +5,14 @@ import java.util.List;
 import net.minecraft.util.math.Vec3i;
 import redilog.routing.Placer.BLOCK;
 import redilog.utils.Array3D;
+import redilog.utils.Vec4i;
 
 /**
  * Determins valid tiles a wire can travel to during routing
  */
 public interface BFSStep {
 
-    public static final Vec3i[] EMPTY_PATH = new Vec3i[0];
+    public static final Vec4i[] EMPTY_PATH = new Vec4i[0];
 
     public static final BFSStep[] STEPS = {
             new CardinalStep(),
@@ -25,7 +26,7 @@ public interface BFSStep {
     /**
      * @return valid tiles the wire can extend to. Each array contains a grouping that must be placed together
      */
-    List<Vec3i[]> getValidMoves(Array3D<BLOCK> grid, Vec3i pos, Vec3i target);
+    List<Vec4i[]> getValidMoves(Array3D<BLOCK> grid, Vec4i cur, Vec3i target);
 
     default int getCost() {
         return 10;
