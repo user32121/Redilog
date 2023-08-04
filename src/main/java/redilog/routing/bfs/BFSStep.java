@@ -17,11 +17,11 @@ public interface BFSStep {
 
     public static final BFSStep[] STEPS = {
             new CardinalStep(),
+            new RepeaterCardinalStep(),
             new VerticalCardinalStep(1),
             new VerticalCardinalStep(-1),
             new ExtendedUpwardCardinalStep(),
             new ExtendedDownwardCardinalStep(),
-            //TODO repeaters
     };
 
     /**

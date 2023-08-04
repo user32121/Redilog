@@ -106,11 +106,12 @@ public class Array4D<T> {
     }
 
     public boolean inBounds(Vec4i v) {
-        return inBounds(v.getX(), v.getY(), v.getZ());
+        return inBounds(v.getX(), v.getY(), v.getZ(), v.getW());
     }
 
-    public boolean inBounds(int x, int y, int z) {
-        return x >= 0 && y >= 0 && z >= 0 && x < getXLength() && y < getYLength() && z < getZLength();
+    public boolean inBounds(int x, int y, int z, int w) {
+        return x >= 0 && y >= 0 && z >= 0 && w >= 0 && x < getXLength() && y < getYLength() && z < getZLength()
+                && w < getWLength();
     }
 
     public boolean isValue(Vec4i v, T value) {

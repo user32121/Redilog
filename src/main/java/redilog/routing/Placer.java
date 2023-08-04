@@ -14,6 +14,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.LeverBlock;
+import net.minecraft.block.RepeaterBlock;
 import net.minecraft.block.WallSignBlock;
 import net.minecraft.block.entity.SignBlockEntity;
 import net.minecraft.block.enums.WallMountLocation;
@@ -42,7 +43,10 @@ public class Placer {
         AIR,
         WIRE,
         BLOCK,
-        REPEATER,
+        REPEATER_NORTH,
+        REPEATER_SOUTH,
+        REPEATER_EAST,
+        REPEATER_WEST,
     }
 
     /**
@@ -105,6 +109,14 @@ public class Placer {
                         case AIR -> Blocks.AIR.getDefaultState();
                         case WIRE -> Blocks.REDSTONE_WIRE.getDefaultState();
                         case BLOCK -> Blocks.LIGHT_BLUE_CONCRETE.getDefaultState();
+                        case REPEATER_NORTH ->
+                            Blocks.REPEATER.getDefaultState().with(RepeaterBlock.FACING, Direction.SOUTH);
+                        case REPEATER_SOUTH ->
+                            Blocks.REPEATER.getDefaultState().with(RepeaterBlock.FACING, Direction.NORTH);
+                        case REPEATER_EAST ->
+                            Blocks.REPEATER.getDefaultState().with(RepeaterBlock.FACING, Direction.WEST);
+                        case REPEATER_WEST ->
+                            Blocks.REPEATER.getDefaultState().with(RepeaterBlock.FACING, Direction.EAST);
                         default -> throw new NotImplementedException(grid.get(x, y, z) + " not implemented");
                     };
                     if (state != null) {
@@ -150,13 +162,15 @@ public class Placer {
                         List<StepData[]> validMoves = step.getValidMoves(grid, cur, end);
                         for (StepData[] moves : validMoves) {
                             Vec4i prev = cur;
+                            //TODO prevent a step if it goes through itself, as indicated by visitedFrom
                             for (StepData move : moves) {
-                                if (move.pos.getW() > 0 && cost.inBounds(move.pos)
-                                        && cost.get(cur) + step.getCost() < cost.get(move.pos)) {
+                                if (cost.inBounds(move.pos) && cost.get(cur) + step.getCost() < cost.get(move.pos)) {
                                     visitedFrom.set(move.pos, prev);
                                     cost.set(move.pos, cost.get(cur) + step.getCost());
-                                    toProcess.add(move.pos);
                                     wireType.set(move.pos, move.type);
+                                    if (move.pos.getW() > 0) { //blocks with 0 power don't need to be explored
+                                        toProcess.add(move.pos);
+                                    }
                                 }
                                 prev = move.pos;
                             }
