@@ -27,6 +27,7 @@ import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
 import redilog.init.Redilog;
 import redilog.routing.bfs.BFSStep;
+import redilog.routing.bfs.StepData;
 import redilog.synthesis.LogicGraph;
 import redilog.synthesis.LogicGraph.Expression;
 import redilog.synthesis.LogicGraph.InputExpression;
@@ -41,6 +42,7 @@ public class Placer {
         AIR,
         WIRE,
         BLOCK,
+        REPEATER,
     }
 
     /**
@@ -122,6 +124,7 @@ public class Placer {
             if (entry.getKey() instanceof InputExpression) {
                 //NO OP
             } else if (entry.getKey() instanceof OutputExpression oe) {
+                //TODO generalize bfs (to nonoutputs)
                 if (oe.value == null) {
                     continue;
                 }
@@ -133,6 +136,8 @@ public class Placer {
                 Array4D<Vec4i> visitedFrom = new Array4D.Builder<Vec4i>().size(new Vec4i(grid.getSize(), 16)).build();
                 Array4D<Integer> cost = new Array4D.Builder<Integer>().size(new Vec4i(grid.getSize(), 16))
                         .fill(Integer.MAX_VALUE).build();
+                Array4D<BLOCK> wireType = new Array4D.Builder<BLOCK>().size(new Vec4i(grid.getSize(), 16))
+                        .fill(BLOCK.AIR).build();
 
                 //NOTE: since bfs stores limited state, it may be possible for the wire to loop on itself and override its path
                 for (Vec4i pos : starts) {
@@ -142,17 +147,18 @@ public class Placer {
                 while (!toProcess.isEmpty()) {
                     Vec4i cur = toProcess.remove();
                     for (BFSStep step : BFSStep.STEPS) {
-                        List<Vec4i[]> validMoves = step.getValidMoves(grid, cur, end);
-                        for (Vec4i[] moves : validMoves) {
+                        List<StepData[]> validMoves = step.getValidMoves(grid, cur, end);
+                        for (StepData[] moves : validMoves) {
                             Vec4i prev = cur;
-                            for (Vec4i move : moves) {
-                                if (move.getW() > 0 && cost.inBounds(move)
-                                        && cost.get(cur) + step.getCost() < cost.get(move)) {
-                                    visitedFrom.set(move, prev);
-                                    cost.set(move, cost.get(cur) + step.getCost());
-                                    toProcess.add(move);
+                            for (StepData move : moves) {
+                                if (move.pos.getW() > 0 && cost.inBounds(move.pos)
+                                        && cost.get(cur) + step.getCost() < cost.get(move.pos)) {
+                                    visitedFrom.set(move.pos, prev);
+                                    cost.set(move.pos, cost.get(cur) + step.getCost());
+                                    toProcess.add(move.pos);
+                                    wireType.set(move.pos, move.type);
                                 }
-                                prev = move;
+                                prev = move.pos;
                             }
                         }
                     }
@@ -173,7 +179,7 @@ public class Placer {
                     //trace path
                     Vec4i cur = visitedFrom.get(new Vec4i(end, bestPathEnd));
                     while (!starts.contains(cur)) {
-                        grid.set(cur.to3i(), BLOCK.WIRE);
+                        grid.set(cur.to3i(), wireType.get(cur));
                         grid.set(cur.to3i().add(0, -1, 0), BLOCK.BLOCK);
                         wires.get(oe.value).wires.add(cur);
                         cur = visitedFrom.get(cur);

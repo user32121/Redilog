@@ -1,5 +1,6 @@
 package redilog.routing.bfs;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import net.minecraft.util.math.Vec3i;
@@ -12,7 +13,7 @@ import redilog.utils.Vec4i;
  */
 public interface BFSStep {
 
-    public static final Vec4i[] EMPTY_PATH = new Vec4i[0];
+    public static final StepData[] EMPTY_PATH = new ArrayList<StepData>().toArray(new StepData[0]);
 
     public static final BFSStep[] STEPS = {
             new CardinalStep(),
@@ -26,7 +27,7 @@ public interface BFSStep {
     /**
      * @return valid tiles the wire can extend to. Each array contains a grouping that must be placed together
      */
-    List<Vec4i[]> getValidMoves(Array3D<BLOCK> grid, Vec4i cur, Vec3i target);
+    List<StepData[]> getValidMoves(Array3D<BLOCK> grid, Vec4i cur, Vec3i target);
 
     default int getCost() {
         return 10;

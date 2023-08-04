@@ -24,10 +24,10 @@ public class CardinalStep implements BFSStep {
     }
 
     @Override
-    public final List<Vec4i[]> getValidMoves(Array3D<BLOCK> grid, Vec4i pos, Vec3i target) {
-        List<Vec4i[]> res = new ArrayList<>();
+    public final List<StepData[]> getValidMoves(Array3D<BLOCK> grid, Vec4i pos, Vec3i target) {
+        List<StepData[]> res = new ArrayList<>();
         for (Direction direction : directions) {
-            Vec4i[] validMove = getValidMove(grid, pos, target, direction);
+            StepData[] validMove = getValidMove(grid, pos, target, direction);
             if (validMove.length > 0) {
                 res.add(validMove);
             }
@@ -39,7 +39,7 @@ public class CardinalStep implements BFSStep {
      * @param direction the direction to check
      * @return a valid path the wire can extend to. An empty array means no valid path could be found.
      */
-    public Vec4i[] getValidMove(Array3D<BLOCK> grid, Vec4i pos, Vec3i target, Direction direction) {
+    public StepData[] getValidMove(Array3D<BLOCK> grid, Vec4i pos, Vec3i target, Direction direction) {
         Vec4i next = getNextPosition(pos, direction);
         //next cannot already have something there (unless it's the target)
         if (!next.to3i().equals(target)
@@ -57,7 +57,7 @@ public class CardinalStep implements BFSStep {
                 }
             }
         }
-        return new Vec4i[] { next };
+        return new StepData[] { new StepData(next, BLOCK.WIRE) };
     }
 
     /**

@@ -9,7 +9,7 @@ import redilog.utils.Vec4i;
 public class ExtendedDownwardCardinalStep extends CardinalStep {
 
     @Override
-    public Vec4i[] getValidMove(Array3D<BLOCK> grid, Vec4i pos, Vec3i target, Direction direction) {
+    public StepData[] getValidMove(Array3D<BLOCK> grid, Vec4i pos, Vec3i target, Direction direction) {
         Vec4i next = getNextPosition(pos, direction);
         Vec4i nextNext = getNextPosition(next, direction);
         //next cannot already have something there (unless it's the target)
@@ -46,7 +46,7 @@ public class ExtendedDownwardCardinalStep extends CardinalStep {
                 }
             }
         }
-        return new Vec4i[] { next, nextNext };
+        return new StepData[] { new StepData(next, BLOCK.WIRE), new StepData(nextNext, BLOCK.WIRE) };
     }
 
     @Override
