@@ -8,6 +8,7 @@ import redilog.routing.Placer.BLOCK;
 import redilog.utils.Array3D;
 import redilog.utils.Vec4i;
 
+//TODO sometimes gets wired at right angle, which will not work for repeaters
 public class RepeaterCardinalStep extends CardinalStep {
 
     @Override
@@ -17,7 +18,9 @@ public class RepeaterCardinalStep extends CardinalStep {
         Vec4i nextNext = getNextPosition(next, direction);
         nextNext.setW(15); //repeater output
         //nextNext cannot already have something there (unless it's the target)
-        if (!nextNext.to3i().equals(target) && (!grid.isValue(nextNext.to3i(), BLOCK.AIR)
+        if (!nextNext.to3i().equals(target) && (!grid.isValue(next.to3i(), BLOCK.AIR)
+                || !grid.isValue(next.to3i().add(0, -1, 0), BLOCK.AIR)
+                || !grid.isValue(nextNext.to3i(), BLOCK.AIR)
                 || !grid.isValue(nextNext.to3i().add(0, -1, 0), BLOCK.AIR))) {
             return EMPTY_PATH;
         }
@@ -38,7 +41,7 @@ public class RepeaterCardinalStep extends CardinalStep {
             case EAST -> BLOCK.REPEATER_EAST;
             case WEST -> BLOCK.REPEATER_WEST;
             default -> throw new NotImplementedException(direction.toString() + "not implemented");
-        }), new StepData(nextNext, BLOCK.WIRE) };
+        }, 0), new StepData(nextNext, BLOCK.WIRE, getCost()) };
     }
 
     @Override

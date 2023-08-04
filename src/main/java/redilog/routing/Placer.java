@@ -162,11 +162,11 @@ public class Placer {
                         List<StepData[]> validMoves = step.getValidMoves(grid, cur, end);
                         for (StepData[] moves : validMoves) {
                             Vec4i prev = cur;
-                            //TODO prevent a step if it goes through itself, as indicated by visitedFrom
                             for (StepData move : moves) {
-                                if (cost.inBounds(move.pos) && cost.get(cur) + step.getCost() < cost.get(move.pos)) {
+                                //TODO if any step out of bounds, then don't process it
+                                if (cost.inBounds(move.pos) && cost.get(cur) + move.cost < cost.get(move.pos)) {
                                     visitedFrom.set(move.pos, prev);
-                                    cost.set(move.pos, cost.get(cur) + step.getCost());
+                                    cost.set(move.pos, cost.get(cur) + move.cost);
                                     wireType.set(move.pos, move.type);
                                     if (move.pos.getW() > 0) { //blocks with 0 power don't need to be explored
                                         toProcess.add(move.pos);

@@ -46,7 +46,8 @@ public class ExtendedDownwardCardinalStep extends CardinalStep {
                 }
             }
         }
-        return new StepData[] { new StepData(next, BLOCK.WIRE), new StepData(nextNext, BLOCK.WIRE) };
+        return new StepData[] { new StepData(next, BLOCK.WIRE, getCost()),
+                new StepData(nextNext, BLOCK.WIRE, getCost()) };
     }
 
     @Override

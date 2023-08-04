@@ -57,7 +57,7 @@ public class CardinalStep implements BFSStep {
                 }
             }
         }
-        return new StepData[] { new StepData(next, BLOCK.WIRE) };
+        return new StepData[] { new StepData(next, BLOCK.WIRE, getCost()) };
     }
 
     /**

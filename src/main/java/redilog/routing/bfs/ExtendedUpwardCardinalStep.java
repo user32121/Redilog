@@ -6,6 +6,7 @@ import redilog.routing.Placer.BLOCK;
 import redilog.utils.Array3D;
 import redilog.utils.Vec4i;
 
+//TODO still has some issues with getting cut
 public class ExtendedUpwardCardinalStep extends CardinalStep {
 
     @Override
@@ -13,10 +14,10 @@ public class ExtendedUpwardCardinalStep extends CardinalStep {
         Vec4i next = getNextPosition(pos, direction);
         Vec4i nextNext = getNextPosition(next, direction);
         //next cannot already have something there (unless it's the target)
-        if (!next.to3i().equals(target)
-                && (!grid.isValue(next.to3i(), BLOCK.AIR) || !grid.isValue(next.to3i().add(0, -1, 0), BLOCK.AIR)
-                        || !grid.isValue(nextNext.to3i(), BLOCK.AIR)
-                        || !grid.isValue(nextNext.to3i().add(0, -1, 0), BLOCK.AIR))) {
+        if (!next.to3i().equals(target) && (!grid.isValue(next.to3i(), BLOCK.AIR)
+                || !grid.isValue(next.to3i().add(0, -1, 0), BLOCK.AIR)
+                || !grid.isValue(nextNext.to3i(), BLOCK.AIR)
+                || !grid.isValue(nextNext.to3i().add(0, -1, 0), BLOCK.AIR))) {
             return EMPTY_PATH;
         }
         //make sure next not adjacent to other wires
@@ -45,7 +46,8 @@ public class ExtendedUpwardCardinalStep extends CardinalStep {
                 }
             }
         }
-        return new StepData[] { new StepData(next, BLOCK.WIRE), new StepData(nextNext, BLOCK.WIRE) };
+        return new StepData[] { new StepData(next, BLOCK.WIRE, getCost()),
+                new StepData(nextNext, BLOCK.WIRE, getCost()) };
     }
 
     @Override
@@ -55,6 +57,6 @@ public class ExtendedUpwardCardinalStep extends CardinalStep {
 
     @Override
     public int getCost() {
-        return 15;
+        return 20;
     }
 }

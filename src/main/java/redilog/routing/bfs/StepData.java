@@ -9,9 +9,11 @@ public class StepData {
      */
     public Vec4i pos;
     public BLOCK type;
+    public int cost;
 
-    public StepData(Vec4i pos, BLOCK type) {
+    public StepData(Vec4i pos, BLOCK type, int cost) {
         this.pos = pos;
         this.type = type;
+        this.cost = cost;
     }
 }

@@ -78,4 +78,9 @@ public class Vec4i {
         return true;
     }
 
+    @Override
+    public String toString() {
+        return String.format("Vec4i [x=%d, y=%d, z=%d, w=%d]", x, y, z, w);
+    }
+
 }
