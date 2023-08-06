@@ -2,6 +2,7 @@ package redilog.routing;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -85,7 +86,7 @@ public class Placer {
         Array3D<BLOCK> grid = new Array3D.Builder<BLOCK>()
                 .size((int) buildSpace.getXLength(), (int) buildSpace.getYLength(), (int) buildSpace.getZLength())
                 .fill(BLOCK.AIR).build();
-        Map<Expression, WireDescriptor> wires = new HashMap<>();
+        Map<Expression, WireDescriptor> wires = new LinkedHashMap<>(); //use linkedhashmap to have a deterministic iteration order
         for (Expression expression : graph.expressions.values()) {
             wires.put(expression, new WireDescriptor());
         }
@@ -188,6 +189,7 @@ public class Placer {
                     }
                 }
                 if (bestPathEnd == -1) {
+                    //TODO provide names of nodes
                     logErrorAndCreateMessage(feedback, String.format("unable to path %s to %s", starts, end));
                 } else {
                     //trace path
