@@ -13,4 +13,6 @@ public class WireDescriptor {
     //set of all wires attached to input
     //reading from any of these should give the same logical value (high/low) given sufficient time
     Set<Vec4i> wires = new HashSet<>();
+
+    boolean isDebug;
 }

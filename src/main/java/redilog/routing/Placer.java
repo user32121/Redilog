@@ -87,8 +87,10 @@ public class Placer {
                 .size((int) buildSpace.getXLength(), (int) buildSpace.getYLength(), (int) buildSpace.getZLength())
                 .fill(BLOCK.AIR).build();
         Map<Expression, WireDescriptor> wires = new LinkedHashMap<>(); //use linkedhashmap to have a deterministic iteration order
-        for (Expression expression : graph.expressions.values()) {
-            wires.put(expression, new WireDescriptor());
+        for (Entry<String, Expression> entry : graph.expressions.entrySet()) {
+            WireDescriptor wd = new WireDescriptor();
+            wd.isDebug = entry.getKey().contains("DEBUG");
+            wires.put(entry.getValue(), wd);
         }
 
         placeIO(buildSpace, graph, grid, wires, feedback);
@@ -159,6 +161,7 @@ public class Placer {
                 }
                 while (!toProcess.isEmpty()) {
                     Vec4i cur = toProcess.remove();
+                    //TODO rework so that getValidMoves returns a single move, replace wireType with reference to moves and invoke build() on them when reconstructing path
                     for (BFSStep step : BFSStep.STEPS) {
                         List<StepData[]> validMoves = step.getValidMoves(grid, cur, end);
                         for (StepData[] moves : validMoves) {
@@ -195,6 +198,9 @@ public class Placer {
                     //trace path
                     Vec4i cur = visitedFrom.get(new Vec4i(end, bestPathEnd));
                     while (!starts.contains(cur)) {
+                        if (entry.getValue().isDebug) {
+                            Redilog.LOGGER.info("{}", cur);
+                        }
                         grid.set(cur.to3i(), wireType.get(cur));
                         grid.set(cur.to3i().add(0, -1, 0), BLOCK.BLOCK);
                         wires.get(oe.value).wires.add(cur);
