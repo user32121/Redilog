@@ -6,7 +6,8 @@ import net.minecraft.util.math.Vec3i;
 public class VerticalCardinalStep extends CardinalStep {
     private int verticalOffset;
 
-    public VerticalCardinalStep(int verticalOffset) {
+    public VerticalCardinalStep(int verticalOffset, Direction direction) {
+        super(direction);
         this.verticalOffset = verticalOffset;
     }
 

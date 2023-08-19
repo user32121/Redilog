@@ -29,7 +29,6 @@ import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
 import redilog.init.Redilog;
 import redilog.routing.bfs.BFSStep;
-import redilog.routing.bfs.StepData;
 import redilog.synthesis.LogicGraph;
 import redilog.synthesis.LogicGraph.Expression;
 import redilog.synthesis.LogicGraph.InputExpression;
@@ -151,8 +150,7 @@ public class Placer {
                 Array4D<Vec4i> visitedFrom = new Array4D.Builder<Vec4i>().size(new Vec4i(grid.getSize(), 16)).build();
                 Array4D<Integer> cost = new Array4D.Builder<Integer>().size(new Vec4i(grid.getSize(), 16))
                         .fill(Integer.MAX_VALUE).build();
-                Array4D<BLOCK> wireType = new Array4D.Builder<BLOCK>().size(new Vec4i(grid.getSize(), 16))
-                        .fill(BLOCK.AIR).build();
+                Array4D<BFSStep> wireType = new Array4D.Builder<BFSStep>().size(new Vec4i(grid.getSize(), 16)).build();
 
                 //NOTE: since bfs stores limited state, it may be possible for the wire to loop on itself and override its path
                 for (Vec4i pos : starts) {
@@ -161,22 +159,14 @@ public class Placer {
                 }
                 while (!toProcess.isEmpty()) {
                     Vec4i cur = toProcess.remove();
-                    //TODO rework so that getValidMoves returns a single move, replace wireType with reference to moves and invoke build() on them when reconstructing path
                     for (BFSStep step : BFSStep.STEPS) {
-                        List<StepData[]> validMoves = step.getValidMoves(grid, cur, end);
-                        for (StepData[] moves : validMoves) {
-                            Vec4i prev = cur;
-                            for (StepData move : moves) {
-                                //TODO if any step out of bounds, then don't process it
-                                if (cost.inBounds(move.pos) && cost.get(cur) + move.cost < cost.get(move.pos)) {
-                                    visitedFrom.set(move.pos, prev);
-                                    cost.set(move.pos, cost.get(cur) + move.cost);
-                                    wireType.set(move.pos, move.type);
-                                    if (move.pos.getW() > 0) { //blocks with 0 power don't need to be explored
-                                        toProcess.add(move.pos);
-                                    }
-                                }
-                                prev = move.pos;
+                        Vec4i move = step.getValidMove(grid, cur, end);
+                        if (move != null && cost.inBounds(move) && cost.get(cur) + step.getCost() < cost.get(move)) {
+                            visitedFrom.set(move, cur);
+                            cost.set(move, cost.get(cur) + step.getCost());
+                            wireType.set(move, step);
+                            if (move.getW() > 0) { //blocks with 0 power don't need to be explored
+                                toProcess.add(move);
                             }
                         }
                     }
@@ -201,9 +191,10 @@ public class Placer {
                         if (entry.getValue().isDebug) {
                             Redilog.LOGGER.info("{}", cur);
                         }
-                        grid.set(cur.to3i(), wireType.get(cur));
-                        grid.set(cur.to3i().add(0, -1, 0), BLOCK.BLOCK);
-                        wires.get(oe.value).wires.add(cur);
+                        Vec4i[] placeds = wireType.get(cur).place(visitedFrom.get(cur), grid);
+                        for (Vec4i placed : placeds) {
+                            wires.get(oe.value).wires.add(placed);
+                        }
                         cur = visitedFrom.get(cur);
                     }
                 }
@@ -263,7 +254,7 @@ public class Placer {
                 logWarnAndCreateMessage(feedback, String.format("Failed to label input %s", entry.getKey()));
                 continue;
             }
-            world.setBlockState(minPos.add(pos.add(0, -1, 0)), Blocks.WHITE_CONCRETE.getDefaultState());
+            world.setBlockState(minPos.add(pos.down()), Blocks.WHITE_CONCRETE.getDefaultState());
             world.setBlockState(minPos.add(pos),
                     Blocks.LEVER.getDefaultState().with(LeverBlock.FACE, WallMountLocation.FLOOR));
             world.setBlockState(minPos.add(pos).add(0, -1, -1),
@@ -278,7 +269,7 @@ public class Placer {
                 logWarnAndCreateMessage(feedback, String.format("Failed to label output %s", entry.getKey()));
                 continue;
             }
-            world.setBlockState(minPos.add(pos.add(0, -1, 0)), Blocks.REDSTONE_LAMP.getDefaultState());
+            world.setBlockState(minPos.add(pos.down()), Blocks.REDSTONE_LAMP.getDefaultState());
             world.setBlockState(minPos.add(pos), Blocks.REDSTONE_WIRE.getDefaultState());
             world.setBlockState(minPos.add(pos).add(0, -1, 1),
                     Blocks.BIRCH_WALL_SIGN.getDefaultState().with(WallSignBlock.FACING, Direction.SOUTH));
