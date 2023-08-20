@@ -26,7 +26,6 @@ public interface BFSStep {
             steps.add(new VerticalCardinalStep(1, dir));
             steps.add(new VerticalCardinalStep(-1, dir));
             steps.add(new ExtendedUpwardCardinalStep(dir));
-            steps.add(new ExtendedDownwardCardinalStep(dir));
         }
         return steps.toArray(BFSStep[]::new);
     }

@@ -1,7 +1,7 @@
 package redilog.routing.bfs;
 
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3i;
+import redilog.utils.Vec4i;
 
 public class VerticalCardinalStep extends CardinalStep {
     private int verticalOffset;
@@ -11,8 +11,9 @@ public class VerticalCardinalStep extends CardinalStep {
         this.verticalOffset = verticalOffset;
     }
 
-    public Vec3i getNextPosition(Vec3i pos, Direction direction) {
-        return pos.offset(direction).add(0, verticalOffset, 0);
+    @Override
+    public Vec4i getNextPosition(Vec4i pos, Direction direction) {
+        return super.getNextPosition(pos, direction).add(0, verticalOffset, 0, 0);
     }
 
     @Override

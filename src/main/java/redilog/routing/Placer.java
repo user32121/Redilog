@@ -41,6 +41,7 @@ import redilog.utils.Vec4i;
 public class Placer {
     public enum BLOCK {
         AIR,
+        STRICT_AIR, //a block that must be air, such as above diagonal wires
         WIRE,
         BLOCK,
         REPEATER_NORTH,
@@ -109,6 +110,7 @@ public class Placer {
                 for (int z = 0; z < buildSpace.getZLength(); ++z) {
                     BlockState state = switch (grid.get(x, y, z)) {
                         case AIR -> Blocks.AIR.getDefaultState();
+                        case STRICT_AIR -> Blocks.AIR.getDefaultState();
                         case WIRE -> Blocks.REDSTONE_WIRE.getDefaultState();
                         case BLOCK -> Blocks.LIGHT_BLUE_CONCRETE.getDefaultState();
                         case REPEATER_NORTH ->

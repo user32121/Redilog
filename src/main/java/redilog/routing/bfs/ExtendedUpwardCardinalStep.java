@@ -6,7 +6,6 @@ import redilog.routing.Placer.BLOCK;
 import redilog.utils.Array3D;
 import redilog.utils.Vec4i;
 
-//TODO still has some issues with getting cut
 public class ExtendedUpwardCardinalStep extends CardinalStep {
 
     public ExtendedUpwardCardinalStep(Direction direction) {
@@ -25,7 +24,8 @@ public class ExtendedUpwardCardinalStep extends CardinalStep {
             return null;
         }
         //make sure next not adjacent to other wires
-        for (Direction dir : new Direction[] { direction.rotateYClockwise(), direction.rotateYCounterclockwise() }) {
+        for (Direction dir : new Direction[] { direction.rotateYClockwise(), direction.rotateYCounterclockwise(),
+                direction.getOpposite() }) {
             for (int y = -1; y <= 1; ++y) {
                 Vec3i adjacent = next.to3i().offset(dir).add(0, y, 0);
                 if (!adjacent.equals(target) //ok to be adjacent to target
@@ -71,6 +71,9 @@ public class ExtendedUpwardCardinalStep extends CardinalStep {
         grid.set(next.to3i().down(), BLOCK.BLOCK);
         grid.set(nextNext.to3i(), BLOCK.WIRE);
         grid.set(nextNext.to3i().down(), BLOCK.BLOCK);
+        //make sure not cut by other things
+        grid.set(pos.to3i().up(), BLOCK.STRICT_AIR);
+        grid.set(next.to3i().up(), BLOCK.STRICT_AIR);
         return new Vec4i[] { next, nextNext };
     }
 }
