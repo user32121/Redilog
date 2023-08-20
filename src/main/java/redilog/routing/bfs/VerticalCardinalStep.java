@@ -12,8 +12,8 @@ public class VerticalCardinalStep extends CardinalStep {
     }
 
     @Override
-    public Vec4i getNextPosition(Vec4i pos, Direction direction) {
-        return super.getNextPosition(pos, direction).add(0, verticalOffset, 0, 0);
+    public Vec4i getNextPosition(Vec4i pos) {
+        return super.getNextPosition(pos).add(0, verticalOffset, 0, 0);
     }
 
     @Override

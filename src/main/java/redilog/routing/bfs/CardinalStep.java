@@ -15,7 +15,7 @@ public class CardinalStep implements BFSStep {
 
     @Override
     public Vec4i getValidMove(Array3D<BLOCK> grid, Vec4i pos, Vec3i target) {
-        Vec4i next = getNextPosition(pos, direction);
+        Vec4i next = getNextPosition(pos);
         //next cannot already have something there (unless it's the target)
         if (!next.to3i().equals(target)
                 && (!grid.isValue(next.to3i(), BLOCK.AIR) || !grid.isValue(next.to3i().down(), BLOCK.AIR))) {
@@ -37,16 +37,15 @@ public class CardinalStep implements BFSStep {
 
     /**
      * @param pos the current position
-     * @param direction the current direction
      * @return the next position to explore
      */
-    public Vec4i getNextPosition(Vec4i pos, Direction direction) {
+    public Vec4i getNextPosition(Vec4i pos) {
         return pos.offset(direction).add(0, 0, 0, -1);
     }
 
     @Override
     public Vec4i[] place(Vec4i pos, Array3D<BLOCK> grid) {
-        Vec4i next = getNextPosition(pos, direction);
+        Vec4i next = getNextPosition(pos);
         grid.set(next.to3i(), BLOCK.WIRE);
         grid.set(next.to3i().down(), BLOCK.BLOCK);
         return new Vec4i[] { next };
