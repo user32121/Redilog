@@ -17,9 +17,9 @@ public class RepeaterCardinalStep extends CardinalStep {
 
     @Override
     public Vec4i getValidMove(Array3D<BLOCK> grid, Vec4i pos, Vec3i target) {
-        Vec4i next = getNextPosition(pos, direction);
+        Vec4i next = getNextPosition(pos);
         next.setW(0); //repeater does not provide power except in output direction
-        Vec4i nextNext = getNextPosition(next, direction);
+        Vec4i nextNext = getNextPosition(next);
         nextNext.setW(15); //repeater output
         //nextNext cannot already have something there (unless it's the target)
         if (!nextNext.to3i().equals(target) && (!grid.isValue(next.to3i(), BLOCK.AIR)
@@ -49,9 +49,9 @@ public class RepeaterCardinalStep extends CardinalStep {
 
     @Override
     public Vec4i[] place(Vec4i pos, Array3D<BLOCK> grid) {
-        Vec4i next = getNextPosition(pos, direction);
+        Vec4i next = getNextPosition(pos);
         next.setW(0);
-        Vec4i nextNext = getNextPosition(next, direction);
+        Vec4i nextNext = getNextPosition(next);
         nextNext.setW(15);
         grid.set(next.to3i(), switch (direction) {
             case NORTH -> BLOCK.REPEATER_NORTH;
