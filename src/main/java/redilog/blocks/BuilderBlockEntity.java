@@ -1,5 +1,8 @@
 package redilog.blocks;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -14,7 +17,9 @@ import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerContext;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import redilog.init.Redilog;
@@ -65,14 +70,25 @@ public class BuilderBlockEntity extends BlockEntity implements ExtendedScreenHan
 
     public void build(ServerPlayerEntity player) {
         try {
-            LogicGraph graph = Parser.synthesizeRedilog(redilog);
-            Placer.placeRedilog(graph, buildSpace, world);
+            List<Text> messages = new ArrayList<>();
+
+            Redilog.LOGGER.info("Begin parsing stage");
+            LogicGraph graph = Parser.parseRedilog(redilog, messages);
+            Redilog.LOGGER.info("Begin placing stage");
+            Placer.placeRedilog(graph, buildSpace, world, messages);
+
+            for (Text text : messages) {
+                player.sendMessage(text);
+            }
+            player.sendMessage(Text.of("Build finished."));
         } catch (RedilogParsingException e) {
-            player.sendMessage(Text.of("An error occurred during parsing. See server log for more details."));
+            player.sendMessage(Text.literal("An error occurred during parsing.\n")
+                    .append(Text.literal(e.toString()).setStyle(Style.EMPTY.withColor(Formatting.RED))));
             Redilog.LOGGER.error("An error occurred during parsing", e);
             return;
         } catch (RedilogPlacementException e) {
-            player.sendMessage(Text.of("An error occurred during placement. See server log for more details."));
+            player.sendMessage(Text.literal("An error occurred during placement.\n")
+                    .append(Text.literal(e.toString()).setStyle(Style.EMPTY.withColor(Formatting.RED))));
             Redilog.LOGGER.error("An error occurred during placement", e);
             return;
         } catch (Exception e) {

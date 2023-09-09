@@ -4,13 +4,15 @@ import java.util.HashSet;
 import java.util.Set;
 
 import net.minecraft.util.math.Vec3i;
+import redilog.utils.Vec4i;
 
 public class WireDescriptor {
-    //the block in the node which receives power
-    //this is not necessarily a wire, so do not write over it
-    Vec3i input;
+    //the block which receives power
+    Vec3i source;
 
     //set of all wires attached to input
-    //reading from any of these should give the same value given sufficient time
-    Set<Vec3i> wires = new HashSet<>();
+    //reading from any of these should give the same logical value (high/low) given sufficient time
+    Set<Vec4i> wires = new HashSet<>();
+
+    boolean isDebug;
 }

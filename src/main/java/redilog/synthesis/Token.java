@@ -74,14 +74,14 @@ public class Token {
         this.column = column;
         switch (hint) {
             case LETTERS_DIGITS:
-                if (Character.isLetter(value.charAt(0))) {
+                if (Character.isDigit(value.charAt(0))) {
+                    type = Type.NUMBER;
+                } else {
                     if (KEYWORDS.contains(value)) {
                         type = Type.KEYWORD;
                     } else {
                         type = Type.VARIABLE;
                     }
-                } else {
-                    type = Type.NUMBER;
                 }
                 break;
             case SYMBOL:
@@ -103,7 +103,6 @@ public class Token {
         return column;
     }
 
-    //TODO pass custom message as string
     public String getValue(Token.Type requiredType) throws RedilogParsingException {
         if (type != requiredType) {
             throw new RedilogParsingException(
@@ -122,14 +121,20 @@ public class Token {
      * @throws RedilogParsingException
      */
     public void require(Type requiredType, String... expected) throws RedilogParsingException {
-        String v = getValue(requiredType);
-        for (String s : expected) {
-            if (v.equals(s)) {
-                return;
+        if (type == requiredType) {
+            for (String s : expected) {
+                if (value.equals(s)) {
+                    return;
+                }
             }
         }
-        throw new RedilogParsingException(
-                String.format("Expected one of [\"%s\"] but got %s", String.join("\",\"", expected), this));
+        if (expected.length == 1) {
+            throw new RedilogParsingException(
+                    String.format("Expected \"%s\" but got %s", expected[0], this));
+        } else {
+            throw new RedilogParsingException(
+                    String.format("Expected one of [\"%s\"] but got %s", String.join("\" \"", expected), this));
+        }
     }
 
     /**
@@ -138,12 +143,22 @@ public class Token {
      * @throws RedilogParsingException
      */
     public int parseAsInt() throws RedilogParsingException {
-        getValue(Type.NUMBER);
+        String s = getValue(Type.NUMBER);
         try {
-            //TODO handle radix
-            return Integer.parseInt(value);
+            int radix = 10;
+            if (s.startsWith("0b")) {
+                radix = 2;
+            } else if (s.startsWith("0o")) {
+                radix = 8;
+            } else if (s.startsWith("0x")) {
+                radix = 16;
+            }
+            if (radix != 10) {
+                s = s.substring(2);
+            }
+            return Integer.parseInt(s, radix);
         } catch (NumberFormatException e) {
-            throw new RedilogParsingException("Could not parse integer", e);
+            throw new RedilogParsingException(e);
         }
     }
 
