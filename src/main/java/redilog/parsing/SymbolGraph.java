@@ -1,4 +1,4 @@
-package redilog.synthesis;
+package redilog.parsing;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -6,9 +6,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 
-import org.jetbrains.annotations.Nullable;
-
 import net.minecraft.util.dynamic.Range;
+import redilog.synthesis.LogicGraph;
 
 /**
  * Represents the variables of a graph and how they relate to each other.<p>
@@ -16,45 +15,22 @@ import net.minecraft.util.dynamic.Range;
  * and is reponsible for resolving values such as determining the range of all expressions.
  */
 public class SymbolGraph {
-    public static abstract class Expression {
-        @Nullable
-        public Range<Integer> range;
-
-        public Expression(Range<Integer> range) {
-            this.range = range;
-        }
-    }
-
-    public static class InputExpression extends Expression {
-        public InputExpression(Range<Integer> range) {
-            super(range);
-        }
-    }
-
-    public static class OutputExpression extends Expression {
-        public Expression value;
-
-        public OutputExpression(Range<Integer> range) {
-            super(range);
-        }
-    }
-
-    public Map<String, InputExpression> inputs = new HashMap<>();
-    public Map<String, OutputExpression> outputs = new HashMap<>();
-    public Map<String, Expression> expressions = new HashMap<>();
+    public Map<String, InputSExpression> inputs = new HashMap<>();
+    public Map<String, OutputSExpression> outputs = new HashMap<>();
+    public Map<String, SymbolExpression> expressions = new HashMap<>();
 
     public Map<String, Token> expressionDeclarations = new HashMap<>();
 
     /**
-     * Ensure all {@link Expression expressions} have a nonempty value for their {@link Expression#range}
+     * Ensure all {@link SymbolExpression expressions} have a nonempty value for their {@link SymbolExpression#range}
      * @throws RedilogParsingException
      */
     public void ResolveRanges() throws RedilogParsingException {
         //for secondary resolution due to dependencies
-        Queue<Entry<String, Expression>> toProcess = new LinkedList<>();
+        Queue<Entry<String, SymbolExpression>> toProcess = new LinkedList<>();
         toProcess.addAll(expressions.entrySet());
 
-        Entry<String, Expression> queueMarker = null;
+        Entry<String, SymbolExpression> queueMarker = null;
         while (!toProcess.isEmpty()) {
             if (queueMarker == null) {
                 queueMarker = toProcess.peek();
@@ -63,11 +39,11 @@ public class SymbolGraph {
                         String.format("infinite loop detected for \"%s\" while resolving ranges",
                                 queueMarker.getKey()));
             }
-            Entry<String, Expression> entry = toProcess.remove();
+            Entry<String, SymbolExpression> entry = toProcess.remove();
             if (entry.getValue().range != null) {
                 continue;
             }
-            if (entry.getValue() instanceof OutputExpression oe && oe.value != null) {
+            if (entry.getValue() instanceof OutputSExpression oe && oe.value != null) {
                 if (oe.value.range == null) {
                     toProcess.add(entry);
                     continue;

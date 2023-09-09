@@ -1,4 +1,4 @@
-package redilog.synthesis;
+package redilog.parsing;
 
 import java.util.Set;
 

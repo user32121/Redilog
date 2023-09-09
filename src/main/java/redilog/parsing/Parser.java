@@ -1,4 +1,4 @@
-package redilog.synthesis;
+package redilog.parsing;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,9 +14,12 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Pair;
 import net.minecraft.util.dynamic.Range;
 import redilog.init.Redilog;
-import redilog.synthesis.SymbolGraph.Expression;
-import redilog.synthesis.Token.Builder;
-import redilog.synthesis.Token.TypeHint;
+import redilog.parsing.Token.Builder;
+import redilog.parsing.Token.TypeHint;
+import redilog.synthesis.InputLExpression;
+import redilog.synthesis.LogicExpression;
+import redilog.synthesis.LogicGraph;
+import redilog.synthesis.OutputLExpression;
 
 public class Parser {
 
@@ -155,7 +158,7 @@ public class Parser {
             }
         }
         for (Pair<String, Token> variable : newVariables) {
-            SymbolGraph.Expression expression;
+            SymbolExpression expression;
             String name = variable.getLeft();
             Token declarer = variable.getRight();
             if (graph.expressions.containsKey(name)) {
@@ -163,11 +166,11 @@ public class Parser {
                         String.format("%s already defined at %s", declarer, graph.expressionDeclarations.get(name)));
             }
             if (variableType.equals("input")) {
-                SymbolGraph.InputExpression ie = new SymbolGraph.InputExpression(range);
+                InputSExpression ie = new InputSExpression(range);
                 graph.inputs.put(name, ie);
                 expression = ie;
             } else if (variableType.equals("output")) {
-                SymbolGraph.OutputExpression oe = new SymbolGraph.OutputExpression(range);
+                OutputSExpression oe = new OutputSExpression(range);
                 graph.outputs.put(name, oe);
                 expression = oe;
             } else {
@@ -197,7 +200,7 @@ public class Parser {
             }
             ++j;
         }
-        Expression expression = parseExpression(tokens, i, j - 1);
+        SymbolExpression expression = parseExpression(tokens, i, j - 1);
 
         //TODO line numbers
         // if (!graph.expressions.containsKey(name)) {
@@ -212,7 +215,7 @@ public class Parser {
         // if (graph.outputs.containsKey(value)) {
         //     throw new RedilogParsingException(String.format("output \"%s\" cannot be used as source", value));
         // }
-        if (graph.expressions.get(name) instanceof SymbolGraph.OutputExpression oe) {
+        if (graph.expressions.get(name) instanceof OutputSExpression oe) {
             oe.value = expression;
         } else {
             throw new RedilogParsingException(String.format("expression \"%s\" (%s) cannot be assigned", name,
@@ -221,7 +224,7 @@ public class Parser {
         return j + 1;
     }
 
-    private static SymbolGraph.Expression parseExpression(List<Token> tokens, int start, int end) {
+    private static SymbolExpression parseExpression(List<Token> tokens, int start, int end) {
         //TODO expression parser
         for (int i = start; i <= end; ++i) {
             Redilog.LOGGER.info("{}", tokens.get(i));
@@ -235,21 +238,21 @@ public class Parser {
         LogicGraph lGraph = new LogicGraph();
         lGraph.expressionDeclarations = sGraph.expressionDeclarations;
 
-        Map<SymbolGraph.Expression, String> names = new HashMap<>();
-        for (Entry<String, SymbolGraph.Expression> symbol : sGraph.expressions.entrySet()) {
+        Map<SymbolExpression, String> names = new HashMap<>();
+        for (Entry<String, SymbolExpression> symbol : sGraph.expressions.entrySet()) {
             names.put(symbol.getValue(), symbol.getKey());
 
             Range<Integer> range = symbol.getValue().range;
             //create a wire for each index
             for (int i = range.minInclusive(); i <= range.maxInclusive(); i++) {
-                LogicGraph.Expression wire;
+                LogicExpression wire;
                 String name = symbol.getKey() + "[" + i + "]";
                 if (sGraph.inputs.containsKey(symbol.getKey())) {
-                    LogicGraph.InputExpression ie = new LogicGraph.InputExpression();
+                    InputLExpression ie = new InputLExpression();
                     lGraph.inputs.put(name, ie);
                     wire = ie;
                 } else if (sGraph.outputs.containsKey(symbol.getKey())) {
-                    LogicGraph.OutputExpression oe = new LogicGraph.OutputExpression();
+                    OutputLExpression oe = new OutputLExpression();
                     lGraph.outputs.put(name, oe);
                     wire = oe;
                 } else {
@@ -260,8 +263,8 @@ public class Parser {
         }
 
         //connect subexpressions (wires) (this has to occur in a separate loop to ensure all wires are already generated)
-        for (Entry<String, SymbolGraph.Expression> symbol : sGraph.expressions.entrySet()) {
-            if (symbol.getValue() instanceof SymbolGraph.OutputExpression soe) {
+        for (Entry<String, SymbolExpression> symbol : sGraph.expressions.entrySet()) {
+            if (symbol.getValue() instanceof OutputSExpression soe) {
                 Range<Integer> range = symbol.getValue().range;
                 if (soe.value == null) {
                     logWarnAndCreateMessage(feedback,
@@ -273,8 +276,8 @@ public class Parser {
                     String name = symbol.getKey() + "[" + i + "]";
                     String sourceName = names.get(soe.value) + "["
                             + (i - range.minInclusive() + sourceRange.minInclusive()) + "]";
-                    LogicGraph.Expression wire = lGraph.expressions.get(name);
-                    if (wire instanceof LogicGraph.OutputExpression loe) {
+                    LogicExpression wire = lGraph.expressions.get(name);
+                    if (wire instanceof OutputLExpression loe) {
                         loe.value = lGraph.expressions.get(sourceName);
                         if (lGraph.expressions.get(sourceName) != null)
                             lGraph.expressions.get(sourceName).used = true;
@@ -289,12 +292,12 @@ public class Parser {
     }
 
     private static void warnUnused(LogicGraph graph, List<Text> feedback) {
-        for (Entry<String, LogicGraph.Expression> entry : graph.expressions.entrySet()) {
-            if (entry.getValue() instanceof LogicGraph.InputExpression ie) {
+        for (Entry<String, LogicExpression> entry : graph.expressions.entrySet()) {
+            if (entry.getValue() instanceof InputLExpression ie) {
                 if (!ie.used) {
                     logWarnAndCreateMessage(feedback, String.format("Value of input %s is not used", entry.getKey()));
                 }
-            } else if (entry.getValue() instanceof LogicGraph.OutputExpression oe) {
+            } else if (entry.getValue() instanceof OutputLExpression oe) {
                 if (oe.value == null) {
                     logWarnAndCreateMessage(feedback, String.format("Output %s has no value", entry.getKey()));
                 }

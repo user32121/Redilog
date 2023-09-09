@@ -24,11 +24,11 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import redilog.init.Redilog;
 import redilog.init.RedilogBlocks;
+import redilog.parsing.Parser;
+import redilog.parsing.RedilogParsingException;
 import redilog.routing.Placer;
 import redilog.routing.RedilogPlacementException;
 import redilog.synthesis.LogicGraph;
-import redilog.synthesis.Parser;
-import redilog.synthesis.RedilogParsingException;
 
 public class BuilderBlockEntity extends BlockEntity implements ExtendedScreenHandlerFactory {
     private static final String REDILOG_KEY = "Redilog";

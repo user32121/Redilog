@@ -1,4 +1,4 @@
-package redilog.synthesis;
+package redilog.parsing;
 
 public class RedilogParsingException extends Exception {
     public RedilogParsingException() {
