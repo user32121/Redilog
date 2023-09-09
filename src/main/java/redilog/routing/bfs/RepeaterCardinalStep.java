@@ -8,7 +8,6 @@ import redilog.routing.Placer.BLOCK;
 import redilog.utils.Array3D;
 import redilog.utils.Vec4i;
 
-//TODO sometimes gets wired at right angle, which will not work for repeaters
 public class RepeaterCardinalStep extends CardinalStep {
 
     public RepeaterCardinalStep(Direction direction) {
