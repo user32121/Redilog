@@ -10,9 +10,9 @@ import redilog.parsing.Token;
  * This class can be fed to the {@link redilog.routing.Placer Placer} for placement and routing.
  */
 public class LogicGraph {
-    public Map<String, InputLExpression> inputs = new HashMap<>();
-    public Map<String, OutputLExpression> outputs = new HashMap<>();
-    public Map<String, LogicExpression> expressions = new HashMap<>();
+    public Map<String, InputNode> inputs = new HashMap<>();
+    public Map<String, OutputNode> outputs = new HashMap<>();
+    public Map<String, Node> expressions = new HashMap<>();
 
     public Map<String, Token> expressionDeclarations = new HashMap<>();
 }

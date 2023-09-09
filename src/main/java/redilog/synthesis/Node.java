@@ -1,5 +1,5 @@
 package redilog.synthesis;
 
-public abstract class LogicExpression {
+public abstract class Node {
     public boolean used;
 }

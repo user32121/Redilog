@@ -16,10 +16,10 @@ import net.minecraft.util.dynamic.Range;
 import redilog.init.Redilog;
 import redilog.parsing.Token.Builder;
 import redilog.parsing.Token.TypeHint;
-import redilog.synthesis.InputLExpression;
-import redilog.synthesis.LogicExpression;
+import redilog.synthesis.InputNode;
+import redilog.synthesis.Node;
 import redilog.synthesis.LogicGraph;
-import redilog.synthesis.OutputLExpression;
+import redilog.synthesis.OutputNode;
 
 public class Parser {
 
@@ -158,7 +158,7 @@ public class Parser {
             }
         }
         for (Pair<String, Token> variable : newVariables) {
-            SymbolExpression expression;
+            Expression expression;
             String name = variable.getLeft();
             Token declarer = variable.getRight();
             if (graph.expressions.containsKey(name)) {
@@ -166,11 +166,11 @@ public class Parser {
                         String.format("%s already defined at %s", declarer, graph.expressionDeclarations.get(name)));
             }
             if (variableType.equals("input")) {
-                InputSExpression ie = new InputSExpression(range);
+                InputExpression ie = new InputExpression(range);
                 graph.inputs.put(name, ie);
                 expression = ie;
             } else if (variableType.equals("output")) {
-                OutputSExpression oe = new OutputSExpression(range);
+                OutputExpression oe = new OutputExpression(range);
                 graph.outputs.put(name, oe);
                 expression = oe;
             } else {
@@ -200,7 +200,7 @@ public class Parser {
             }
             ++j;
         }
-        SymbolExpression expression = parseExpression(tokens, i, j - 1);
+        Expression expression = parseExpression(tokens, i, j - 1);
 
         //TODO line numbers
         // if (!graph.expressions.containsKey(name)) {
@@ -215,7 +215,7 @@ public class Parser {
         // if (graph.outputs.containsKey(value)) {
         //     throw new RedilogParsingException(String.format("output \"%s\" cannot be used as source", value));
         // }
-        if (graph.expressions.get(name) instanceof OutputSExpression oe) {
+        if (graph.expressions.get(name) instanceof OutputExpression oe) {
             oe.value = expression;
         } else {
             throw new RedilogParsingException(String.format("expression \"%s\" (%s) cannot be assigned", name,
@@ -224,7 +224,7 @@ public class Parser {
         return j + 1;
     }
 
-    private static SymbolExpression parseExpression(List<Token> tokens, int start, int end) {
+    private static Expression parseExpression(List<Token> tokens, int start, int end) {
         //TODO expression parser
         for (int i = start; i <= end; ++i) {
             Redilog.LOGGER.info("{}", tokens.get(i));
@@ -238,21 +238,21 @@ public class Parser {
         LogicGraph lGraph = new LogicGraph();
         lGraph.expressionDeclarations = sGraph.expressionDeclarations;
 
-        Map<SymbolExpression, String> names = new HashMap<>();
-        for (Entry<String, SymbolExpression> symbol : sGraph.expressions.entrySet()) {
+        Map<Expression, String> names = new HashMap<>();
+        for (Entry<String, Expression> symbol : sGraph.expressions.entrySet()) {
             names.put(symbol.getValue(), symbol.getKey());
 
             Range<Integer> range = symbol.getValue().range;
             //create a wire for each index
             for (int i = range.minInclusive(); i <= range.maxInclusive(); i++) {
-                LogicExpression wire;
+                Node wire;
                 String name = symbol.getKey() + "[" + i + "]";
                 if (sGraph.inputs.containsKey(symbol.getKey())) {
-                    InputLExpression ie = new InputLExpression();
+                    InputNode ie = new InputNode();
                     lGraph.inputs.put(name, ie);
                     wire = ie;
                 } else if (sGraph.outputs.containsKey(symbol.getKey())) {
-                    OutputLExpression oe = new OutputLExpression();
+                    OutputNode oe = new OutputNode();
                     lGraph.outputs.put(name, oe);
                     wire = oe;
                 } else {
@@ -263,8 +263,8 @@ public class Parser {
         }
 
         //connect subexpressions (wires) (this has to occur in a separate loop to ensure all wires are already generated)
-        for (Entry<String, SymbolExpression> symbol : sGraph.expressions.entrySet()) {
-            if (symbol.getValue() instanceof OutputSExpression soe) {
+        for (Entry<String, Expression> symbol : sGraph.expressions.entrySet()) {
+            if (symbol.getValue() instanceof OutputExpression soe) {
                 Range<Integer> range = symbol.getValue().range;
                 if (soe.value == null) {
                     logWarnAndCreateMessage(feedback,
@@ -276,8 +276,8 @@ public class Parser {
                     String name = symbol.getKey() + "[" + i + "]";
                     String sourceName = names.get(soe.value) + "["
                             + (i - range.minInclusive() + sourceRange.minInclusive()) + "]";
-                    LogicExpression wire = lGraph.expressions.get(name);
-                    if (wire instanceof OutputLExpression loe) {
+                    Node wire = lGraph.expressions.get(name);
+                    if (wire instanceof OutputNode loe) {
                         loe.value = lGraph.expressions.get(sourceName);
                         if (lGraph.expressions.get(sourceName) != null)
                             lGraph.expressions.get(sourceName).used = true;
@@ -292,12 +292,12 @@ public class Parser {
     }
 
     private static void warnUnused(LogicGraph graph, List<Text> feedback) {
-        for (Entry<String, LogicExpression> entry : graph.expressions.entrySet()) {
-            if (entry.getValue() instanceof InputLExpression ie) {
+        for (Entry<String, Node> entry : graph.expressions.entrySet()) {
+            if (entry.getValue() instanceof InputNode ie) {
                 if (!ie.used) {
                     logWarnAndCreateMessage(feedback, String.format("Value of input %s is not used", entry.getKey()));
                 }
-            } else if (entry.getValue() instanceof OutputLExpression oe) {
+            } else if (entry.getValue() instanceof OutputNode oe) {
                 if (oe.value == null) {
                     logWarnAndCreateMessage(feedback, String.format("Output %s has no value", entry.getKey()));
                 }

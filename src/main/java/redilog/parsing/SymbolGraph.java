@@ -15,22 +15,22 @@ import redilog.synthesis.LogicGraph;
  * and is reponsible for resolving values such as determining the range of all expressions.
  */
 public class SymbolGraph {
-    public Map<String, InputSExpression> inputs = new HashMap<>();
-    public Map<String, OutputSExpression> outputs = new HashMap<>();
-    public Map<String, SymbolExpression> expressions = new HashMap<>();
+    public Map<String, InputExpression> inputs = new HashMap<>();
+    public Map<String, OutputExpression> outputs = new HashMap<>();
+    public Map<String, Expression> expressions = new HashMap<>();
 
     public Map<String, Token> expressionDeclarations = new HashMap<>();
 
     /**
-     * Ensure all {@link SymbolExpression expressions} have a nonempty value for their {@link SymbolExpression#range}
+     * Ensure all {@link Expression expressions} have a nonempty value for their {@link Expression#range}
      * @throws RedilogParsingException
      */
     public void ResolveRanges() throws RedilogParsingException {
         //for secondary resolution due to dependencies
-        Queue<Entry<String, SymbolExpression>> toProcess = new LinkedList<>();
+        Queue<Entry<String, Expression>> toProcess = new LinkedList<>();
         toProcess.addAll(expressions.entrySet());
 
-        Entry<String, SymbolExpression> queueMarker = null;
+        Entry<String, Expression> queueMarker = null;
         while (!toProcess.isEmpty()) {
             if (queueMarker == null) {
                 queueMarker = toProcess.peek();
@@ -39,11 +39,11 @@ public class SymbolGraph {
                         String.format("infinite loop detected for \"%s\" while resolving ranges",
                                 queueMarker.getKey()));
             }
-            Entry<String, SymbolExpression> entry = toProcess.remove();
+            Entry<String, Expression> entry = toProcess.remove();
             if (entry.getValue().range != null) {
                 continue;
             }
-            if (entry.getValue() instanceof OutputSExpression oe && oe.value != null) {
+            if (entry.getValue() instanceof OutputExpression oe && oe.value != null) {
                 if (oe.value.range == null) {
                     toProcess.add(entry);
                     continue;
