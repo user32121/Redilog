@@ -14,6 +14,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Pair;
 import net.minecraft.util.dynamic.Range;
 import redilog.init.Redilog;
+import redilog.synthesis.SymbolGraph.Expression;
 import redilog.synthesis.Token.Builder;
 import redilog.synthesis.Token.TypeHint;
 
@@ -184,30 +185,48 @@ public class Parser {
 
         String name = tokens.get(i++).getValue(Token.Type.VARIABLE);
         tokens.get(i++).require(Token.Type.SYMBOL, "=");
-        //TODO expression parser
-        String value = tokens.get(i++).getValue(Token.Type.VARIABLE);
-        tokens.get(i++).require(Token.Type.SYMBOL, ";");
+        //find next semicolon (or keyword that indicates missing semicolon)
+        int j = i;
+        while (true) {
+            Token token = tokens.get(j);
+            if (token.getType() == Token.Type.KEYWORD || token.getType() == Token.Type.EOF) {
+                throw new RedilogParsingException(
+                        String.format("\";\" expected between %s and %s", token, tokens.get(i - 1)));
+            } else if (token.getType() == Token.Type.SYMBOL && token.getValue(Token.Type.SYMBOL).equals(";")) {
+                break;
+            }
+            ++j;
+        }
+        Expression expression = parseExpression(tokens, i, j - 1);
 
         //TODO line numbers
-        if (!graph.expressions.containsKey(name)) {
-            throw new RedilogParsingException(String.format("\"%s\" not defined", name));
-        }
-        if (!graph.expressions.containsKey(value)) {
-            throw new RedilogParsingException(String.format("\"%s\" not defined", value));
-        }
-        if (graph.inputs.containsKey(name)) {
-            throw new RedilogParsingException(String.format("input \"%s\" cannot be assigned", name));
-        }
-        if (graph.outputs.containsKey(value)) {
-            throw new RedilogParsingException(String.format("output \"%s\" cannot be used as source", value));
-        }
+        // if (!graph.expressions.containsKey(name)) {
+        //     throw new RedilogParsingException(String.format("\"%s\" not defined", name));
+        // }
+        // if (!graph.expressions.containsKey(value)) {
+        //     throw new RedilogParsingException(String.format("\"%s\" not defined", value));
+        // }
+        // if (graph.inputs.containsKey(name)) {
+        //     throw new RedilogParsingException(String.format("input \"%s\" cannot be assigned", name));
+        // }
+        // if (graph.outputs.containsKey(value)) {
+        //     throw new RedilogParsingException(String.format("output \"%s\" cannot be used as source", value));
+        // }
         if (graph.expressions.get(name) instanceof SymbolGraph.OutputExpression oe) {
-            oe.value = graph.expressions.get(value);
+            oe.value = expression;
         } else {
             throw new RedilogParsingException(String.format("expression \"%s\" (%s) cannot be assigned", name,
                     graph.expressions.get(name).getClass()));
         }
-        return i;
+        return j + 1;
+    }
+
+    private static SymbolGraph.Expression parseExpression(List<Token> tokens, int start, int end) {
+        //TODO expression parser
+        for (int i = start; i <= end; ++i) {
+            Redilog.LOGGER.info("{}", tokens.get(i));
+        }
+        return null;
     }
 
     private static LogicGraph convertGraph(SymbolGraph sGraph, List<Text> feedback) throws RedilogParsingException {
