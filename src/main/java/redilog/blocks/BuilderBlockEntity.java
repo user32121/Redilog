@@ -1,8 +1,5 @@
 package redilog.blocks;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -26,9 +23,12 @@ import redilog.init.Redilog;
 import redilog.init.RedilogBlocks;
 import redilog.parsing.Parser;
 import redilog.parsing.RedilogParsingException;
+import redilog.parsing.SymbolGraph;
 import redilog.routing.Placer;
 import redilog.routing.RedilogPlacementException;
 import redilog.synthesis.LogicGraph;
+import redilog.synthesis.RedilogSynthesisException;
+import redilog.synthesis.Synthesizer;
 
 public class BuilderBlockEntity extends BlockEntity implements ExtendedScreenHandlerFactory {
     private static final String REDILOG_KEY = "Redilog";
@@ -70,21 +70,26 @@ public class BuilderBlockEntity extends BlockEntity implements ExtendedScreenHan
 
     public void build(ServerPlayerEntity player) {
         try {
-            List<Text> messages = new ArrayList<>();
-
             Redilog.LOGGER.info("Begin parsing stage");
-            LogicGraph graph = Parser.parseRedilog(redilog, messages);
-            Redilog.LOGGER.info("Begin placing stage");
-            Placer.placeRedilog(graph, buildSpace, world, messages);
+            player.sendMessage(Text.of("parsing..."));
+            SymbolGraph sGraph = Parser.parseRedilog(redilog, player::sendMessage);
+            Redilog.LOGGER.info("Begin synthesize stage");
+            player.sendMessage(Text.of("synthesizing..."));
+            LogicGraph lGraph = Synthesizer.synthesize(sGraph, player::sendMessage);
+            Redilog.LOGGER.info("Begin placing and routing stage");
+            player.sendMessage(Text.of("placing..."));
+            Placer.placeRedilog(lGraph, buildSpace, world, player::sendMessage);
 
-            for (Text text : messages) {
-                player.sendMessage(text);
-            }
             player.sendMessage(Text.of("Build finished."));
         } catch (RedilogParsingException e) {
             player.sendMessage(Text.literal("An error occurred during parsing.\n")
                     .append(Text.literal(e.toString()).setStyle(Style.EMPTY.withColor(Formatting.RED))));
             Redilog.LOGGER.error("An error occurred during parsing", e);
+            return;
+        } catch (RedilogSynthesisException e) {
+            player.sendMessage(Text.literal("An error occurred during synthesis.\n")
+                    .append(Text.literal(e.toString()).setStyle(Style.EMPTY.withColor(Formatting.RED))));
+            Redilog.LOGGER.error("An error occurred during synthesis", e);
             return;
         } catch (RedilogPlacementException e) {
             player.sendMessage(Text.literal("An error occurred during placement.\n")

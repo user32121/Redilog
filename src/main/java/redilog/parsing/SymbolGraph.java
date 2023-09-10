@@ -8,6 +8,7 @@ import java.util.Queue;
 
 import net.minecraft.util.dynamic.Range;
 import redilog.synthesis.LogicGraph;
+import redilog.synthesis.RedilogSynthesisException;
 
 /**
  * Represents the variables of a graph and how they relate to each other.<p>
@@ -23,9 +24,8 @@ public class SymbolGraph {
 
     /**
      * Ensure all {@link Expression expressions} have a nonempty value for their {@link Expression#range}
-     * @throws RedilogParsingException
      */
-    public void ResolveRanges() throws RedilogParsingException {
+    public void ResolveRanges() throws RedilogSynthesisException {
         //for secondary resolution due to dependencies
         Queue<Entry<String, Expression>> toProcess = new LinkedList<>();
         toProcess.addAll(expressions.entrySet());
@@ -35,7 +35,7 @@ public class SymbolGraph {
             if (queueMarker == null) {
                 queueMarker = toProcess.peek();
             } else if (queueMarker == toProcess.peek()) {
-                throw new RedilogParsingException(
+                throw new RedilogSynthesisException(
                         String.format("infinite loop detected for \"%s\" while resolving ranges",
                                 queueMarker.getKey()));
             }

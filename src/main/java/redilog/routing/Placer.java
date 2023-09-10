@@ -4,11 +4,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.apache.commons.lang3.NotImplementedException;
 
@@ -30,8 +30,8 @@ import net.minecraft.world.World;
 import redilog.init.Redilog;
 import redilog.routing.bfs.BFSStep;
 import redilog.synthesis.InputNode;
-import redilog.synthesis.Node;
 import redilog.synthesis.LogicGraph;
+import redilog.synthesis.Node;
 import redilog.synthesis.OutputNode;
 import redilog.utils.Array3D;
 import redilog.utils.Array3DView;
@@ -55,7 +55,7 @@ public class Placer {
      * @param feedback the function will add messages that should be relayed to the user
      * @throws RedilogPlacementException
      */
-    public static void placeRedilog(LogicGraph graph, Box buildSpace, World world, List<Text> feedback)
+    public static void placeRedilog(LogicGraph graph, Box buildSpace, World world, Consumer<Text> feedback)
             throws RedilogPlacementException {
         if (buildSpace == null || (buildSpace.getAverageSideLength() == 0)) {
             throw new RedilogPlacementException(
@@ -137,7 +137,7 @@ public class Placer {
     }
 
     private static void routeWires(Array3D<BLOCK> grid, Map<Node, WireDescriptor> wires,
-            List<Text> feedback) {
+            Consumer<Text> feedback) {
         for (Entry<Node, WireDescriptor> entry : wires.entrySet()) {
             if (entry.getKey() instanceof InputNode) {
                 //NO OP
@@ -209,7 +209,7 @@ public class Placer {
     }
 
     private static void placeIO(Box buildSpace, LogicGraph graph, Array3D<BLOCK> grid,
-            Map<Node, WireDescriptor> wires, List<Text> feedback) throws RedilogPlacementException {
+            Map<Node, WireDescriptor> wires, Consumer<Text> feedback) throws RedilogPlacementException {
         if (buildSpace.getZLength() < 3) {
             throw new RedilogPlacementException("Not enough space for I/O. Need z length >= 3.");
         } else if (buildSpace.getYLength() < 2) {
@@ -250,7 +250,7 @@ public class Placer {
     }
 
     private static void labelIO(Box buildSpace, LogicGraph graph, World world,
-            Map<Node, WireDescriptor> wires, List<Text> feedback) {
+            Map<Node, WireDescriptor> wires, Consumer<Text> feedback) {
         BlockPos minPos = new BlockPos(buildSpace.minX, buildSpace.minY, buildSpace.minZ);
         for (Entry<String, InputNode> entry : graph.inputs.entrySet()) {
             Vec3i pos = wires.get(entry.getValue()).source;
@@ -283,13 +283,13 @@ public class Placer {
         }
     }
 
-    private static void logWarnAndCreateMessage(List<Text> feedback, String message) {
+    private static void logWarnAndCreateMessage(Consumer<Text> feedback, String message) {
         Redilog.LOGGER.warn(message);
-        feedback.add(Text.literal(message).setStyle(Style.EMPTY.withColor(Formatting.YELLOW)));
+        feedback.accept(Text.literal(message).setStyle(Style.EMPTY.withColor(Formatting.YELLOW)));
     }
 
-    private static void logErrorAndCreateMessage(List<Text> feedback, String message) {
+    private static void logErrorAndCreateMessage(Consumer<Text> feedback, String message) {
         Redilog.LOGGER.error(message);
-        feedback.add(Text.literal(message).setStyle(Style.EMPTY.withColor(Formatting.RED)));
+        feedback.accept(Text.literal(message).setStyle(Style.EMPTY.withColor(Formatting.RED)));
     }
 }
