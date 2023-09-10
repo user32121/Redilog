@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 
-import net.minecraft.util.dynamic.Range;
 import redilog.synthesis.LogicGraph;
 import redilog.synthesis.RedilogSynthesisException;
 
@@ -40,19 +39,12 @@ public class SymbolGraph {
                                 queueMarker.getKey()));
             }
             Entry<String, Expression> entry = toProcess.remove();
-            if (entry.getValue().range != null) {
+            entry.getValue().resolveRange();
+            if (entry.getValue().range == null) {
+                toProcess.add(entry);
                 continue;
             }
-            if (entry.getValue() instanceof OutputExpression oe && oe.value != null) {
-                if (oe.value.range == null) {
-                    toProcess.add(entry);
-                    continue;
-                } else {
-                    entry.getValue().range = oe.value.range;
-                }
-            } else {
-                entry.getValue().range = new Range<Integer>(0, 0);
-            }
+
             queueMarker = null;
         }
     }

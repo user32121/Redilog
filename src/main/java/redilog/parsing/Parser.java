@@ -9,7 +9,6 @@ import org.apache.commons.lang3.NotImplementedException;
 import net.minecraft.text.Text;
 import net.minecraft.util.Pair;
 import net.minecraft.util.dynamic.Range;
-import redilog.init.Redilog;
 import redilog.parsing.Token.Builder;
 import redilog.parsing.Token.TypeHint;
 
@@ -185,40 +184,25 @@ public class Parser {
             if (token.getType() == Token.Type.KEYWORD || token.getType() == Token.Type.EOF) {
                 throw new RedilogParsingException(
                         String.format("\";\" expected between %s and %s", token, tokens.get(i - 1)));
-            } else if (token.getType() == Token.Type.SYMBOL && token.getValue(Token.Type.SYMBOL).equals(";")) {
+            } else if (token.getType() == Token.Type.SYMBOL && token.getValue().equals(";")) {
                 break;
             }
             ++j;
         }
-        Expression expression = parseExpression(tokens, i, j - 1);
+        Expression expression = ExpressionParser.parseExpression(graph, tokens, i, j - 1);
 
         //TODO line numbers
-        // if (!graph.expressions.containsKey(name)) {
-        //     throw new RedilogParsingException(String.format("\"%s\" not defined", name));
-        // }
-        // if (!graph.expressions.containsKey(value)) {
-        //     throw new RedilogParsingException(String.format("\"%s\" not defined", value));
-        // }
-        // if (graph.inputs.containsKey(name)) {
-        //     throw new RedilogParsingException(String.format("input \"%s\" cannot be assigned", name));
-        // }
-        // if (graph.outputs.containsKey(value)) {
-        //     throw new RedilogParsingException(String.format("output \"%s\" cannot be used as source", value));
-        // }
+        if (!graph.expressions.containsKey(name)) {
+            throw new RedilogParsingException(String.format("\"%s\" not defined", name));
+        }
         if (graph.expressions.get(name) instanceof OutputExpression oe) {
             oe.value = expression;
-        } else {
+        } else if (graph.expressions.get(name) instanceof InputExpression) {
             throw new RedilogParsingException(String.format("expression \"%s\" (%s) cannot be assigned", name,
                     graph.expressions.get(name).getClass()));
+        } else {
+            throw new NotImplementedException(String.format("assigning expression \"%s\" not implemented", name));
         }
         return j + 1;
-    }
-
-    private static Expression parseExpression(List<Token> tokens, int start, int end) {
-        //TODO expression parser
-        for (int i = start; i <= end; ++i) {
-            Redilog.LOGGER.info("{}", tokens.get(i));
-        }
-        return null;
     }
 }

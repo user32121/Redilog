@@ -103,6 +103,10 @@ public class Token {
         return column;
     }
 
+    public String getValue() {
+        return value;
+    }
+
     public String getValue(Token.Type requiredType) throws RedilogParsingException {
         if (type != requiredType) {
             throw new RedilogParsingException(

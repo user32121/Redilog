@@ -48,7 +48,7 @@ public class Synthesizer {
                     lGraph.outputs.put(name, oe);
                     wire = oe;
                 } else {
-                    throw new NotImplementedException(symbol.getValue() + "not implemented");
+                    throw new NotImplementedException(symbol.getValue() + " not implemented");
                 }
                 lGraph.expressions.put(name, wire);
             }
@@ -64,6 +64,9 @@ public class Synthesizer {
                     continue;
                 }
                 Range<Integer> sourceRange = soe.value.range;
+                Redilog.LOGGER.info("{}", soe);
+                Redilog.LOGGER.info("{}", soe.value);
+                Redilog.LOGGER.info("{}", soe.value.range);
                 for (int i = range.minInclusive(); i <= range.maxInclusive(); i++) {
                     String name = symbol.getKey() + "[" + i + "]";
                     String sourceName = names.get(soe.value) + "["
@@ -74,7 +77,7 @@ public class Synthesizer {
                         if (lGraph.expressions.get(sourceName) != null)
                             lGraph.expressions.get(sourceName).used = true;
                     } else {
-                        throw new NotImplementedException(wire + "not implemented");
+                        throw new NotImplementedException(wire + " not implemented");
                     }
                 }
             }
