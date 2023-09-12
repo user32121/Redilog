@@ -155,11 +155,11 @@ public class Parser {
                         String.format("%s already defined at %s", declarer, graph.expressionDeclarations.get(name)));
             }
             if (variableType.equals("input")) {
-                InputExpression ie = new InputExpression(range);
+                InputExpression ie = new InputExpression(name, range);
                 graph.inputs.put(name, ie);
                 expression = ie;
             } else if (variableType.equals("output")) {
-                OutputExpression oe = new OutputExpression(range);
+                OutputExpression oe = new OutputExpression(name, range);
                 graph.outputs.put(name, oe);
                 expression = oe;
             } else {

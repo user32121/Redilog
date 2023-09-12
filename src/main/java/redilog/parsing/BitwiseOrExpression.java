@@ -1,6 +1,8 @@
 package redilog.parsing;
 
 import net.minecraft.util.dynamic.Range;
+import redilog.synthesis.Node;
+import redilog.synthesis.OrNode;
 
 public class BitwiseOrExpression extends Expression {
     public Expression input1, input2;
@@ -26,5 +28,19 @@ public class BitwiseOrExpression extends Expression {
         }
         range = new Range<>(0, getMSBNeeded(input1.range, input2.range));
         return true;
+    }
+
+    @Override
+    public Node getNode(int index) throws IndexOutOfBoundsException {
+        if (nodes == null) {
+            nodes = new Node[range.maxInclusive() - range.minInclusive() + 1];
+        }
+        if (nodes[index] == null) {
+            OrNode node = new OrNode();
+            nodes[index] = node;
+            node.input1 = input1.getNode(index);
+            node.input2 = input2.getNode(index);
+        }
+        return nodes[index];
     }
 }

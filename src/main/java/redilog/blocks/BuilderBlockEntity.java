@@ -71,13 +71,13 @@ public class BuilderBlockEntity extends BlockEntity implements ExtendedScreenHan
     public void build(ServerPlayerEntity player) {
         try {
             Redilog.LOGGER.info("Begin parsing stage");
-            player.sendMessage(Text.of("parsing..."));
+            player.sendMessage(Text.of("Parsing..."));
             SymbolGraph sGraph = Parser.parseRedilog(redilog, player::sendMessage);
             Redilog.LOGGER.info("Begin synthesize stage");
-            player.sendMessage(Text.of("synthesizing..."));
+            player.sendMessage(Text.of("Synthesizing..."));
             LogicGraph lGraph = Synthesizer.synthesize(sGraph, player::sendMessage);
             Redilog.LOGGER.info("Begin placing and routing stage");
-            player.sendMessage(Text.of("placing..."));
+            player.sendMessage(Text.of("Placing..."));
             Placer.placeRedilog(lGraph, buildSpace, world, player::sendMessage);
 
             player.sendMessage(Text.of("Build finished."));

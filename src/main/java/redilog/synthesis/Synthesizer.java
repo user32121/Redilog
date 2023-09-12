@@ -30,6 +30,7 @@ public class Synthesizer {
         LogicGraph lGraph = new LogicGraph();
         lGraph.expressionDeclarations = sGraph.expressionDeclarations;
 
+        //TODO delegate wire creation and linking to expressions
         Map<Expression, String> names = new HashMap<>();
         for (Entry<String, Expression> symbol : sGraph.expressions.entrySet()) {
             names.put(symbol.getValue(), symbol.getKey());
@@ -40,11 +41,11 @@ public class Synthesizer {
                 Node wire;
                 String name = symbol.getKey() + "[" + i + "]";
                 if (sGraph.inputs.containsKey(symbol.getKey())) {
-                    InputNode ie = new InputNode();
+                    InputNode ie = new InputNode(name);
                     lGraph.inputs.put(name, ie);
                     wire = ie;
                 } else if (sGraph.outputs.containsKey(symbol.getKey())) {
-                    OutputNode oe = new OutputNode();
+                    OutputNode oe = new OutputNode(name);
                     lGraph.outputs.put(name, oe);
                     wire = oe;
                 } else {

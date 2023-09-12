@@ -66,23 +66,9 @@ public class Placer {
         for (Map.Entry<String, Node> entry : graph.expressions.entrySet()) {
             symbolNames.put(entry.getValue(), entry.getKey());
         }
-        Redilog.LOGGER.info("inputs:");
-        for (var entry : graph.inputs.entrySet()) {
-            Redilog.LOGGER.info("{}", entry.getKey());
-        }
-        Redilog.LOGGER.info("outputs:");
-        for (var entry : graph.outputs.entrySet()) {
-            Redilog.LOGGER.info("{} = {}", entry.getKey(), symbolNames.get(entry.getValue().value));
-        }
-        Redilog.LOGGER.info("other expressions:");
-        for (var entry : graph.expressions.entrySet()) {
-            if (entry.getValue() instanceof InputNode ie
-                    || entry.getValue() instanceof OutputNode oe) {
-                //NO OP
-            } else {
-                throw new NotImplementedException(entry.getValue().getClass() + " not implemented");
-            }
-        }
+        Redilog.LOGGER.info("inputs: " + graph.inputs.size());
+        Redilog.LOGGER.info("outputs: " + graph.inputs.size());
+        Redilog.LOGGER.info("intermediates: " + graph.expressions.size());
 
         Array3D<BLOCK> grid = new Array3D.Builder<BLOCK>()
                 .size((int) buildSpace.getXLength(), (int) buildSpace.getYLength(), (int) buildSpace.getZLength())
