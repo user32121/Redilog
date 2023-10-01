@@ -34,8 +34,11 @@ public class WireExpression extends Expression {
         if (nodes[index] == null) {
             OutputNode node = new OutputNode(String.format("%s[%s]", name, index + range.minInclusive()));
             nodes[index] = node;
-            node.value = value.getNode(index);
+            if (value != null) {
+                node.value = value.getNode(index);
+            }
         }
+        nodes[index].used = true;
         return nodes[index];
     }
 }

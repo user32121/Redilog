@@ -41,6 +41,7 @@ public class BitwiseOrExpression extends Expression {
             node.input1 = input1.getNode(index);
             node.input2 = input2.getNode(index);
         }
+        nodes[index].used = true;
         return nodes[index];
     }
 }

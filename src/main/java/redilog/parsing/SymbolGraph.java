@@ -15,8 +15,6 @@ import redilog.synthesis.RedilogSynthesisException;
  * and is reponsible for resolving values such as determining the range of all expressions.
  */
 public class SymbolGraph {
-    public Map<String, InputExpression> inputs = new HashMap<>();
-    public Map<String, OutputExpression> outputs = new HashMap<>();
     public Map<String, Expression> expressions = new HashMap<>();
 
     public Map<String, Token> expressionDeclarations = new HashMap<>();

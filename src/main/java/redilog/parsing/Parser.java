@@ -156,11 +156,9 @@ public class Parser {
             }
             if (variableType.equals("input")) {
                 InputExpression ie = new InputExpression(name, range);
-                graph.inputs.put(name, ie);
                 expression = ie;
             } else if (variableType.equals("output")) {
                 OutputExpression oe = new OutputExpression(name, range);
-                graph.outputs.put(name, oe);
                 expression = oe;
             } else {
                 throw new NotImplementedException(variableType + " not implemented");

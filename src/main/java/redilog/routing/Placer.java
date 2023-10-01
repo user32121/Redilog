@@ -68,7 +68,7 @@ public class Placer {
         }
         Redilog.LOGGER.info("inputs: " + graph.inputs.size());
         Redilog.LOGGER.info("outputs: " + graph.inputs.size());
-        Redilog.LOGGER.info("intermediates: " + graph.expressions.size());
+        Redilog.LOGGER.info("all nodes: " + graph.expressions.size());
 
         Array3D<BLOCK> grid = new Array3D.Builder<BLOCK>()
                 .size((int) buildSpace.getXLength(), (int) buildSpace.getYLength(), (int) buildSpace.getZLength())

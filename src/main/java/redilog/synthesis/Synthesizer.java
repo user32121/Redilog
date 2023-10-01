@@ -1,19 +1,14 @@
 package redilog.synthesis;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Consumer;
-
-import org.apache.commons.lang3.NotImplementedException;
 
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.dynamic.Range;
 import redilog.init.Redilog;
 import redilog.parsing.Expression;
-import redilog.parsing.OutputExpression;
+import redilog.parsing.InputExpression;
 import redilog.parsing.SymbolGraph;
 
 public class Synthesizer {
@@ -30,56 +25,17 @@ public class Synthesizer {
         LogicGraph lGraph = new LogicGraph();
         lGraph.expressionDeclarations = sGraph.expressionDeclarations;
 
-        //TODO delegate wire creation and linking to expressions
-        Map<Expression, String> names = new HashMap<>();
-        for (Entry<String, Expression> symbol : sGraph.expressions.entrySet()) {
-            names.put(symbol.getValue(), symbol.getKey());
-
-            Range<Integer> range = symbol.getValue().range;
-            //create a wire for each index
-            for (int i = range.minInclusive(); i <= range.maxInclusive(); i++) {
-                Node wire;
-                String name = symbol.getKey() + "[" + i + "]";
-                if (sGraph.inputs.containsKey(symbol.getKey())) {
-                    InputNode ie = new InputNode(name);
-                    lGraph.inputs.put(name, ie);
-                    wire = ie;
-                } else if (sGraph.outputs.containsKey(symbol.getKey())) {
-                    OutputNode oe = new OutputNode(name);
-                    lGraph.outputs.put(name, oe);
-                    wire = oe;
-                } else {
-                    throw new NotImplementedException(symbol.getValue() + " not implemented");
-                }
-                lGraph.expressions.put(name, wire);
-            }
-        }
-
-        //connect subexpressions (wires) (this has to occur in a separate loop to ensure all wires are already generated)
-        for (Entry<String, Expression> symbol : sGraph.expressions.entrySet()) {
-            if (symbol.getValue() instanceof OutputExpression soe) {
-                Range<Integer> range = symbol.getValue().range;
-                if (soe.value == null) {
-                    logWarnAndCreateMessage(feedback,
-                            String.format("Symbol %s does not have a value", symbol.getKey()));
-                    continue;
-                }
-                Range<Integer> sourceRange = soe.value.range;
-                Redilog.LOGGER.info("{}", soe);
-                Redilog.LOGGER.info("{}", soe.value);
-                Redilog.LOGGER.info("{}", soe.value.range);
-                for (int i = range.minInclusive(); i <= range.maxInclusive(); i++) {
-                    String name = symbol.getKey() + "[" + i + "]";
-                    String sourceName = names.get(soe.value) + "["
-                            + (i - range.minInclusive() + sourceRange.minInclusive()) + "]";
-                    Node wire = lGraph.expressions.get(name);
-                    if (wire instanceof OutputNode loe) {
-                        loe.value = lGraph.expressions.get(sourceName);
-                        if (lGraph.expressions.get(sourceName) != null)
-                            lGraph.expressions.get(sourceName).used = true;
-                    } else {
-                        throw new NotImplementedException(wire + " not implemented");
-                    }
+        //ensure all needed nodes are loaded
+        for (Entry<String, Expression> entry : sGraph.expressions.entrySet()) {
+            Expression expression = entry.getValue();
+            for (int i = 0; i <= expression.range.maxInclusive() - expression.range.minInclusive(); i++) {
+                Node node = expression.getNode(i);
+                String name = entry.getKey() + "[" + i + "]";
+                lGraph.expressions.put(name, node);
+                if (node instanceof InputNode in) {
+                    lGraph.inputs.put(name, in);
+                } else if (node instanceof OutputNode on) {
+                    lGraph.outputs.put(name, on);
                 }
             }
         }

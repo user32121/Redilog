@@ -23,7 +23,7 @@ public abstract class Expression {
 
     /**
      * Gets the node at {@code index}. If it is not yet initilized, it should be initialized here.
-     * @throws IndexOutOfBoundsException if {@code index < 0 || index >= range.maxInclusive() - range.minInclusive() + 1}
+     * @throws IndexOutOfBoundsException if {@code index < 0 || index >= range.maxInclusive() - range.minInclusive()}
      */
     public abstract Node getNode(int index) throws IndexOutOfBoundsException;
 }
