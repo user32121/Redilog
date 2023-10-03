@@ -7,6 +7,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
+import java.util.Random;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -32,6 +33,7 @@ import redilog.routing.bfs.BFSStep;
 import redilog.synthesis.InputNode;
 import redilog.synthesis.LogicGraph;
 import redilog.synthesis.Node;
+import redilog.synthesis.OrNode;
 import redilog.synthesis.OutputNode;
 import redilog.utils.Array3D;
 import redilog.utils.Array3DView;
@@ -66,7 +68,7 @@ public class Placer {
         for (Map.Entry<String, Node> entry : graph.expressions.entrySet()) {
             symbolNames.put(entry.getValue(), entry.getKey());
         }
-        Redilog.LOGGER.info("inputs: " + graph.inputs.size());
+        // Redilog.LOGGER.info("inputs: " + graph.inputs.size());
         Redilog.LOGGER.info("outputs: " + graph.inputs.size());
         Redilog.LOGGER.info("all nodes: " + graph.expressions.size());
 
@@ -81,7 +83,7 @@ public class Placer {
         }
 
         placeIO(buildSpace, graph, grid, wires, feedback);
-        placeComponents();
+        placeComponents(buildSpace, grid, wires);
         //view prevents routing wires in sign space
         routeWires(new Array3DView<>(grid, 0, 0, 2, grid.getXLength(), grid.getYLength(), grid.getZLength() - 1),
                 wires, feedback);
@@ -118,78 +120,117 @@ public class Placer {
         }
     }
 
-    private static void placeComponents() {
-        //TODO for each component, if not placed (wireDesc.input==null), place in random pos
+    private static void placeComponents(Box buildSpace, Array3D<BLOCK> grid, Map<Node, WireDescriptor> wires) {
+        //TODO make better deterministic (maybe supply seed as parameter?)
+        Random rng = new Random(100);
+        //check for components that are not placed
+        for (Entry<Node, WireDescriptor> entry : wires.entrySet()) {
+            if (entry.getValue().source == null) {
+                if (entry.getKey() instanceof OrNode on) {
+                    Vec3i pos = new Vec3i(rng.nextInt((int) buildSpace.getXLength() - 1), 1,
+                            rng.nextInt(2, (int) buildSpace.getZLength() - 5));
+                    entry.getValue().source = pos;
+                    entry.getValue().wires.add(new Vec4i(pos.add(0, 0, 2), 15));
+                    //TODO bruh make this an array
+                    grid.set(pos.add(0, -1, 2), BLOCK.BLOCK);
+                    grid.set(pos.add(0, 0, 2), BLOCK.WIRE);
+                    grid.set(pos.add(1, -1, 2), BLOCK.BLOCK);
+                    grid.set(pos.add(1, 0, 2), BLOCK.WIRE);
+                    grid.set(pos.add(1, -1, 1), BLOCK.BLOCK);
+                    grid.set(pos.add(1, 0, 1), BLOCK.REPEATER_SOUTH);
+                    grid.set(pos.add(1, -1, 0), BLOCK.BLOCK);
+                    grid.set(pos.add(1, 0, 0), BLOCK.WIRE);
+                    grid.set(pos.add(-1, -1, 2), BLOCK.BLOCK);
+                    grid.set(pos.add(-1, 0, 2), BLOCK.WIRE);
+                    grid.set(pos.add(-1, -1, 1), BLOCK.BLOCK);
+                    grid.set(pos.add(-1, 0, 1), BLOCK.REPEATER_SOUTH);
+                    grid.set(pos.add(-1, -1, 0), BLOCK.BLOCK);
+                    grid.set(pos.add(-1, 0, 0), BLOCK.WIRE);
+                } else {
+                    throw new NotImplementedException(entry.getKey().getClass() + " not implemented");
+                }
+            }
+        }
     }
 
-    private static void routeWires(Array3D<BLOCK> grid, Map<Node, WireDescriptor> wires,
-            Consumer<Text> feedback) {
+    private static void routeWires(Array3D<BLOCK> grid, Map<Node, WireDescriptor> wires, Consumer<Text> feedback) {
         for (Entry<Node, WireDescriptor> entry : wires.entrySet()) {
-            if (entry.getKey() instanceof InputNode) {
+            if (entry.getKey() instanceof InputNode in) {
                 //NO OP
-            } else if (entry.getKey() instanceof OutputNode oe) {
-                //TODO generalize bfs (to nonoutputs)
-                if (oe.value == null) {
-                    continue;
+            } else if (entry.getKey() instanceof OutputNode on) {
+                if (on.value != null) {
+                    routeBFS(entry.getValue().source, wires.get(on.value).wires, grid, wires, entry.getValue().isDebug,
+                            feedback);
                 }
-                Vec3i end = entry.getValue().source;
-                Set<Vec4i> starts = wires.get(oe.value).wires;
-
-                //bfs (4th dimension represents signal strength)
-                Queue<Vec4i> toProcess = new LinkedList<>();
-                Array4D<Vec4i> visitedFrom = new Array4D.Builder<Vec4i>().size(new Vec4i(grid.getSize(), 16)).build();
-                Array4D<Integer> cost = new Array4D.Builder<Integer>().size(new Vec4i(grid.getSize(), 16))
-                        .fill(Integer.MAX_VALUE).build();
-                Array4D<BFSStep> wireType = new Array4D.Builder<BFSStep>().size(new Vec4i(grid.getSize(), 16)).build();
-
-                //NOTE: since bfs stores limited state, it may be possible for the wire to loop on itself and override its path
-                for (Vec4i pos : starts) {
-                    toProcess.add(pos);
-                    cost.set(pos, 0);
+            } else if (entry.getKey() instanceof OrNode on) {
+                if (on.input1 != null) {
+                    routeBFS(entry.getValue().source.add(-1, 0, 0), wires.get(on.input1).wires, grid, wires,
+                            entry.getValue().isDebug, feedback);
                 }
-                while (!toProcess.isEmpty()) {
-                    Vec4i cur = toProcess.remove();
-                    for (BFSStep step : BFSStep.STEPS) {
-                        Vec4i move = step.getValidMove(grid, cur, end);
-                        if (move != null && cost.inBounds(move) && cost.get(cur) + step.getCost() < cost.get(move)) {
-                            visitedFrom.set(move, cur);
-                            cost.set(move, cost.get(cur) + step.getCost());
-                            wireType.set(move, step);
-                            if (move.getW() > 0) { //blocks with 0 power don't need to be explored
-                                toProcess.add(move);
-                            }
-                        }
-                    }
-                }
-
-                //check if path exists
-                int bestPathCost = Integer.MAX_VALUE;
-                int bestPathEnd = -1;
-                for (int i = 1; i < 16; ++i) {
-                    if (cost.get(new Vec4i(end, i)) < bestPathCost) {
-                        bestPathCost = cost.get(new Vec4i(end, i));
-                        bestPathEnd = i;
-                    }
-                }
-                if (bestPathEnd == -1) {
-                    //TODO provide names of nodes
-                    logErrorAndCreateMessage(feedback, String.format("unable to path %s to %s", starts, end));
-                } else {
-                    //trace path
-                    Vec4i cur = visitedFrom.get(new Vec4i(end, bestPathEnd));
-                    while (!starts.contains(cur)) {
-                        if (entry.getValue().isDebug) {
-                            Redilog.LOGGER.info("{}", cur);
-                        }
-                        Vec4i[] placeds = wireType.get(cur).place(visitedFrom.get(cur), grid);
-                        for (Vec4i placed : placeds) {
-                            wires.get(oe.value).wires.add(placed);
-                        }
-                        cur = visitedFrom.get(cur);
-                    }
+                if (on.input2 != null) {
+                    routeBFS(entry.getValue().source.add(1, 0, 0), wires.get(on.input2).wires, grid, wires,
+                            entry.getValue().isDebug, feedback);
                 }
             } else {
                 throw new NotImplementedException(entry.getKey().getClass() + " not implemented");
+            }
+        }
+    }
+
+    //constructs a path from one of starts to end
+    private static void routeBFS(Vec3i end, Set<Vec4i> starts, Array3D<BLOCK> grid, Map<Node, WireDescriptor> wires,
+            boolean isDebug, Consumer<Text> feedback) {
+        //(4th dimension represents signal strength)
+        Queue<Vec4i> toProcess = new LinkedList<>();
+        Array4D<Vec4i> visitedFrom = new Array4D.Builder<Vec4i>().size(new Vec4i(grid.getSize(), 16)).build();
+        Array4D<Integer> cost = new Array4D.Builder<Integer>().size(new Vec4i(grid.getSize(), 16))
+                .fill(Integer.MAX_VALUE).build();
+        Array4D<BFSStep> wireType = new Array4D.Builder<BFSStep>().size(new Vec4i(grid.getSize(), 16)).build();
+
+        //NOTE: since bfs stores limited state, it may be possible for the wire to loop on itself and override its path
+        for (Vec4i pos : starts) {
+            toProcess.add(pos);
+            cost.set(pos, 0);
+        }
+        while (!toProcess.isEmpty()) {
+            Vec4i cur = toProcess.remove();
+            for (BFSStep step : BFSStep.STEPS) {
+                Vec4i move = step.getValidMove(grid, cur, end);
+                if (move != null && cost.inBounds(move) && cost.get(cur) + step.getCost() < cost.get(move)) {
+                    visitedFrom.set(move, cur);
+                    cost.set(move, cost.get(cur) + step.getCost());
+                    wireType.set(move, step);
+                    if (move.getW() > 0) { //blocks with 0 power don't need to be explored
+                        toProcess.add(move);
+                    }
+                }
+            }
+        }
+
+        //check if path exists
+        int bestPathCost = Integer.MAX_VALUE;
+        int bestPathEnd = -1;
+        for (int i = 1; i < 16; ++i) {
+            if (cost.get(new Vec4i(end, i)) < bestPathCost) {
+                bestPathCost = cost.get(new Vec4i(end, i));
+                bestPathEnd = i;
+            }
+        }
+        if (bestPathEnd == -1) {
+            //TODO provide names of nodes
+            logErrorAndCreateMessage(feedback, String.format("unable to path %s to %s", starts, end));
+        } else {
+            //trace path
+            Vec4i cur = visitedFrom.get(new Vec4i(end, bestPathEnd));
+            while (!starts.contains(cur)) {
+                if (isDebug) {
+                    Redilog.LOGGER.info("{}", cur);
+                }
+                Vec4i[] placeds = wireType.get(cur).place(visitedFrom.get(cur), grid);
+                for (Vec4i placed : placeds) {
+                    starts.add(placed);
+                }
+                cur = visitedFrom.get(cur);
             }
         }
     }

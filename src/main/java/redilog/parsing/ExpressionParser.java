@@ -41,9 +41,12 @@ public class ExpressionParser {
                     //operator
                     while (!operators.empty()) {
                         String o2 = operators.peek();
+                        boolean o2GtO1 = false, o2EqO1 = false;
                         boolean notLParen = !o2.equals("(");
-                        boolean o2GtO1 = OPERATOR_PRECEDENCE.get(o2) > OPERATOR_PRECEDENCE.get(o1);
-                        boolean o2EqO1 = OPERATOR_PRECEDENCE.get(o2) == OPERATOR_PRECEDENCE.get(o1);
+                        if (notLParen) {
+                            o2GtO1 = OPERATOR_PRECEDENCE.get(o2) > OPERATOR_PRECEDENCE.get(o1);
+                            o2EqO1 = OPERATOR_PRECEDENCE.get(o2) == OPERATOR_PRECEDENCE.get(o1);
+                        }
                         boolean leftAssoc = OPERATOR_LEFT_ASSOCIATIVE.get(o1);
                         if (!(notLParen && (o2GtO1 || (o2EqO1 && leftAssoc)))) {
                             break;

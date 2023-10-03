@@ -8,7 +8,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import redilog.init.Redilog;
 import redilog.parsing.Expression;
-import redilog.parsing.InputExpression;
 import redilog.parsing.SymbolGraph;
 
 public class Synthesizer {
@@ -55,7 +54,7 @@ public class Synthesizer {
                 }
             } else {
                 logWarnAndCreateMessage(feedback,
-                        String.format("unused check for %s not implemented", entry.getValue().getClass()));
+                        String.format("%s's unused check is not implemented", entry.getValue().getClass()));
             }
         }
     }
