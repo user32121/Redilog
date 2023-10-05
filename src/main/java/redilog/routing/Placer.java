@@ -13,6 +13,7 @@ import java.util.function.Consumer;
 
 import org.apache.commons.lang3.NotImplementedException;
 
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.LeverBlock;
@@ -127,25 +128,23 @@ public class Placer {
         for (Entry<Node, WireDescriptor> entry : wires.entrySet()) {
             if (entry.getValue().source == null) {
                 if (entry.getKey() instanceof OrNode on) {
-                    Vec3i pos = new Vec3i(rng.nextInt((int) buildSpace.getXLength() - 1), 1,
-                            rng.nextInt(2, (int) buildSpace.getZLength() - 5));
-                    entry.getValue().source = pos;
-                    entry.getValue().wires.add(new Vec4i(pos.add(0, 0, 2), 15));
-                    //TODO bruh make this an array
-                    grid.set(pos.add(0, -1, 2), BLOCK.BLOCK);
-                    grid.set(pos.add(0, 0, 2), BLOCK.WIRE);
-                    grid.set(pos.add(1, -1, 2), BLOCK.BLOCK);
-                    grid.set(pos.add(1, 0, 2), BLOCK.WIRE);
-                    grid.set(pos.add(1, -1, 1), BLOCK.BLOCK);
-                    grid.set(pos.add(1, 0, 1), BLOCK.REPEATER_SOUTH);
-                    grid.set(pos.add(1, -1, 0), BLOCK.BLOCK);
-                    grid.set(pos.add(1, 0, 0), BLOCK.WIRE);
-                    grid.set(pos.add(-1, -1, 2), BLOCK.BLOCK);
-                    grid.set(pos.add(-1, 0, 2), BLOCK.WIRE);
-                    grid.set(pos.add(-1, -1, 1), BLOCK.BLOCK);
-                    grid.set(pos.add(-1, 0, 1), BLOCK.REPEATER_SOUTH);
-                    grid.set(pos.add(-1, -1, 0), BLOCK.BLOCK);
-                    grid.set(pos.add(-1, 0, 0), BLOCK.WIRE);
+                    Vec3i pos = new Vec3i(rng.nextInt((int) buildSpace.getXLength() - 1), 0,
+                            rng.nextInt((int) buildSpace.getZLength() - 3));
+                    entry.getValue().source = pos.add(1, 1, 0);
+                    for (int x = 0; x < 3; x++) {
+                        entry.getValue().wires.add(new Vec4i(pos.add(x, 1, 2), 15));
+                    }
+                    BLOCK[][][] orGateBlocks = {
+                            { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK },
+                                    { BLOCK.WIRE, BLOCK.REPEATER_SOUTH, BLOCK.WIRE }, },
+                            { { BLOCK.AIR, BLOCK.AIR, BLOCK.BLOCK },
+                                    { BLOCK.AIR, BLOCK.AIR, BLOCK.WIRE }, },
+                            { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK },
+                                    { BLOCK.WIRE, BLOCK.REPEATER_SOUTH, BLOCK.WIRE }, }, };
+                    for (BlockPos offset : BlockPos.iterate(0, 0, 0,
+                            orGateBlocks.length - 1, orGateBlocks[0].length - 1, orGateBlocks[0][0].length - 1)) {
+                        grid.set(pos.add(offset), orGateBlocks[offset.getX()][offset.getY()][offset.getZ()]);
+                    }
                 } else {
                     throw new NotImplementedException(entry.getKey().getClass() + " not implemented");
                 }
