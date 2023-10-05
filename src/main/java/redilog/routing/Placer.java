@@ -13,7 +13,6 @@ import java.util.function.Consumer;
 
 import org.apache.commons.lang3.NotImplementedException;
 
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.LeverBlock;
