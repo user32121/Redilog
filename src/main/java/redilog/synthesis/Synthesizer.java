@@ -44,17 +44,13 @@ public class Synthesizer {
 
     private static void warnUnused(LogicGraph graph, Consumer<Text> feedback) {
         for (Entry<String, Node> entry : graph.expressions.entrySet()) {
-            if (entry.getValue() instanceof InputNode ie) {
-                if (!ie.used) {
-                    logWarnAndCreateMessage(feedback, String.format("Value of input %s is not used", entry.getKey()));
-                }
-            } else if (entry.getValue() instanceof OutputNode oe) {
-                if (oe.value == null) {
+            if (!entry.getValue().used) {
+                logWarnAndCreateMessage(feedback, String.format("Value of node %s is not used", entry.getKey()));
+            }
+            if (entry.getValue() instanceof OutputNode on) {
+                if (on.value == null) {
                     logWarnAndCreateMessage(feedback, String.format("Output %s has no value", entry.getKey()));
                 }
-            } else {
-                logWarnAndCreateMessage(feedback,
-                        String.format("%s's unused check is not implemented", entry.getValue().getClass()));
             }
         }
     }

@@ -6,5 +6,6 @@ public class OutputNode extends Node {
 
     public OutputNode(String name) {
         this.name = name;
+        this.used = true;
     }
 }
