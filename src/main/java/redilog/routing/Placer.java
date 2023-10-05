@@ -130,9 +130,9 @@ public class Placer {
                     Vec3i pos = new Vec3i(rng.nextInt((int) buildSpace.getXLength() - 1), 0,
                             rng.nextInt((int) buildSpace.getZLength() - 3));
                     entry.getValue().source = pos.add(1, 1, 0);
-                    for (int x = 0; x < 3; x++) {
-                        entry.getValue().wires.add(new Vec4i(pos.add(x, 1, 2), 15));
-                    }
+                    entry.getValue().wires.add(new Vec4i(pos.add(0, 1, 2), 13));
+                    entry.getValue().wires.add(new Vec4i(pos.add(1, 1, 2), 14));
+                    entry.getValue().wires.add(new Vec4i(pos.add(2, 1, 2), 13));
                     BLOCK[][][] orGateBlocks = {
                             { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK },
                                     { BLOCK.WIRE, BLOCK.REPEATER_SOUTH, BLOCK.WIRE }, },
