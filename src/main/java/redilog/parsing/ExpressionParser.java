@@ -6,8 +6,6 @@ import java.util.Stack;
 
 import org.apache.commons.lang3.NotImplementedException;
 
-import redilog.init.Redilog;
-
 public class ExpressionParser {
 
     //higher means the operator applies first
@@ -16,31 +14,31 @@ public class ExpressionParser {
 
     public static Expression parseExpression(SymbolGraph graph, List<Token> tokens, int start, int end)
             throws RedilogParsingException {
-        // TODO line numbers for error messages
         if (start > end) {
-            throw new RedilogParsingException("Empty expression");
+            throw new RedilogParsingException(String.format("Empty expression near %s", tokens.get(start)));
         }
 
         //https://en.wikipedia.org/wiki/Shunting_yard_algorithm
         Stack<Expression> output = new Stack<>();
-        Stack<String> operators = new Stack<>();
+        Stack<Token> operators = new Stack<>();
         for (int i = start; i <= end; ++i) {
-            if (tokens.get(i).getType() == Token.Type.NUMBER) {
+            Token token = tokens.get(i);
+            if (token.getType() == Token.Type.NUMBER) {
                 //number
-                output.add(new ConstantExpression(tokens.get(i).parseAsInt()));
-            } else if (tokens.get(i).getType() == Token.Type.VARIABLE) {
-                //"number"
-                String value = tokens.get(i).getValue();
+                output.add(new ConstantExpression(token.parseAsInt()));
+            } else if (token.getType() == Token.Type.VARIABLE) {
+                //value
+                String value = token.getValue();
                 if (!graph.expressions.containsKey(value)) {
-                    throw new RedilogParsingException(String.format("\"%s\" not defined", tokens.get(i)));
+                    throw new RedilogParsingException(String.format("\"%s\" not defined", token));
                 }
                 output.add(graph.expressions.get(value));
-            } else if (tokens.get(i).getType() == Token.Type.SYMBOL) {
-                String o1 = tokens.get(i).getValue();
+            } else if (token.getType() == Token.Type.SYMBOL) {
+                String o1 = token.getValue();
                 if (OPERATOR_PRECEDENCE.containsKey(o1)) {
                     //operator
                     while (!operators.empty()) {
-                        String o2 = operators.peek();
+                        String o2 = operators.peek().getValue();
                         boolean o2GtO1 = false, o2EqO1 = false;
                         boolean notLParen = !o2.equals("(");
                         if (notLParen) {
@@ -53,10 +51,10 @@ public class ExpressionParser {
                         }
                         applyOperator(output, operators.pop(), graph);
                     }
-                    operators.push(o1);
+                    operators.push(token);
                 } else if (o1.equals("(")) {
                     //left parenthesis
-                    operators.push(o1);
+                    operators.push(token);
                 } else if (o1.equals(")")) {
                     //right parenthesis
                     while (true) {
@@ -64,8 +62,8 @@ public class ExpressionParser {
                             throw new RedilogParsingException(
                                     String.format("Mismatched parentheses near %s", tokens.get(i)));
                         }
-                        String o2 = operators.pop();
-                        if (o2.equals("(")) {
+                        Token o2 = operators.pop();
+                        if (o2.getValue().equals("(")) {
                             break;
                         }
                         applyOperator(output, o2, graph);
@@ -76,27 +74,29 @@ public class ExpressionParser {
             }
         }
         while (!operators.empty()) {
-            String o = operators.pop();
-            if (o.equals("(")) {
-                throw new RedilogParsingException(String.format("Mismatched parentheses, extra %s", o));
+            Token t = operators.pop();
+            if (t.getValue().equals("(")) {
+                throw new RedilogParsingException(String.format("Mismatched parentheses, extra %s", t));
             }
-            applyOperator(output, o, graph);
+            applyOperator(output, t, graph);
         }
         if (output.empty()) {
-            throw new RedilogParsingException(String.format("Expression produced no output"));
-        } else if (output.size() > 1) {
             throw new RedilogParsingException(
-                    String.format("Expression produced multiple outputs, likely due to missing operators"));
+                    String.format("Expression starting at %s produced no output", tokens.get(start)));
+        } else if (output.size() > 1) {
+            throw new RedilogParsingException(String.format(
+                    "Expression starting at %s produced multiple outputs, likely due to missing operators",
+                    tokens.get(start)));
         }
         return output.pop();
     }
 
-    private static void applyOperator(Stack<Expression> output, String operator, SymbolGraph graph)
+    private static void applyOperator(Stack<Expression> output, Token token, SymbolGraph graph)
             throws RedilogParsingException {
-        Redilog.LOGGER.info("{}", output);
+        String operator = token.getValue();
         if (operator.equals("|")) {
             if (output.size() < 2) {
-                throw new RedilogParsingException("| requires two operands");
+                throw new RedilogParsingException(String.format("%s requires two operands", token));
             }
             Expression e1 = output.pop();
             Expression e2 = output.pop();
