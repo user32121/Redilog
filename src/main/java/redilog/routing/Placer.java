@@ -19,9 +19,7 @@ import net.minecraft.block.RepeaterBlock;
 import net.minecraft.block.WallSignBlock;
 import net.minecraft.block.entity.SignBlockEntity;
 import net.minecraft.block.enums.WallMountLocation;
-import net.minecraft.text.Style;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -37,6 +35,7 @@ import redilog.synthesis.OutputNode;
 import redilog.utils.Array3D;
 import redilog.utils.Array3DView;
 import redilog.utils.Array4D;
+import redilog.utils.LoggerUtil;
 import redilog.utils.Vec4i;
 
 public class Placer {
@@ -189,7 +188,7 @@ public class Placer {
             }
         }
         if (bestPathEnd == -1) {
-            logErrorAndCreateMessage(feedback,
+            LoggerUtil.logErrorAndCreateMessage(feedback,
                     String.format("unable to path %s to %s (%s to %s)",
                             startNode.owner.declaration, endNode.owner.declaration, starts, end),
                     String.format("unable to path %s to %s",
@@ -218,11 +217,11 @@ public class Placer {
             throw new RedilogPlacementException("Not enough space for I/O. Need height >= 2.");
         }
         if (buildSpace.getZLength() < 5) {
-            logWarnAndCreateMessage(feedback,
+            LoggerUtil.logWarnAndCreateMessage(feedback,
                     "Limited space for I/O; potentially degenerate layout. Recommended z length >= 5.");
         }
         if (buildSpace.getXLength() < Math.max(graph.inputs.size(), graph.outputs.size()) * 2 - 1) {
-            logWarnAndCreateMessage(feedback,
+            LoggerUtil.logWarnAndCreateMessage(feedback,
                     String.format("Limited space for I/O; potentially degenerate layout. Recommended x length >= %s.",
                             Math.max(graph.inputs.size(), graph.outputs.size()) * 2 - 1));
         }
@@ -256,7 +255,7 @@ public class Placer {
         for (Entry<String, InputNode> entry : graph.inputs.entrySet()) {
             Vec3i pos = entry.getValue().position;
             if (pos == null) {
-                logWarnAndCreateMessage(feedback, String.format("Failed to label input %s", entry.getKey()));
+                LoggerUtil.logWarnAndCreateMessage(feedback, String.format("Failed to label input %s", entry.getKey()));
                 continue;
             }
             world.setBlockState(minPos.add(pos.down()), Blocks.WHITE_CONCRETE.getDefaultState());
@@ -271,7 +270,8 @@ public class Placer {
         for (Entry<String, OutputNode> entry : graph.outputs.entrySet()) {
             Vec3i pos = entry.getValue().input;
             if (pos == null) {
-                logWarnAndCreateMessage(feedback, String.format("Failed to label output %s", entry.getKey()));
+                LoggerUtil.logWarnAndCreateMessage(feedback,
+                        String.format("Failed to label output %s", entry.getKey()));
                 continue;
             }
             world.setBlockState(minPos.add(pos.down()), Blocks.REDSTONE_LAMP.getDefaultState());
@@ -282,20 +282,5 @@ public class Placer {
                 sbe.setTextOnRow(0, Text.of(entry.getKey()));
             }
         }
-    }
-
-    private static void logWarnAndCreateMessage(Consumer<Text> feedback, String message) {
-        Redilog.LOGGER.warn(message);
-        feedback.accept(Text.literal(message).setStyle(Style.EMPTY.withColor(Formatting.YELLOW)));
-    }
-
-    private static void logErrorAndCreateMessage(Consumer<Text> feedback, String message) {
-        Redilog.LOGGER.error(message);
-        feedback.accept(Text.literal(message).setStyle(Style.EMPTY.withColor(Formatting.RED)));
-    }
-
-    private static void logErrorAndCreateMessage(Consumer<Text> feedback, String logMessage, String chatMessage) {
-        Redilog.LOGGER.error(logMessage);
-        feedback.accept(Text.literal(chatMessage).setStyle(Style.EMPTY.withColor(Formatting.RED)));
     }
 }

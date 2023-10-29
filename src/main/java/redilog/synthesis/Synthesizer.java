@@ -3,12 +3,10 @@ package redilog.synthesis;
 import java.util.Map.Entry;
 import java.util.function.Consumer;
 
-import net.minecraft.text.Style;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import redilog.init.Redilog;
 import redilog.parsing.Expression;
 import redilog.parsing.SymbolGraph;
+import redilog.utils.LoggerUtil;
 
 public class Synthesizer {
     public static LogicGraph synthesize(SymbolGraph sGraph, Consumer<Text> feedback) throws RedilogSynthesisException {
@@ -44,18 +42,15 @@ public class Synthesizer {
     private static void warnUnused(LogicGraph graph, Consumer<Text> feedback) {
         for (Entry<String, Node> entry : graph.nodes.entrySet()) {
             if (!entry.getValue().used) {
-                logWarnAndCreateMessage(feedback, String.format("Value of node %s is not used", entry.getKey()));
+                LoggerUtil.logWarnAndCreateMessage(feedback,
+                        String.format("Value of node %s is not used", entry.getKey()));
             }
             if (entry.getValue() instanceof OutputNode on) {
                 if (on.value == null) {
-                    logWarnAndCreateMessage(feedback, String.format("Output %s has no value", entry.getKey()));
+                    LoggerUtil.logWarnAndCreateMessage(feedback,
+                            String.format("Output %s has no value", entry.getKey()));
                 }
             }
         }
-    }
-
-    private static void logWarnAndCreateMessage(Consumer<Text> feedback, String message) {
-        Redilog.LOGGER.warn(message);
-        feedback.accept(Text.literal(message).setStyle(Style.EMPTY.withColor(Formatting.YELLOW)));
     }
 }
