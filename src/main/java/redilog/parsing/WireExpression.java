@@ -8,8 +8,8 @@ public class WireExpression extends Expression {
     public final String name;
     public Expression value;
 
-    public WireExpression(String name, Range<Integer> range) {
-        super(range);
+    public WireExpression(Token declaration, String name, Range<Integer> range) {
+        super(declaration, range);
         this.name = name;
     }
 

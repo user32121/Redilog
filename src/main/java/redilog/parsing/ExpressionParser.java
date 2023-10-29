@@ -25,7 +25,7 @@ public class ExpressionParser {
             Token token = tokens.get(i);
             if (token.getType() == Token.Type.NUMBER) {
                 //number
-                output.add(new ConstantExpression(token.parseAsInt()));
+                output.add(new ConstantExpression(token, token.parseAsInt()));
             } else if (token.getType() == Token.Type.VARIABLE) {
                 //value
                 String value = token.getValue();
@@ -100,7 +100,7 @@ public class ExpressionParser {
             }
             Expression e1 = output.pop();
             Expression e2 = output.pop();
-            output.push(new BitwiseOrExpression(e1, e2));
+            output.push(new BitwiseOrExpression(token, e1, e2));
         } else {
             throw new NotImplementedException(operator + " not implemented");
         }

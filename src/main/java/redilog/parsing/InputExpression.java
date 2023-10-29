@@ -7,8 +7,8 @@ import redilog.synthesis.Node;
 public class InputExpression extends Expression {
     public final String name;
 
-    public InputExpression(String name, Range<Integer> range) {
-        super(range);
+    public InputExpression(Token declaration, String name, Range<Integer> range) {
+        super(declaration, range);
         this.name = name;
     }
 

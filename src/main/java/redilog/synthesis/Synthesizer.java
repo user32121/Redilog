@@ -22,7 +22,6 @@ public class Synthesizer {
         sGraph.ResolveRanges();
 
         LogicGraph lGraph = new LogicGraph();
-        lGraph.expressionDeclarations = sGraph.expressionDeclarations;
 
         //ensure all needed nodes are loaded
         for (Entry<String, Expression> entry : sGraph.expressions.entrySet()) {

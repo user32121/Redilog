@@ -7,8 +7,8 @@ import redilog.synthesis.OrNode;
 public class BitwiseOrExpression extends Expression {
     public Expression input1, input2;
 
-    public BitwiseOrExpression(Expression input1, Expression input2) {
-        super(null);
+    public BitwiseOrExpression(Token declaration, Expression input1, Expression input2) {
+        super(declaration, null);
         this.input1 = input1;
         this.input2 = input2;
     }

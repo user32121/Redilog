@@ -17,8 +17,6 @@ import redilog.synthesis.RedilogSynthesisException;
 public class SymbolGraph {
     public Map<String, Expression> expressions = new HashMap<>();
 
-    public Map<String, Token> expressionDeclarations = new HashMap<>();
-
     /**
      * Ensure all {@link Expression expressions} have a nonempty value for their {@link Expression#range}
      */

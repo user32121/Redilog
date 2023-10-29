@@ -14,5 +14,6 @@ public class LogicGraph {
     public Map<String, OutputNode> outputs = new HashMap<>();
     public Map<String, Node> expressions = new HashMap<>();
 
+    //TODO remove
     public Map<String, Token> expressionDeclarations = new HashMap<>();
 }

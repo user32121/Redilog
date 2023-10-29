@@ -11,8 +11,8 @@ import redilog.synthesis.Node;
 public class ConstantExpression extends Expression {
     int value;
 
-    public ConstantExpression(int value) {
-        super(new Range<>(0, getMSBNeeded(value)));
+    public ConstantExpression(Token declaration, int value) {
+        super(declaration, new Range<>(0, getMSBNeeded(value)));
         this.value = value;
     }
 

@@ -6,13 +6,15 @@ import net.minecraft.util.dynamic.Range;
 import redilog.synthesis.Node;
 
 public abstract class Expression {
+    public Token declaration;
     @Nullable
     public Range<Integer> range;
 
     protected Node[] nodes;
 
-    public Expression(Range<Integer> range) {
+    public Expression(Token declaration, Range<Integer> range) {
         this.range = range;
+        this.declaration = declaration;
     }
 
     /**

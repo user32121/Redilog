@@ -7,7 +7,6 @@ import java.util.function.Consumer;
 import org.apache.commons.lang3.NotImplementedException;
 
 import net.minecraft.text.Text;
-import net.minecraft.util.Pair;
 import net.minecraft.util.dynamic.Range;
 import redilog.parsing.Token.Builder;
 import redilog.parsing.Token.TypeHint;
@@ -136,35 +135,32 @@ public class Parser {
             range = new Range<>(rangeMin, rangeMax);
         }
         //variable names <name, token that declared it>
-        List<Pair<String, Token>> newVariables = new ArrayList<>();
+        List<Token> newVariables = new ArrayList<>();
         while (true) {
             Token declarer = tokens.get(i++);
-            String name = declarer.getValue(Token.Type.VARIABLE);
-            newVariables.add(new Pair<String, Token>(name, declarer));
+            newVariables.add(declarer);
             tokens.get(i).require(Token.Type.SYMBOL, ",", ";");
             if (tokens.get(i++).getValue(Token.Type.SYMBOL).equals(";")) {
                 break;
             }
         }
-        for (Pair<String, Token> variable : newVariables) {
+        for (Token token : newVariables) {
             Expression expression;
-            String name = variable.getLeft();
-            Token declarer = variable.getRight();
+            String name = token.getValue(Token.Type.VARIABLE);
             if (graph.expressions.containsKey(name)) {
                 throw new RedilogParsingException(
-                        String.format("%s already defined at %s", declarer, graph.expressionDeclarations.get(name)));
+                        String.format("%s already defined at %s", token, graph.expressions.get(name).declaration));
             }
             if (variableType.equals("input")) {
-                InputExpression ie = new InputExpression(name, range);
+                InputExpression ie = new InputExpression(token, name, range);
                 expression = ie;
             } else if (variableType.equals("output")) {
-                OutputExpression oe = new OutputExpression(name, range);
+                OutputExpression oe = new OutputExpression(token, name, range);
                 expression = oe;
             } else {
                 throw new NotImplementedException(variableType + " not implemented");
             }
             graph.expressions.put(name, expression);
-            graph.expressionDeclarations.put(name, declarer);
         }
 
         return i;
