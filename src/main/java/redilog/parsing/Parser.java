@@ -27,7 +27,7 @@ public class Parser {
     }
 
     private static String stripComments(String input) {
-        //slash star
+        //slash star (block comment)
         while (true) {
             int start = input.indexOf("/*");
             if (start == -1) {
@@ -40,10 +40,10 @@ public class Parser {
                 end += "*/".length();
             }
             input = input.substring(0, start)
-                    + input.substring(start, end).replaceAll(".", "") //preserve line info (replace all nonline chars)
+                    + input.substring(start, end).replaceAll(".", " ") //preserve line info (replace all nonline chars)
                     + input.substring(end);
         }
-        //double slash
+        //double slash (line comment)
         while (true) {
             int start = input.indexOf("//");
             if (start == -1) {
@@ -53,7 +53,9 @@ public class Parser {
             if (end == -1) {
                 end = input.length();
             }
-            input = input.substring(0, start) + input.substring(end);
+            input = input.substring(0, start)
+                    + input.substring(start, end).replaceAll(".", " ")
+                    + input.substring(end);
         }
         return input;
     }
