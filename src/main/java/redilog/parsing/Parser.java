@@ -169,7 +169,7 @@ public class Parser {
     private static int processAssignment(SymbolGraph graph, List<Token> tokens, int i) throws RedilogParsingException {
         tokens.get(i++).require(Token.Type.KEYWORD, "assign");
 
-        String name = tokens.get(i++).getValue(Token.Type.VARIABLE);
+        Token name = tokens.get(i++);
         tokens.get(i++).require(Token.Type.SYMBOL, "=");
         //find next semicolon (or keyword that indicates missing semicolon)
         int j = i;
@@ -185,11 +185,10 @@ public class Parser {
         }
         Expression expression = ExpressionParser.parseExpression(graph, tokens, i, j - 1);
 
-        //TODO line numbers
-        if (!graph.expressions.containsKey(name)) {
-            throw new RedilogParsingException(String.format("\"%s\" not defined", name));
+        if (!graph.expressions.containsKey(name.getValue(Token.Type.VARIABLE))) {
+            throw new RedilogParsingException(String.format("%s not defined", name));
         }
-        graph.expressions.get(name).setValue(expression);
+        graph.expressions.get(name.getValue(Token.Type.VARIABLE)).setValue(expression);
         return j + 1;
     }
 }

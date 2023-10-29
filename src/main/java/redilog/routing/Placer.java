@@ -67,7 +67,7 @@ public class Placer {
         for (Map.Entry<String, Node> entry : graph.nodes.entrySet()) {
             symbolNames.put(entry.getValue(), entry.getKey());
         }
-        // Redilog.LOGGER.info("inputs: " + graph.inputs.size());
+        Redilog.LOGGER.info("inputs: " + graph.inputs.size());
         Redilog.LOGGER.info("outputs: " + graph.inputs.size());
         Redilog.LOGGER.info("all nodes: " + graph.nodes.size());
 

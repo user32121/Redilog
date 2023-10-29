@@ -30,7 +30,7 @@ public class ExpressionParser {
                 //value
                 String value = token.getValue();
                 if (!graph.expressions.containsKey(value)) {
-                    throw new RedilogParsingException(String.format("\"%s\" not defined", token));
+                    throw new RedilogParsingException(String.format("%s not defined", token));
                 }
                 output.add(graph.expressions.get(value));
             } else if (token.getType() == Token.Type.SYMBOL) {
