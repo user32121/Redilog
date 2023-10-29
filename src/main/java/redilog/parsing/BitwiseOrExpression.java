@@ -36,7 +36,7 @@ public class BitwiseOrExpression extends Expression {
             nodes = new Node[range.maxInclusive() - range.minInclusive() + 1];
         }
         if (nodes[index] == null) {
-            OrNode node = new OrNode();
+            OrNode node = new OrNode(this, input1.getNode(index), input2.getNode(index));
             nodes[index] = node;
             node.input1 = input1.getNode(index);
             node.input2 = input2.getNode(index);

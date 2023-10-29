@@ -32,7 +32,7 @@ public class WireExpression extends Expression {
             nodes = new Node[range.maxInclusive() - range.minInclusive() + 1];
         }
         if (nodes[index] == null) {
-            OutputNode node = new OutputNode(String.format("%s[%s]", name, index + range.minInclusive()));
+            OutputNode node = new OutputNode(this, String.format("%s[%s]", name, index + range.minInclusive()));
             nodes[index] = node;
             if (value != null) {
                 node.value = value.getNode(index);

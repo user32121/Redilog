@@ -78,7 +78,6 @@ public class Placer {
         Map<Node, WireDescriptor> wires = new LinkedHashMap<>(); //use linkedhashmap to have a deterministic iteration order
         for (Entry<String, Node> entry : graph.expressions.entrySet()) {
             WireDescriptor wd = new WireDescriptor();
-            wd.isDebug = entry.getKey().contains("DEBUG");
             wires.put(entry.getValue(), wd);
         }
 

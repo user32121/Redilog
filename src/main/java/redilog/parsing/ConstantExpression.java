@@ -44,7 +44,7 @@ public class ConstantExpression extends Expression {
             nodes = new Node[range.maxInclusive() - range.minInclusive() + 1];
             int bits = value;
             for (int i = 0; i < nodes.length; ++i) {
-                nodes[i] = new ConstantNode((bits & 1) == 1);
+                nodes[i] = new ConstantNode(this, (bits & 1) == 1);
                 bits >>= 1;
             }
         }
