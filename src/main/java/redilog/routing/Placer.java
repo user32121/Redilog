@@ -128,6 +128,7 @@ public class Placer {
 
     private static void routeWires(Array3D<BLOCK> grid, LogicGraph graph, Consumer<Text> feedback)
             throws RedilogPlacementException {
+        //TODO delegate more
         for (Node node : graph.nodes.values()) {
             if (node instanceof InputNode in) {
                 //NO OP
@@ -232,7 +233,7 @@ public class Placer {
             grid.set(x, 0, 1, BLOCK.BLOCK);
             grid.set(x, 0, 2, BLOCK.BLOCK);
             grid.set(x, 1, 2, BLOCK.WIRE);
-            input.position = new Vec3i(x, 1, 2);
+            input.position = new Vec3i(x, 1, 1);
             input.outputs.add(new Vec4i(x, 1, 2, 15));
         }
         //outputs

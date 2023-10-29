@@ -32,4 +32,9 @@ public class InputExpression extends Expression {
         nodes[index].used = true;
         return nodes[index];
     }
+
+    @Override
+    public void setValue(Expression expression) throws RedilogParsingException {
+        throw new RedilogParsingException(getClass() + " cannot be assigned");
+    }
 }

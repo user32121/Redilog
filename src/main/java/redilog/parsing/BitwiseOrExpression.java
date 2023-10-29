@@ -44,4 +44,9 @@ public class BitwiseOrExpression extends Expression {
         nodes[index].used = true;
         return nodes[index];
     }
+
+    @Override
+    public void setValue(Expression expression) throws RedilogParsingException {
+        throw new RedilogParsingException("Ambiguous input assignment to dual input " + getClass());
+    }
 }

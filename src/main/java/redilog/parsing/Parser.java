@@ -189,14 +189,7 @@ public class Parser {
         if (!graph.expressions.containsKey(name)) {
             throw new RedilogParsingException(String.format("\"%s\" not defined", name));
         }
-        if (graph.expressions.get(name) instanceof OutputExpression oe) {
-            oe.value = expression;
-        } else if (graph.expressions.get(name) instanceof InputExpression) {
-            throw new RedilogParsingException(String.format("expression \"%s\" (%s) cannot be assigned", name,
-                    graph.expressions.get(name).getClass()));
-        } else {
-            throw new NotImplementedException(String.format("assigning expression \"%s\" not implemented", name));
-        }
+        graph.expressions.get(name).setValue(expression);
         return j + 1;
     }
 }

@@ -28,4 +28,6 @@ public abstract class Expression {
      * @throws IndexOutOfBoundsException if {@code index < 0 || index >= range.maxInclusive() - range.minInclusive()}
      */
     public abstract Node getNode(int index) throws IndexOutOfBoundsException;
+
+    public abstract void setValue(Expression expression) throws RedilogParsingException;
 }

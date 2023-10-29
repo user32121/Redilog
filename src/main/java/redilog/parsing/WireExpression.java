@@ -41,4 +41,9 @@ public class WireExpression extends Expression {
         nodes[index].used = true;
         return nodes[index];
     }
+
+    @Override
+    public void setValue(Expression expression) throws RedilogParsingException {
+        value = expression;
+    }
 }
