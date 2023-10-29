@@ -134,14 +134,14 @@ public class Placer {
                 //NO OP
             } else if (node instanceof OutputNode on) {
                 if (on.value != null) {
-                    routeBFS(on.input, on.value.getOutputs(), grid, graph, on.isDebug(), feedback);
+                    routeBFS(on.value.getOutputs(), on.input, grid, graph, on.value, on, feedback);
                 }
             } else if (node instanceof OrNode on) {
                 if (on.input1 != null) {
-                    routeBFS(on.getInput1(), on.input1.getOutputs(), grid, graph, on.isDebug(), feedback);
+                    routeBFS(on.input1.getOutputs(), on.getInput1(), grid, graph, on.input1, on, feedback);
                 }
                 if (on.input2 != null) {
-                    routeBFS(on.getInput2(), on.input2.getOutputs(), grid, graph, on.isDebug(), feedback);
+                    routeBFS(on.input2.getOutputs(), on.getInput2(), grid, graph, on.input2, on, feedback);
                 }
             } else {
                 throw new NotImplementedException(node.getClass() + " not implemented");
@@ -150,8 +150,8 @@ public class Placer {
     }
 
     //constructs a path from one of starts to end
-    private static void routeBFS(Vec3i end, Set<Vec4i> starts, Array3D<BLOCK> grid, LogicGraph graph, boolean isDebug,
-            Consumer<Text> feedback) {
+    private static void routeBFS(Set<Vec4i> starts, Vec3i end, Array3D<BLOCK> grid, LogicGraph graph,
+            Node startNode, Node endNode, Consumer<Text> feedback) {
         //(4th dimension represents signal strength)
         Queue<Vec4i> toProcess = new LinkedList<>();
         Array4D<Vec4i> visitedFrom = new Array4D.Builder<Vec4i>().size(new Vec4i(grid.getSize(), 16)).build();
@@ -189,13 +189,16 @@ public class Placer {
             }
         }
         if (bestPathEnd == -1) {
-            //TODO provide names of nodes
-            logErrorAndCreateMessage(feedback, String.format("unable to path %s to %s", starts, end));
+            logErrorAndCreateMessage(feedback,
+                    String.format("unable to path %s to %s (%s to %s)",
+                            startNode.owner.declaration, endNode.owner.declaration, starts, end),
+                    String.format("unable to path %s to %s",
+                            startNode.owner.declaration, endNode.owner.declaration));
         } else {
             //trace path
             Vec4i cur = visitedFrom.get(new Vec4i(end, bestPathEnd));
             while (!starts.contains(cur)) {
-                if (isDebug) {
+                if (endNode.isDebug()) {
                     Redilog.LOGGER.info("{}", cur);
                 }
                 Vec4i[] placeds = wireType.get(cur).place(visitedFrom.get(cur), grid);
@@ -289,5 +292,10 @@ public class Placer {
     private static void logErrorAndCreateMessage(Consumer<Text> feedback, String message) {
         Redilog.LOGGER.error(message);
         feedback.accept(Text.literal(message).setStyle(Style.EMPTY.withColor(Formatting.RED)));
+    }
+
+    private static void logErrorAndCreateMessage(Consumer<Text> feedback, String logMessage, String chatMessage) {
+        Redilog.LOGGER.error(logMessage);
+        feedback.accept(Text.literal(chatMessage).setStyle(Style.EMPTY.withColor(Formatting.RED)));
     }
 }
