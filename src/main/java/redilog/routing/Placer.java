@@ -2,7 +2,6 @@ package redilog.routing;
 
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -65,29 +64,24 @@ public class Placer {
         }
 
         Map<Node, String> symbolNames = new HashMap<>();
-        for (Map.Entry<String, Node> entry : graph.expressions.entrySet()) {
+        for (Map.Entry<String, Node> entry : graph.nodes.entrySet()) {
             symbolNames.put(entry.getValue(), entry.getKey());
         }
         // Redilog.LOGGER.info("inputs: " + graph.inputs.size());
         Redilog.LOGGER.info("outputs: " + graph.inputs.size());
-        Redilog.LOGGER.info("all nodes: " + graph.expressions.size());
+        Redilog.LOGGER.info("all nodes: " + graph.nodes.size());
 
         Array3D<BLOCK> grid = new Array3D.Builder<BLOCK>()
                 .size((int) buildSpace.getXLength(), (int) buildSpace.getYLength(), (int) buildSpace.getZLength())
                 .fill(BLOCK.AIR).build();
-        Map<Node, WireDescriptor> wires = new LinkedHashMap<>(); //use linkedhashmap to have a deterministic iteration order
-        for (Entry<String, Node> entry : graph.expressions.entrySet()) {
-            WireDescriptor wd = new WireDescriptor();
-            wires.put(entry.getValue(), wd);
-        }
 
-        placeIO(buildSpace, graph, grid, wires, feedback);
-        placeComponents(buildSpace, grid, wires);
+        placeIO(buildSpace, grid, graph, feedback);
+        placeComponents(buildSpace, grid, graph);
         //view prevents routing wires in sign space
         routeWires(new Array3DView<>(grid, 0, 0, 2, grid.getXLength(), grid.getYLength(), grid.getZLength() - 1),
-                wires, feedback);
+                graph, feedback);
         transferGridToWorld(buildSpace, world, grid);
-        labelIO(buildSpace, graph, world, wires, feedback);
+        labelIO(buildSpace, graph, world, feedback);
         //TODO repeat while adjusting buildSpace and layout to fine tune
     }
 
@@ -119,64 +113,44 @@ public class Placer {
         }
     }
 
-    private static void placeComponents(Box buildSpace, Array3D<BLOCK> grid, Map<Node, WireDescriptor> wires) {
+    private static void placeComponents(Box buildSpace, Array3D<BLOCK> grid, LogicGraph graph) {
         //TODO make better deterministic (maybe supply seed as parameter?)
         Random rng = new Random(100);
         //check for components that are not placed
-        for (Entry<Node, WireDescriptor> entry : wires.entrySet()) {
-            if (entry.getValue().source == null) {
-                if (entry.getKey() instanceof OrNode on) {
-                    Vec3i pos = new Vec3i(rng.nextInt((int) buildSpace.getXLength() - 1), 0,
-                            rng.nextInt((int) buildSpace.getZLength() - 3));
-                    entry.getValue().source = pos.add(1, 1, 0);
-                    entry.getValue().wires.add(new Vec4i(pos.add(0, 1, 2), 13));
-                    entry.getValue().wires.add(new Vec4i(pos.add(1, 1, 2), 14));
-                    entry.getValue().wires.add(new Vec4i(pos.add(2, 1, 2), 13));
-                    BLOCK[][][] orGateBlocks = {
-                            { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK },
-                                    { BLOCK.WIRE, BLOCK.REPEATER_SOUTH, BLOCK.WIRE }, },
-                            { { BLOCK.AIR, BLOCK.AIR, BLOCK.BLOCK },
-                                    { BLOCK.AIR, BLOCK.AIR, BLOCK.WIRE }, },
-                            { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK },
-                                    { BLOCK.WIRE, BLOCK.REPEATER_SOUTH, BLOCK.WIRE }, }, };
-                    for (BlockPos offset : BlockPos.iterate(0, 0, 0,
-                            orGateBlocks.length - 1, orGateBlocks[0].length - 1, orGateBlocks[0][0].length - 1)) {
-                        grid.set(pos.add(offset), orGateBlocks[offset.getX()][offset.getY()][offset.getZ()]);
-                    }
-                } else {
-                    throw new NotImplementedException(entry.getKey().getClass() + " not implemented");
-                }
+        for (Node node : graph.nodes.values()) {
+            if (!node.isPlaced()) {
+                Vec3i pos = new Vec3i(rng.nextInt((int) buildSpace.getXLength() - 1), 0,
+                        rng.nextInt((int) buildSpace.getZLength() - 3));
+                node.placeAt(grid, pos);
             }
         }
     }
 
-    private static void routeWires(Array3D<BLOCK> grid, Map<Node, WireDescriptor> wires, Consumer<Text> feedback) {
-        for (Entry<Node, WireDescriptor> entry : wires.entrySet()) {
-            if (entry.getKey() instanceof InputNode in) {
+    private static void routeWires(Array3D<BLOCK> grid, LogicGraph graph, Consumer<Text> feedback)
+            throws RedilogPlacementException {
+        for (Node node : graph.nodes.values()) {
+            if (node instanceof InputNode in) {
                 //NO OP
-            } else if (entry.getKey() instanceof OutputNode on) {
+            } else if (node instanceof OutputNode on) {
                 if (on.value != null) {
-                    routeBFS(entry.getValue().source, wires.get(on.value).wires, grid, wires, entry.getValue().isDebug,
-                            feedback);
+                    routeBFS(on.input, on.value.getOutputs(), grid, graph, on.isDebug(), feedback);
                 }
-            } else if (entry.getKey() instanceof OrNode on) {
+            } else if (node instanceof OrNode on) {
                 if (on.input1 != null) {
-                    routeBFS(entry.getValue().source.add(-1, 0, 0), wires.get(on.input1).wires, grid, wires,
-                            entry.getValue().isDebug, feedback);
+                    routeBFS(on.getInput1(), on.input1.getOutputs(), grid, graph, on.isDebug(), feedback);
                 }
                 if (on.input2 != null) {
-                    routeBFS(entry.getValue().source.add(1, 0, 0), wires.get(on.input2).wires, grid, wires,
-                            entry.getValue().isDebug, feedback);
+                    routeBFS(on.getInput2(), on.input2.getOutputs(), grid, graph, on.isDebug(), feedback);
                 }
             } else {
-                throw new NotImplementedException(entry.getKey().getClass() + " not implemented");
+                throw new NotImplementedException(node.getClass() + " not implemented");
             }
         }
     }
 
     //constructs a path from one of starts to end
-    private static void routeBFS(Vec3i end, Set<Vec4i> starts, Array3D<BLOCK> grid, Map<Node, WireDescriptor> wires,
-            boolean isDebug, Consumer<Text> feedback) {
+    private static void routeBFS(Vec3i end, Set<Vec4i> starts, Array3D<BLOCK> grid, LogicGraph graph, boolean isDebug,
+            Consumer<Text> feedback) {
         //(4th dimension represents signal strength)
         Queue<Vec4i> toProcess = new LinkedList<>();
         Array4D<Vec4i> visitedFrom = new Array4D.Builder<Vec4i>().size(new Vec4i(grid.getSize(), 16)).build();
@@ -232,8 +206,8 @@ public class Placer {
         }
     }
 
-    private static void placeIO(Box buildSpace, LogicGraph graph, Array3D<BLOCK> grid,
-            Map<Node, WireDescriptor> wires, Consumer<Text> feedback) throws RedilogPlacementException {
+    private static void placeIO(Box buildSpace, Array3D<BLOCK> grid, LogicGraph graph, Consumer<Text> feedback)
+            throws RedilogPlacementException {
         if (buildSpace.getZLength() < 3) {
             throw new RedilogPlacementException("Not enough space for I/O. Need z length >= 3.");
         } else if (buildSpace.getYLength() < 2) {
@@ -258,8 +232,8 @@ public class Placer {
             grid.set(x, 0, 1, BLOCK.BLOCK);
             grid.set(x, 0, 2, BLOCK.BLOCK);
             grid.set(x, 1, 2, BLOCK.WIRE);
-            wires.get(input).source = new Vec3i(x, 1, 1);
-            wires.get(input).wires.add(new Vec4i(x, 1, 2, 15));
+            input.position = new Vec3i(x, 1, 2);
+            input.outputs.add(new Vec4i(x, 1, 2, 15));
         }
         //outputs
         Iterator<Entry<String, OutputNode>> outputs = graph.outputs.entrySet().stream()
@@ -269,15 +243,14 @@ public class Placer {
             OutputNode output = outputs.next().getValue();
             int z = grid.getZLength() - 2;
             grid.set(x, 1, z, BLOCK.WIRE);
-            wires.get(output).source = new Vec3i(x, 1, z);
+            output.input = new Vec3i(x, 1, z);
         }
     }
 
-    private static void labelIO(Box buildSpace, LogicGraph graph, World world,
-            Map<Node, WireDescriptor> wires, Consumer<Text> feedback) {
+    private static void labelIO(Box buildSpace, LogicGraph graph, World world, Consumer<Text> feedback) {
         BlockPos minPos = new BlockPos(buildSpace.minX, buildSpace.minY, buildSpace.minZ);
         for (Entry<String, InputNode> entry : graph.inputs.entrySet()) {
-            Vec3i pos = wires.get(entry.getValue()).source;
+            Vec3i pos = entry.getValue().position;
             if (pos == null) {
                 logWarnAndCreateMessage(feedback, String.format("Failed to label input %s", entry.getKey()));
                 continue;
@@ -292,7 +265,7 @@ public class Placer {
             }
         }
         for (Entry<String, OutputNode> entry : graph.outputs.entrySet()) {
-            Vec3i pos = wires.get(entry.getValue()).source;
+            Vec3i pos = entry.getValue().input;
             if (pos == null) {
                 logWarnAndCreateMessage(feedback, String.format("Failed to label output %s", entry.getKey()));
                 continue;

@@ -29,7 +29,7 @@ public class Synthesizer {
             for (int i = 0; i <= expression.range.maxInclusive() - expression.range.minInclusive(); i++) {
                 Node node = expression.getNode(i);
                 String name = entry.getKey() + "[" + i + "]";
-                lGraph.expressions.put(name, node);
+                lGraph.nodes.put(name, node);
                 if (node instanceof InputNode in) {
                     lGraph.inputs.put(name, in);
                 } else if (node instanceof OutputNode on) {
@@ -42,7 +42,7 @@ public class Synthesizer {
     }
 
     private static void warnUnused(LogicGraph graph, Consumer<Text> feedback) {
-        for (Entry<String, Node> entry : graph.expressions.entrySet()) {
+        for (Entry<String, Node> entry : graph.nodes.entrySet()) {
             if (!entry.getValue().used) {
                 logWarnAndCreateMessage(feedback, String.format("Value of node %s is not used", entry.getKey()));
             }

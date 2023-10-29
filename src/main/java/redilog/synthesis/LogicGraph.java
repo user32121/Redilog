@@ -10,5 +10,5 @@ import java.util.Map;
 public class LogicGraph {
     public Map<String, InputNode> inputs = new HashMap<>();
     public Map<String, OutputNode> outputs = new HashMap<>();
-    public Map<String, Node> expressions = new HashMap<>();
+    public Map<String, Node> nodes = new HashMap<>();
 }
