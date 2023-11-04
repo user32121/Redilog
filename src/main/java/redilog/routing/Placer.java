@@ -1,8 +1,10 @@
 package redilog.routing;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
@@ -23,6 +25,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3f;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
 import redilog.init.Redilog;
@@ -66,15 +69,13 @@ public class Placer {
         for (Map.Entry<String, Node> entry : graph.nodes.entrySet()) {
             symbolNames.put(entry.getValue(), entry.getKey());
         }
-        Redilog.LOGGER.info("inputs: " + graph.inputs.size());
-        Redilog.LOGGER.info("outputs: " + graph.inputs.size());
-        Redilog.LOGGER.info("all nodes: " + graph.nodes.size());
+        Redilog.LOGGER.info("node count: " + graph.nodes.size());
 
         Array3D<BLOCK> grid = new Array3D.Builder<BLOCK>()
                 .size((int) buildSpace.getXLength(), (int) buildSpace.getYLength(), (int) buildSpace.getZLength())
                 .fill(BLOCK.AIR).build();
 
-        placeIO(buildSpace, grid, graph, feedback);
+        placeIO(buildSpace, graph, feedback);
         placeComponents(buildSpace, grid, graph);
         //view prevents routing wires in sign space
         routeWires(new Array3DView<>(grid, 0, 0, 2, grid.getXLength(), grid.getYLength(), grid.getZLength() - 1),
@@ -115,13 +116,24 @@ public class Placer {
     private static void placeComponents(Box buildSpace, Array3D<BLOCK> grid, LogicGraph graph) {
         //TODO make better deterministic (maybe supply seed as parameter?)
         Random rng = new Random(100);
-        //check for components that are not placed
+        //check for nodes that are not placed
+        //give a random initial position
         for (Node node : graph.nodes.values()) {
             if (!node.isPlaced()) {
-                Vec3i pos = new Vec3i(rng.nextInt((int) buildSpace.getXLength() - 1), 0,
+                Vec3f pos = new Vec3f(rng.nextInt((int) buildSpace.getXLength() - 1), 0,
                         rng.nextInt((int) buildSpace.getZLength() - 3));
-                node.placeAt(grid, pos);
+                node.potentialPosition = pos;
             }
+        }
+        //repeatedly adjust so they are close to their target
+        //TODO pick less arbitrary repeat constant
+        for (int i = 0; i < 5; i++) {
+            for (Node node : graph.nodes.values()) {
+                node.adjustPotentialPosition(buildSpace, graph.nodes.values());
+            }
+        }
+        for (Node node : graph.nodes.values()) {
+            node.placeAtPotentialPos(grid);
         }
     }
 
@@ -133,7 +145,7 @@ public class Placer {
                 //NO OP
             } else if (node instanceof OutputNode on) {
                 if (on.value != null) {
-                    routeBFS(on.value.getOutputs(), on.input, grid, graph, on.value, on, feedback);
+                    routeBFS(on.value.getOutputs(), on.position, grid, graph, on.value, on, feedback);
                 }
             } else if (node instanceof OrNode on) {
                 if (on.input1 != null) {
@@ -209,7 +221,7 @@ public class Placer {
         }
     }
 
-    private static void placeIO(Box buildSpace, Array3D<BLOCK> grid, LogicGraph graph, Consumer<Text> feedback)
+    private static void placeIO(Box buildSpace, LogicGraph graph, Consumer<Text> feedback)
             throws RedilogPlacementException {
         if (buildSpace.getZLength() < 3) {
             throw new RedilogPlacementException("Not enough space for I/O. Need z length >= 3.");
@@ -220,66 +232,71 @@ public class Placer {
             LoggerUtil.logWarnAndCreateMessage(feedback,
                     "Limited space for I/O; potentially degenerate layout. Recommended z length >= 5.");
         }
-        if (buildSpace.getXLength() < Math.max(graph.inputs.size(), graph.outputs.size()) * 2 - 1) {
+        List<InputNode> inputs = new ArrayList<>();
+        List<OutputNode> outputs = new ArrayList<>();
+        for (Node n : graph.nodes.values()) {
+            if (n instanceof InputNode in) {
+                inputs.add(in);
+            } else if (n instanceof OutputNode on) {
+                outputs.add(on);
+            }
+        }
+        if (buildSpace.getXLength() < Math.max(inputs.size(), outputs.size()) * 2 - 1) {
             LoggerUtil.logWarnAndCreateMessage(feedback,
                     String.format("Limited space for I/O; potentially degenerate layout. Recommended x length >= %s.",
-                            Math.max(graph.inputs.size(), graph.outputs.size()) * 2 - 1));
+                            Math.max(inputs.size(), outputs.size()) * 2 - 1));
         }
         //place inputs and outputs evenly spaced along x
         //inputs
-        Iterator<Entry<String, InputNode>> inputs = graph.inputs.entrySet().stream()
-                .sorted((lhs, rhs) -> lhs.getKey().compareTo(rhs.getKey())).iterator();
-        for (int i = 0; i < graph.inputs.size(); ++i) {
-            InputNode input = inputs.next().getValue();
-            int x = (int) (i * (buildSpace.getXLength() - 1) / (graph.inputs.size() - 1));
-            grid.set(x, 0, 1, BLOCK.BLOCK);
-            grid.set(x, 0, 2, BLOCK.BLOCK);
-            grid.set(x, 1, 2, BLOCK.WIRE);
+        Collections.sort(inputs, (l, r) -> l.name.compareTo(r.name));
+        for (int i = 0; i < inputs.size(); ++i) {
+            InputNode input = inputs.get(i);
+            int x = (int) (i * (buildSpace.getXLength() - 1) / (inputs.size() - 1));
             input.position = new Vec3i(x, 1, 1);
-            input.outputs.add(new Vec4i(x, 1, 2, 15));
         }
         //outputs
-        Iterator<Entry<String, OutputNode>> outputs = graph.outputs.entrySet().stream()
-                .sorted((lhs, rhs) -> lhs.getKey().compareTo(rhs.getKey())).iterator();
-        for (int i = 0; i < graph.outputs.size(); ++i) {
-            int x = (int) (i * (buildSpace.getXLength() - 1) / (graph.outputs.size() - 1));
-            OutputNode output = outputs.next().getValue();
-            int z = grid.getZLength() - 2;
-            grid.set(x, 1, z, BLOCK.WIRE);
-            output.input = new Vec3i(x, 1, z);
+        Collections.sort(outputs, (l, r) -> l.name.compareTo(r.name));
+        for (int i = 0; i < outputs.size(); ++i) {
+            OutputNode output = outputs.get(i);
+            int x = (int) (i * (buildSpace.getXLength() - 1) / (outputs.size() - 1));
+            int z = (int) (buildSpace.getZLength() - 2);
+            output.position = new Vec3i(x, 1, z);
         }
     }
 
     private static void labelIO(Box buildSpace, LogicGraph graph, World world, Consumer<Text> feedback) {
         BlockPos minPos = new BlockPos(buildSpace.minX, buildSpace.minY, buildSpace.minZ);
-        for (Entry<String, InputNode> entry : graph.inputs.entrySet()) {
-            Vec3i pos = entry.getValue().position;
-            if (pos == null) {
-                LoggerUtil.logWarnAndCreateMessage(feedback, String.format("Failed to label input %s", entry.getKey()));
-                continue;
-            }
-            world.setBlockState(minPos.add(pos.down()), Blocks.WHITE_CONCRETE.getDefaultState());
-            world.setBlockState(minPos.add(pos),
-                    Blocks.LEVER.getDefaultState().with(LeverBlock.FACE, WallMountLocation.FLOOR));
-            world.setBlockState(minPos.add(pos).add(0, -1, -1),
-                    Blocks.BIRCH_WALL_SIGN.getDefaultState().with(WallSignBlock.FACING, Direction.NORTH));
-            if (world.getBlockEntity(minPos.add(pos).add(0, -1, -1)) instanceof SignBlockEntity sbe) {
-                sbe.setTextOnRow(0, Text.of(entry.getKey()));
-            }
-        }
-        for (Entry<String, OutputNode> entry : graph.outputs.entrySet()) {
-            Vec3i pos = entry.getValue().input;
-            if (pos == null) {
-                LoggerUtil.logWarnAndCreateMessage(feedback,
-                        String.format("Failed to label output %s", entry.getKey()));
-                continue;
-            }
-            world.setBlockState(minPos.add(pos.down()), Blocks.REDSTONE_LAMP.getDefaultState());
-            world.setBlockState(minPos.add(pos), Blocks.REDSTONE_WIRE.getDefaultState());
-            world.setBlockState(minPos.add(pos).add(0, -1, 1),
-                    Blocks.BIRCH_WALL_SIGN.getDefaultState().with(WallSignBlock.FACING, Direction.SOUTH));
-            if (world.getBlockEntity(minPos.add(pos).add(0, -1, 1)) instanceof SignBlockEntity sbe) {
-                sbe.setTextOnRow(0, Text.of(entry.getKey()));
+        for (Entry<String, Node> entry : graph.nodes.entrySet()) {
+            //TODO delegate
+            if (entry.getValue() instanceof InputNode in) {
+                Vec3i pos = in.position;
+                if (pos == null) {
+                    LoggerUtil.logWarnAndCreateMessage(feedback,
+                            String.format("Failed to label input %s", entry.getKey()));
+                    continue;
+                }
+                world.setBlockState(minPos.add(pos.down()), Blocks.WHITE_CONCRETE.getDefaultState());
+                world.setBlockState(minPos.add(pos),
+                        Blocks.LEVER.getDefaultState().with(LeverBlock.FACE, WallMountLocation.FLOOR));
+                world.setBlockState(minPos.add(pos).add(0, -1, -1),
+                        Blocks.BIRCH_WALL_SIGN.getDefaultState().with(WallSignBlock.FACING, Direction.NORTH));
+                if (world.getBlockEntity(minPos.add(pos).add(0, -1, -1)) instanceof SignBlockEntity sbe) {
+                    sbe.setTextOnRow(0, Text.of(entry.getKey()));
+                }
+            } else if (entry.getValue() instanceof OutputNode on) {
+                Vec3i pos = on.position;
+                if (pos == null) {
+                    LoggerUtil.logWarnAndCreateMessage(feedback,
+                            String.format("Failed to label output %s", entry.getKey()));
+                    continue;
+                }
+                world.setBlockState(minPos.add(pos.down()), Blocks.REDSTONE_LAMP.getDefaultState());
+                world.setBlockState(minPos.add(pos), Blocks.REDSTONE_WIRE.getDefaultState());
+                world.setBlockState(minPos.add(pos).add(0, -1, 1),
+                        Blocks.BIRCH_WALL_SIGN.getDefaultState().with(WallSignBlock.FACING, Direction.SOUTH));
+                if (world.getBlockEntity(minPos.add(pos).add(0, -1, 1)) instanceof SignBlockEntity sbe) {
+                    sbe.setTextOnRow(0, Text.of(entry.getKey()));
+                }
             }
         }
     }

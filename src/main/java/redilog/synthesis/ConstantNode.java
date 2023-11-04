@@ -1,17 +1,16 @@
 package redilog.synthesis;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Collection;
 
-import net.minecraft.util.math.Vec3i;
+import org.apache.commons.lang3.NotImplementedException;
+
+import net.minecraft.util.math.Box;
 import redilog.parsing.Expression;
 import redilog.routing.Placer.BLOCK;
 import redilog.utils.Array3D;
-import redilog.utils.Vec4i;
 
 public class ConstantNode extends Node {
-    boolean bit;
-    Set<Vec4i> outputs = new HashSet<>();
+    public final boolean bit;
 
     public ConstantNode(Expression owner, boolean bit) {
         super(owner);
@@ -23,13 +22,15 @@ public class ConstantNode extends Node {
     }
 
     @Override
-    public void placeAt(Array3D<BLOCK> grid, Vec3i pos) {
+    public void placeAtPotentialPos(Array3D<BLOCK> grid) {
         // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'placeAt'");
+        throw new NotImplementedException("Unimplemented method 'placeAt'");
     }
 
     @Override
-    public Set<Vec4i> getOutputs() {
-        return outputs;
+    public void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes) {
+        // TODO Auto-generated method stub
+        throw new NotImplementedException("Unimplemented method 'adjustPotentialPosition'");
+
     }
 }

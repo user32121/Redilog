@@ -28,11 +28,6 @@ public class Synthesizer {
                 Node node = expression.getNode(i);
                 String name = entry.getKey() + "[" + i + "]";
                 lGraph.nodes.put(name, node);
-                if (node instanceof InputNode in) {
-                    lGraph.inputs.put(name, in);
-                } else if (node instanceof OutputNode on) {
-                    lGraph.outputs.put(name, on);
-                }
             }
         }
 

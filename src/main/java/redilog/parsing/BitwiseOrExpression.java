@@ -38,8 +38,6 @@ public class BitwiseOrExpression extends Expression {
         if (nodes[index] == null) {
             OrNode node = new OrNode(this, input1.getNode(index), input2.getNode(index));
             nodes[index] = node;
-            node.input1 = input1.getNode(index);
-            node.input2 = input2.getNode(index);
         }
         nodes[index].used = true;
         return nodes[index];
