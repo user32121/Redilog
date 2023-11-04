@@ -17,10 +17,6 @@ public class ConstantNode extends Node {
         this.bit = bit;
     }
 
-    public boolean isPlaced() {
-        return !outputs.isEmpty();
-    }
-
     @Override
     public void placeAtPotentialPos(Array3D<BLOCK> grid) {
         // TODO Auto-generated method stub

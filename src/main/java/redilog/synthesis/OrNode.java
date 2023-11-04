@@ -2,10 +2,9 @@ package redilog.synthesis;
 
 import java.util.Collection;
 
-import org.apache.commons.lang3.NotImplementedException;
-
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
 import redilog.parsing.BitwiseOrExpression;
 import redilog.routing.Placer.BLOCK;
@@ -25,21 +24,18 @@ public class OrNode extends Node {
         input2.outputNodes.add(this);
     }
 
-    public boolean isPlaced() {
-        return position != null;
-    }
-
     public Vec3i getInput1() {
-        return position;
+        return position.add(0, 1, 0);
     }
 
     public Vec3i getInput2() {
-        return position.add(2, 0, 0);
+        return position.add(2, 1, 0);
     }
 
     @Override
     public void placeAtPotentialPos(Array3D<BLOCK> grid) {
-        Vec3i position = VecUtil.vec3f2i(potentialPosition);
+        //TODO swap inputs if more convenient?
+        position = VecUtil.d2i(potentialPosition);
         outputs.add(new Vec4i(position.add(0, 1, 2), 13));
         outputs.add(new Vec4i(position.add(1, 1, 2), 14));
         outputs.add(new Vec4i(position.add(2, 1, 2), 13));
@@ -58,8 +54,22 @@ public class OrNode extends Node {
 
     @Override
     public void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes) {
-        // TODO Auto-generated method stub
-        throw new NotImplementedException("Unimplemented method 'adjustPotentialPosition'");
-    }
+        //get average positions of inputs and outputs
+        Vec3d avg = potentialPosition.add(input1.potentialPosition).add(input2.potentialPosition);
+        int count = 3;
+        for (Node node : outputNodes) {
+            avg = avg.add(node.potentialPosition);
+            ++count;
+        }
+        avg.multiply(1.0 / count);
 
+        //repel from other nodes
+        for (Node n : otherNodes) {
+            double distSqr = avg.squaredDistanceTo(n.potentialPosition);
+            avg = avg.lerp(n.potentialPosition, -1 / (distSqr + 0.1));
+        }
+
+        //clamp by buildspace
+
+    }
 }

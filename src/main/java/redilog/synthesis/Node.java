@@ -5,7 +5,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3f;
+import net.minecraft.util.math.Vec3d;
 import redilog.parsing.Expression;
 import redilog.routing.Placer.BLOCK;
 import redilog.routing.RedilogPlacementException;
@@ -15,7 +15,7 @@ import redilog.utils.Vec4i;
 public abstract class Node {
     public final Expression owner;
     public boolean used;
-    public Vec3f potentialPosition;
+    public Vec3d potentialPosition;
     public final Set<Vec4i> outputs = new HashSet<>();
     public final Set<Node> outputNodes = new HashSet<>();
 
@@ -26,8 +26,6 @@ public abstract class Node {
     public boolean isDebug() {
         return owner.declaration.getValue().contains("DEBUG");
     }
-
-    public abstract boolean isPlaced();
 
     public abstract void placeAtPotentialPos(Array3D<BLOCK> grid);
 

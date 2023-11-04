@@ -19,10 +19,6 @@ public class InputNode extends Node {
         this.name = name;
     }
 
-    public boolean isPlaced() {
-        return position != null;
-    }
-
     @Override
     public void placeAtPotentialPos(Array3D<BLOCK> grid) {
         grid.set(position.add(0, -1, 0), BLOCK.BLOCK);
@@ -33,6 +29,6 @@ public class InputNode extends Node {
 
     @Override
     public void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes) {
-        potentialPosition = VecUtil.vec3i2f(position);
+        potentialPosition = VecUtil.i2d(position);
     }
 }

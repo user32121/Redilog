@@ -25,7 +25,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3f;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
 import redilog.init.Redilog;
@@ -119,15 +119,13 @@ public class Placer {
         //check for nodes that are not placed
         //give a random initial position
         for (Node node : graph.nodes.values()) {
-            if (!node.isPlaced()) {
-                Vec3f pos = new Vec3f(rng.nextInt((int) buildSpace.getXLength() - 1), 0,
-                        rng.nextInt((int) buildSpace.getZLength() - 3));
-                node.potentialPosition = pos;
-            }
+            Vec3d pos = new Vec3d(rng.nextInt((int) buildSpace.getXLength() - 1), 0,
+                    rng.nextInt((int) buildSpace.getZLength() - 3));
+            node.potentialPosition = pos;
         }
         //repeatedly adjust so they are close to their target
         //TODO pick less arbitrary repeat constant
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 10; i++) {
             for (Node node : graph.nodes.values()) {
                 node.adjustPotentialPosition(buildSpace, graph.nodes.values());
             }

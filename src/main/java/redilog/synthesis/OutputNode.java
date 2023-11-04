@@ -27,10 +27,6 @@ public class OutputNode extends Node {
         }
     }
 
-    public boolean isPlaced() {
-        return position != null;
-    }
-
     @Override
     public void placeAtPotentialPos(Array3D<BLOCK> grid) {
         grid.set(position, BLOCK.WIRE);
@@ -49,6 +45,6 @@ public class OutputNode extends Node {
 
     @Override
     public void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes) {
-        potentialPosition = VecUtil.vec3i2f(position);
+        potentialPosition = VecUtil.i2d(position);
     }
 }
