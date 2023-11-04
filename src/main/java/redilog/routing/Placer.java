@@ -119,8 +119,9 @@ public class Placer {
         //check for nodes that are not placed
         //give a random initial position
         for (Node node : graph.nodes.values()) {
-            Vec3d pos = new Vec3d(rng.nextInt((int) buildSpace.getXLength() - 1), 0,
-                    rng.nextInt((int) buildSpace.getZLength() - 3));
+            Vec3d pos = new Vec3d(rng.nextInt((int) buildSpace.getXLength()),
+                    rng.nextInt((int) buildSpace.getYLength()),
+                    rng.nextInt((int) buildSpace.getZLength()));
             node.potentialPosition = pos;
         }
         //repeatedly adjust so they are close to their target

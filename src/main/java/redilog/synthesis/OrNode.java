@@ -13,8 +13,18 @@ import redilog.utils.Vec4i;
 import redilog.utils.VecUtil;
 
 public class OrNode extends Node {
+    private final static Array3D<BLOCK> orGateBlocks = new Array3D.Builder<BLOCK>().size(3, 2, 3).data(new BLOCK[][][] {
+            { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK },
+                    { BLOCK.WIRE, BLOCK.REPEATER_SOUTH, BLOCK.WIRE }, },
+            { { BLOCK.AIR, BLOCK.AIR, BLOCK.BLOCK },
+                    { BLOCK.AIR, BLOCK.AIR, BLOCK.WIRE }, },
+            { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK },
+                    { BLOCK.WIRE, BLOCK.REPEATER_SOUTH, BLOCK.WIRE }, }, })
+            .build();
+
     public final Node input1, input2;
     private Vec3i position;
+    private boolean swapInputs;
 
     public OrNode(BitwiseOrExpression owner, Node input1, Node input2) {
         super(owner);
@@ -25,38 +35,34 @@ public class OrNode extends Node {
     }
 
     public Vec3i getInput1() {
-        return position.add(0, 1, 0);
+        return position.add(swapInputs ? 2 : 0, 1, 0);
     }
 
     public Vec3i getInput2() {
-        return position.add(2, 1, 0);
+        return position.add(swapInputs ? 0 : 2, 1, 0);
     }
 
     @Override
     public void placeAtPotentialPos(Array3D<BLOCK> grid) {
-        //TODO swap inputs if more convenient?
+        //swap inputs if more convenient
+        swapInputs = input2.potentialPosition.x < input1.potentialPosition.x;
+
         position = VecUtil.d2i(potentialPosition);
         outputs.add(new Vec4i(position.add(0, 1, 2), 13));
         outputs.add(new Vec4i(position.add(1, 1, 2), 14));
         outputs.add(new Vec4i(position.add(2, 1, 2), 13));
-        BLOCK[][][] orGateBlocks = {
-                { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK },
-                        { BLOCK.WIRE, BLOCK.REPEATER_SOUTH, BLOCK.WIRE }, },
-                { { BLOCK.AIR, BLOCK.AIR, BLOCK.BLOCK },
-                        { BLOCK.AIR, BLOCK.AIR, BLOCK.WIRE }, },
-                { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK },
-                        { BLOCK.WIRE, BLOCK.REPEATER_SOUTH, BLOCK.WIRE }, }, };
-        for (BlockPos offset : BlockPos.iterate(0, 0, 0,
-                orGateBlocks.length - 1, orGateBlocks[0].length - 1, orGateBlocks[0][0].length - 1)) {
-            grid.set(position.add(offset), orGateBlocks[offset.getX()][offset.getY()][offset.getZ()]);
+
+        for (BlockPos offset : BlockPos.iterate(BlockPos.ORIGIN,
+                new BlockPos(orGateBlocks.getSize().add(-1, -1, -1)))) {
+            grid.set(position.add(offset), orGateBlocks.get(offset));
         }
     }
 
     @Override
     public void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes) {
         //get average positions of inputs and outputs
-        Vec3d avg = potentialPosition.add(input1.potentialPosition).add(input2.potentialPosition);
-        int count = 3;
+        Vec3d avg = input1.potentialPosition.add(input2.potentialPosition);
+        int count = 2;
         for (Node node : outputNodes) {
             avg = avg.add(node.potentialPosition);
             ++count;
@@ -70,6 +76,25 @@ public class OrNode extends Node {
         }
 
         //clamp by buildspace
+        double x = avg.x;
+        double y = avg.y;
+        double z = avg.z;
+        if (x < 0) {
+            x = 0;
+        } else if (x + orGateBlocks.getXLength() >= buildSpace.getXLength()) {
+            x = buildSpace.getXLength() - orGateBlocks.getXLength();
+        }
+        if (y < 0) {
+            y = 0;
+        } else if (y + orGateBlocks.getYLength() >= buildSpace.getYLength()) {
+            y = buildSpace.getYLength() - orGateBlocks.getYLength();
+        }
+        if (z < 0) {
+            z = 0;
+        } else if (z + orGateBlocks.getZLength() >= buildSpace.getZLength()) {
+            z = buildSpace.getZLength() - orGateBlocks.getZLength();
+        }
 
+        potentialPosition = new Vec3d(x, y, z);
     }
 }
