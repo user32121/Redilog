@@ -63,7 +63,7 @@ public class ExtendedUpwardCardinalStep extends CardinalStep {
 
     @Override
     public int getCost() {
-        return 20;
+        return 30;
     }
 
     @Override

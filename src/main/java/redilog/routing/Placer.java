@@ -75,6 +75,7 @@ public class Placer {
                 .size((int) buildSpace.getXLength(), (int) buildSpace.getYLength(), (int) buildSpace.getZLength())
                 .fill(BLOCK.AIR).build();
 
+        //TODO logging substeps
         placeIO(buildSpace, graph, feedback);
         placeComponents(buildSpace, grid, graph);
         //view prevents routing wires in sign space
