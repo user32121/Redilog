@@ -1,6 +1,7 @@
 package redilog.synthesis;
 
 import java.util.Collection;
+import java.util.function.Supplier;
 
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -23,56 +24,55 @@ public class OrNode extends Node {
             .build();
 
     public final Node input1, input2;
-    private Vec3i position;
     private boolean swapInputs;
 
     public OrNode(BitwiseOrExpression owner, Node input1, Node input2) {
         super(owner);
         this.input1 = input1;
         this.input2 = input2;
-        input1.outputNodes.add(this);
-        input2.outputNodes.add(this);
+        input1.outputNodes.add(() -> VecUtil.i2d(getInput1()));
+        input2.outputNodes.add(() -> VecUtil.i2d(getInput2()));
     }
 
     public Vec3i getInput1() {
-        return position.add(swapInputs ? 2 : 0, 1, 0);
+        return VecUtil.d2i(getPosition()).add(swapInputs ? 2 : 0, 1, 0);
     }
 
     public Vec3i getInput2() {
-        return position.add(swapInputs ? 0 : 2, 1, 0);
+        return VecUtil.d2i(getPosition()).add(swapInputs ? 0 : 2, 1, 0);
     }
 
     @Override
     public void placeAtPotentialPos(Array3D<BLOCK> grid) {
         //swap inputs if more convenient
-        swapInputs = input2.potentialPosition.x < input1.potentialPosition.x;
+        swapInputs = input2.getPosition().x < input1.getPosition().x;
 
-        position = VecUtil.d2i(potentialPosition);
-        outputs.add(new Vec4i(position.add(0, 1, 2), 13));
-        outputs.add(new Vec4i(position.add(1, 1, 2), 14));
-        outputs.add(new Vec4i(position.add(2, 1, 2), 13));
+        setPosition(getPosition());
+        outputs.add(new Vec4i(VecUtil.d2i(getPosition()).add(0, 1, 2), 13));
+        outputs.add(new Vec4i(VecUtil.d2i(getPosition()).add(1, 1, 2), 14));
+        outputs.add(new Vec4i(VecUtil.d2i(getPosition()).add(2, 1, 2), 13));
 
         for (BlockPos offset : BlockPos.iterate(BlockPos.ORIGIN,
                 new BlockPos(orGateBlocks.getSize().add(-1, -1, -1)))) {
-            grid.set(position.add(offset), orGateBlocks.get(offset));
+            grid.set(VecUtil.d2i(getPosition()).add(offset), orGateBlocks.get(offset));
         }
     }
 
     @Override
     public void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes) {
         //get average positions of inputs and outputs
-        Vec3d avg = input1.potentialPosition.add(input2.potentialPosition);
+        Vec3d avg = input1.getPosition().add(input2.getPosition());
         int count = 2;
-        for (Node node : outputNodes) {
-            avg = avg.add(node.potentialPosition);
+        for (Supplier<Vec3d> pos : outputNodes) {
+            avg = avg.add(pos.get());
             ++count;
         }
         avg = avg.multiply(1.0 / count);
 
         //repel from other nodes
         for (Node n : otherNodes) {
-            double distSqr = avg.squaredDistanceTo(n.potentialPosition);
-            avg = avg.lerp(n.potentialPosition, -1 / (distSqr + 0.1));
+            double distSqr = avg.squaredDistanceTo(n.getPosition());
+            avg = avg.lerp(n.getPosition(), -1 / (distSqr + 0.1));
         }
 
         //clamp by buildspace
@@ -94,6 +94,6 @@ public class OrNode extends Node {
         } else if (z + orGateBlocks.getZLength() >= buildSpace.getZLength()) {
             z = buildSpace.getZLength() - orGateBlocks.getZLength();
         }
-        potentialPosition = new Vec3d(x, y, z);
+        setPosition(new Vec3d(x, y, z));
     }
 }

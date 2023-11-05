@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.Set;
 
 import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3i;
+import net.minecraft.util.math.Vec3d;
 import redilog.parsing.Expression;
 import redilog.routing.Placer.BLOCK;
 import redilog.routing.RedilogPlacementException;
@@ -15,7 +15,6 @@ import redilog.utils.VecUtil;
 public class OutputNode extends Node {
     public final Node value;
     public final String name;
-    public Vec3i position;
 
     public OutputNode(Expression owner, String name, Node value) {
         super(owner);
@@ -23,14 +22,14 @@ public class OutputNode extends Node {
         this.used = true;
         this.value = value;
         if (value != null) {
-            value.outputNodes.add(this);
+            value.outputNodes.add(() -> getPosition());
         }
     }
 
     @Override
     public void placeAtPotentialPos(Array3D<BLOCK> grid) {
-        grid.set(position, BLOCK.WIRE);
-        grid.set(position.add(0, -1, 0), BLOCK.BLOCK);
+        grid.set(VecUtil.d2i(getPosition()), BLOCK.WIRE);
+        grid.set(VecUtil.d2i(getPosition().add(0, -1, 0)), BLOCK.BLOCK);
     }
 
     @Override
@@ -39,12 +38,12 @@ public class OutputNode extends Node {
     }
 
     @Override
-    public Set<Node> getOutputNodes() throws RedilogPlacementException {
-        throw new RedilogPlacementException("Cannot use output node as intermediate node");
+    public void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes) {
+        //NO OP
     }
 
     @Override
-    public void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes) {
-        potentialPosition = VecUtil.i2d(position);
+    public void setPotentialPosition(Vec3d pos) {
+        //NO OP
     }
 }

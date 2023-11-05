@@ -40,6 +40,7 @@ import redilog.utils.Array3DView;
 import redilog.utils.Array4D;
 import redilog.utils.LoggerUtil;
 import redilog.utils.Vec4i;
+import redilog.utils.VecUtil;
 
 public class Placer {
     public enum BLOCK {
@@ -123,7 +124,7 @@ public class Placer {
             Vec3d pos = new Vec3d(rng.nextInt((int) buildSpace.getXLength()),
                     rng.nextInt((int) buildSpace.getYLength()),
                     rng.nextInt((int) buildSpace.getZLength()));
-            node.potentialPosition = pos;
+            node.setPotentialPosition(pos);
         }
         //repeatedly adjust so they are close to their target
         //TODO pick less arbitrary repeat constant
@@ -145,7 +146,7 @@ public class Placer {
                 //NO OP
             } else if (node instanceof OutputNode on) {
                 if (on.value != null) {
-                    routeBFS(on.value.getOutputs(), on.position, grid, graph, on.value, on, feedback);
+                    routeBFS(on.value.getOutputs(), VecUtil.d2i(on.getPosition()), grid, graph, on.value, on, feedback);
                 }
             } else if (node instanceof OrNode on) {
                 if (on.input1 != null) {
@@ -252,7 +253,7 @@ public class Placer {
         for (int i = 0; i < inputs.size(); ++i) {
             InputNode input = inputs.get(i);
             int x = (int) (i * (buildSpace.getXLength() - 1) / (inputs.size() - 1));
-            input.position = new Vec3i(x, 1, 1);
+            input.setPosition(new Vec3d(x, 1, 1));
         }
         //outputs
         Collections.sort(outputs, (l, r) -> l.name.compareTo(r.name));
@@ -260,7 +261,7 @@ public class Placer {
             OutputNode output = outputs.get(i);
             int x = (int) (i * (buildSpace.getXLength() - 1) / (outputs.size() - 1));
             int z = (int) (buildSpace.getZLength() - 2);
-            output.position = new Vec3i(x, 1, z);
+            output.setPosition(VecUtil.i2d(new Vec3i(x, 1, z)));
         }
     }
 
@@ -269,7 +270,7 @@ public class Placer {
         for (Entry<String, Node> entry : graph.nodes.entrySet()) {
             //TODO delegate
             if (entry.getValue() instanceof InputNode in) {
-                Vec3i pos = in.position;
+                Vec3i pos = VecUtil.d2i(in.getPosition());
                 if (pos == null) {
                     LoggerUtil.logWarnAndCreateMessage(feedback,
                             String.format("Failed to label input %s", entry.getKey()));
@@ -284,7 +285,7 @@ public class Placer {
                     sbe.setTextOnRow(0, Text.of(entry.getKey()));
                 }
             } else if (entry.getValue() instanceof OutputNode on) {
-                Vec3i pos = on.position;
+                Vec3i pos = VecUtil.d2i(on.getPosition());
                 if (pos == null) {
                     LoggerUtil.logWarnAndCreateMessage(feedback,
                             String.format("Failed to label output %s", entry.getKey()));
