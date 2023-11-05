@@ -50,7 +50,7 @@ public class ExtendedUpwardCardinalStep extends CardinalStep {
             return null;
         }
         //must be air above
-        if (!grid.isValue(pos.to3i().up(), BLOCK.AIR)) {
+        if (!grid.isValue(pos.to3i().up(), BLOCK.AIR) || !grid.isValue(next.to3i().up(), BLOCK.AIR)) {
             return null;
         }
         return nextNext;

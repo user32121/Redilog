@@ -29,10 +29,18 @@ public class VerticalCardinalStep extends CardinalStep {
         //make sure wire not cut
         Vec4i next = getNextPosition(pos);
         Vec4i lower = next.getY() < pos.getY() ? next : pos;
-        if (!grid.isValue(lower.to3i(), BLOCK.AIR)) {
+        if (!grid.isValue(lower.to3i().up(), BLOCK.AIR)) {
             return null;
         }
         return super.getValidMove(grid, pos, target);
+    }
+
+    @Override
+    public Vec4i[] place(Vec4i pos, Array3D<BLOCK> grid) {
+        Vec4i next = getNextPosition(pos);
+        Vec4i lower = next.getY() < pos.getY() ? next : pos;
+        grid.set(lower.to3i().up(), BLOCK.STRICT_AIR);
+        return super.place(pos, grid);
     }
 
 }
