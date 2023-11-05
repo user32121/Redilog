@@ -67,7 +67,7 @@ public class OrNode extends Node {
             avg = avg.add(node.potentialPosition);
             ++count;
         }
-        avg.multiply(1.0 / count);
+        avg = avg.multiply(1.0 / count);
 
         //repel from other nodes
         for (Node n : otherNodes) {
@@ -94,7 +94,6 @@ public class OrNode extends Node {
         } else if (z + orGateBlocks.getZLength() >= buildSpace.getZLength()) {
             z = buildSpace.getZLength() - orGateBlocks.getZLength();
         }
-
         potentialPosition = new Vec3d(x, y, z);
     }
 }
