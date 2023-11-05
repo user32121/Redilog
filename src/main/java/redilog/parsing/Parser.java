@@ -80,7 +80,6 @@ public class Parser {
                     ++line;
                     column = 1;
                 }
-                continue;
             } else if (Character.isLetterOrDigit(c) || c == '_') {
                 if (token == null) {
                     token = new Builder(TypeHint.LETTERS_DIGITS, line, column);
