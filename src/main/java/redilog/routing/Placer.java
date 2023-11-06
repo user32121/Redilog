@@ -53,7 +53,7 @@ public class Placer {
         REPEATER_SOUTH,
         REPEATER_EAST,
         REPEATER_WEST,
-        TORCH,
+        REDSTONE_BLOCK,
     }
 
     /**
@@ -95,7 +95,7 @@ public class Placer {
                         case STRICT_AIR -> Blocks.AIR.getDefaultState();
                         case WIRE -> Blocks.REDSTONE_WIRE.getDefaultState();
                         case BLOCK -> Blocks.LIGHT_BLUE_CONCRETE.getDefaultState();
-                        case TORCH -> Blocks.REDSTONE_TORCH.getDefaultState();
+                        case REDSTONE_BLOCK -> Blocks.REDSTONE_BLOCK.getDefaultState();
                         case REPEATER_NORTH ->
                             Blocks.REPEATER.getDefaultState().with(RepeaterBlock.FACING, Direction.SOUTH);
                         case REPEATER_SOUTH ->

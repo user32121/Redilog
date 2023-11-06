@@ -22,9 +22,9 @@ public class ConstantExpression extends Expression {
             ++i;
             x >>= 1;
             if (x == 0) {
-                return i;
+                return i - 1;
             } else if (x == -1) {
-                return i + 1;
+                return i;
             }
         }
     }

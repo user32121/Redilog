@@ -21,17 +21,17 @@ public class ConstantNode extends Node {
 
     @Override
     public void placeAtPotentialPos(Array3D<BLOCK> grid) {
-        if (bit) {
-            grid.set(VecUtil.d2i(getPosition()), BLOCK.BLOCK);
-            grid.set(VecUtil.d2i(getPosition()).up(), BLOCK.TORCH);
-        }
-        outputs.add(new Vec4i(VecUtil.d2i(getPosition()).up(), 15));
+        grid.set(VecUtil.d2i(getPosition()).add(0, 0, 0), BLOCK.BLOCK);
+        grid.set(VecUtil.d2i(getPosition()).add(0, 1, 0), bit ? BLOCK.REDSTONE_BLOCK : BLOCK.WIRE);
+        grid.set(VecUtil.d2i(getPosition()).add(0, 0, 1), BLOCK.BLOCK);
+        grid.set(VecUtil.d2i(getPosition()).add(0, 1, 1), BLOCK.WIRE);
+        outputs.add(new Vec4i(VecUtil.d2i(getPosition()).add(0, 1, 1), 15));
     }
 
     @Override
     public void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes) {
         //get average positions of inputs and outputs
-        Vec3d avg = getPosition();
+        Vec3d avg = getPosition().add(0, 0, -5);
         int count = 1;
         for (Supplier<Vec3d> pos : outputNodes) {
             avg = avg.add(pos.get());
@@ -42,7 +42,7 @@ public class ConstantNode extends Node {
         //repel from other nodes
         for (Node n : otherNodes) {
             double distSqr = avg.squaredDistanceTo(n.getPosition());
-            avg = avg.lerp(n.getPosition(), -1 / (distSqr + 0.1));
+            avg = avg.lerp(n.getPosition(), -3 / (distSqr + 0.1));
         }
 
         //clamp by buildspace
@@ -59,10 +59,10 @@ public class ConstantNode extends Node {
         } else if (y + 2 >= buildSpace.getYLength()) {
             y = buildSpace.getYLength() - 2;
         }
-        if (z < 0) {
-            z = 0;
-        } else if (z + 1 >= buildSpace.getZLength()) {
-            z = buildSpace.getZLength() - 1;
+        if (z < 2) {
+            z = 2;
+        } else if (z + 2 >= buildSpace.getZLength() - 3) {
+            z = buildSpace.getZLength() - 3 - 2;
         }
         setPosition(new Vec3d(x, y, z));
     }

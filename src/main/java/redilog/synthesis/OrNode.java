@@ -71,7 +71,7 @@ public class OrNode extends Node {
         //repel from other nodes
         for (Node n : otherNodes) {
             double distSqr = avg.squaredDistanceTo(n.getPosition());
-            avg = avg.lerp(n.getPosition(), -1 / (distSqr + 0.1));
+            avg = avg.lerp(n.getPosition(), -3 / (distSqr + 0.1));
         }
 
         //clamp by buildspace
@@ -88,10 +88,10 @@ public class OrNode extends Node {
         } else if (y + orGateBlocks.getYLength() >= buildSpace.getYLength()) {
             y = buildSpace.getYLength() - orGateBlocks.getYLength();
         }
-        if (z < 0) {
-            z = 0;
-        } else if (z + orGateBlocks.getZLength() >= buildSpace.getZLength()) {
-            z = buildSpace.getZLength() - orGateBlocks.getZLength();
+        if (z < 2) {
+            z = 2;
+        } else if (z + orGateBlocks.getZLength() >= buildSpace.getZLength() - 3) {
+            z = buildSpace.getZLength() - 3 - orGateBlocks.getZLength();
         }
         setPosition(new Vec3d(x, y, z));
     }
