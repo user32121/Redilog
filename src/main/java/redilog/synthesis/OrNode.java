@@ -47,7 +47,6 @@ public class OrNode extends Node {
         //swap inputs if more convenient
         swapInputs = input2.getPosition().x < input1.getPosition().x;
 
-        setPosition(getPosition());
         outputs.add(new Vec4i(VecUtil.d2i(getPosition()).add(0, 1, 2), 13));
         outputs.add(new Vec4i(VecUtil.d2i(getPosition()).add(1, 1, 2), 14));
         outputs.add(new Vec4i(VecUtil.d2i(getPosition()).add(2, 1, 2), 13));

@@ -18,6 +18,7 @@ public abstract class Node {
     public boolean used;
     public final Set<Vec4i> outputs = new HashSet<>();
     public final Set<Supplier<Vec3d>> outputNodes = new HashSet<>();
+    //TODO remove getter and setter
     private Vec3d position;
 
     public Node(Expression owner) {

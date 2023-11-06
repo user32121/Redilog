@@ -30,6 +30,7 @@ import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
 import redilog.init.Redilog;
 import redilog.routing.bfs.BFSStep;
+import redilog.synthesis.ConstantNode;
 import redilog.synthesis.InputNode;
 import redilog.synthesis.LogicGraph;
 import redilog.synthesis.Node;
@@ -52,6 +53,7 @@ public class Placer {
         REPEATER_SOUTH,
         REPEATER_EAST,
         REPEATER_WEST,
+        TORCH,
     }
 
     /**
@@ -97,6 +99,7 @@ public class Placer {
                         case STRICT_AIR -> Blocks.AIR.getDefaultState();
                         case WIRE -> Blocks.REDSTONE_WIRE.getDefaultState();
                         case BLOCK -> Blocks.LIGHT_BLUE_CONCRETE.getDefaultState();
+                        case TORCH -> Blocks.REDSTONE_TORCH.getDefaultState();
                         case REPEATER_NORTH ->
                             Blocks.REPEATER.getDefaultState().with(RepeaterBlock.FACING, Direction.SOUTH);
                         case REPEATER_SOUTH ->
@@ -142,7 +145,7 @@ public class Placer {
             throws RedilogPlacementException {
         //TODO delegate more
         for (Node node : graph.nodes.values()) {
-            if (node instanceof InputNode in) {
+            if (node instanceof InputNode || node instanceof ConstantNode) {
                 //NO OP
             } else if (node instanceof OutputNode on) {
                 if (on.value != null) {
