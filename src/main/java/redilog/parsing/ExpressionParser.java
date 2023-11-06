@@ -27,7 +27,7 @@ public class ExpressionParser {
                 //number
                 ConstantExpression ce = new ConstantExpression(token, token.parseAsInt());
                 output.add(ce);
-                graph.expressions.put("Constant_" + token.getValue(), ce);
+                graph.expressions.put("Constant_" + token, ce);
             } else if (token.getType() == Token.Type.VARIABLE) {
                 //value
                 String value = token.getValue();

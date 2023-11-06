@@ -25,7 +25,7 @@ public class ConstantNode extends Node {
             grid.set(VecUtil.d2i(getPosition()), BLOCK.BLOCK);
             grid.set(VecUtil.d2i(getPosition()).up(), BLOCK.TORCH);
         }
-        outputs.add(new Vec4i(VecUtil.d2i(getPosition()).up(), 13));
+        outputs.add(new Vec4i(VecUtil.d2i(getPosition()).up(), 15));
     }
 
     @Override
