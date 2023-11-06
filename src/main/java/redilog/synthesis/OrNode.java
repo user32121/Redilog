@@ -61,8 +61,8 @@ public class OrNode extends Node {
     @Override
     public void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes) {
         //get average positions of inputs and outputs
-        Vec3d avg = input1.getPosition().add(input2.getPosition());
-        int count = 2;
+        Vec3d avg = getPosition().add(input1.getPosition()).add(input2.getPosition());
+        int count = 3;
         for (Supplier<Vec3d> pos : outputNodes) {
             avg = avg.add(pos.get());
             ++count;
