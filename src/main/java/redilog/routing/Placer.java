@@ -68,10 +68,6 @@ public class Placer {
                     "No build space specified (specify by creating a zone using layout markers, then placing the builder next to one of the markers)");
         }
 
-        Map<Node, String> symbolNames = new HashMap<>();
-        for (Map.Entry<String, Node> entry : graph.nodes.entrySet()) {
-            symbolNames.put(entry.getValue(), entry.getKey());
-        }
         Redilog.LOGGER.info("node count: " + graph.nodes.size());
 
         Array3D<BLOCK> grid = new Array3D.Builder<BLOCK>()
