@@ -26,7 +26,7 @@ public class InputExpression extends Expression {
         if (nodes == null) {
             nodes = new Node[range.maxInclusive() - range.minInclusive() + 1];
             for (int i = 0; i < nodes.length; ++i) {
-                nodes[i] = new InputNode(this, String.format("%s[%s]", name, index + range.minInclusive()));
+                nodes[i] = new InputNode(this, String.format("%s[%s]", name, i + range.minInclusive()));
             }
         }
         nodes[index].used = true;
