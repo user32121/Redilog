@@ -1,0 +1,48 @@
+package redilog.parsing;
+
+import net.minecraft.util.dynamic.Range;
+import redilog.synthesis.Node;
+import redilog.synthesis.OutputNode;
+
+public class WireExpression extends Expression {
+    public final String name;
+    public Expression value;
+
+    public WireExpression(Token declaration, String name, Range<Integer> range) {
+        super(declaration, range);
+        this.name = name;
+    }
+
+    @Override
+    public boolean resolveRange() {
+        if (range != null) {
+            return true;
+        }
+        if (value == null) {
+            range = new Range<Integer>(0, 0);
+            return true;
+        }
+        range = value.range;
+        return range != null;
+    }
+
+    @Override
+    public Node getNode(int index) throws IndexOutOfBoundsException {
+        if (nodes == null) {
+            nodes = new Node[range.maxInclusive() - range.minInclusive() + 1];
+        }
+        if (nodes[index] == null) {
+            Node nodeValue = value != null ? value.getNode(index) : null;
+            OutputNode node = new OutputNode(this, String.format("%s[%s]", name, index + range.minInclusive()),
+                    nodeValue);
+            nodes[index] = node;
+        }
+        nodes[index].used = true;
+        return nodes[index];
+    }
+
+    @Override
+    public void setValue(Expression expression) throws RedilogParsingException {
+        value = expression;
+    }
+}

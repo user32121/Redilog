@@ -20,6 +20,11 @@ public class Array3D<T> {
             return this;
         }
 
+        public Builder<T> data(T[][][] data) {
+            this.supplier = (x, y, z) -> data[x][y][z];
+            return this;
+        }
+
         public Builder<T> size(int x, int y, int z) {
             sizeX = x;
             sizeY = y;

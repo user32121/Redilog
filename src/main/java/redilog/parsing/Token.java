@@ -1,4 +1,4 @@
-package redilog.synthesis;
+package redilog.parsing;
 
 import java.util.Set;
 
@@ -101,6 +101,10 @@ public class Token {
 
     public int getColumn() {
         return column;
+    }
+
+    public String getValue() {
+        return value;
     }
 
     public String getValue(Token.Type requiredType) throws RedilogParsingException {
