@@ -35,32 +35,32 @@ public class OrNode extends Node {
     }
 
     public Vec3i getInput1() {
-        return VecUtil.d2i(getPosition()).add(swapInputs ? 2 : 0, 1, 0);
+        return VecUtil.d2i(position).add(swapInputs ? 2 : 0, 1, 0);
     }
 
     public Vec3i getInput2() {
-        return VecUtil.d2i(getPosition()).add(swapInputs ? 0 : 2, 1, 0);
+        return VecUtil.d2i(position).add(swapInputs ? 0 : 2, 1, 0);
     }
 
     @Override
     public void placeAtPotentialPos(Array3D<BLOCK> grid) {
         //swap inputs if more convenient
-        swapInputs = input2.getPosition().x < input1.getPosition().x;
+        swapInputs = input2.position.x < input1.position.x;
 
-        outputs.add(new Vec4i(VecUtil.d2i(getPosition()).add(0, 1, 2), 13));
-        outputs.add(new Vec4i(VecUtil.d2i(getPosition()).add(1, 1, 2), 14));
-        outputs.add(new Vec4i(VecUtil.d2i(getPosition()).add(2, 1, 2), 13));
+        outputs.add(new Vec4i(VecUtil.d2i(position).add(0, 1, 2), 13));
+        outputs.add(new Vec4i(VecUtil.d2i(position).add(1, 1, 2), 14));
+        outputs.add(new Vec4i(VecUtil.d2i(position).add(2, 1, 2), 13));
 
         for (BlockPos offset : BlockPos.iterate(BlockPos.ORIGIN,
                 new BlockPos(orGateBlocks.getSize().add(-1, -1, -1)))) {
-            grid.set(VecUtil.d2i(getPosition()).add(offset), orGateBlocks.get(offset));
+            grid.set(VecUtil.d2i(position).add(offset), orGateBlocks.get(offset));
         }
     }
 
     @Override
     public void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes) {
         //get average positions of inputs and outputs
-        Vec3d avg = getPosition().add(input1.getPosition()).add(input2.getPosition());
+        Vec3d avg = position.add(input1.position).add(input2.position);
         int count = 3;
         for (Supplier<Vec3d> pos : outputNodes) {
             avg = avg.add(pos.get());
@@ -70,8 +70,8 @@ public class OrNode extends Node {
 
         //repel from other nodes
         for (Node n : otherNodes) {
-            double distSqr = avg.squaredDistanceTo(n.getPosition());
-            avg = avg.lerp(n.getPosition(), -3 / (distSqr + 0.1));
+            double distSqr = avg.squaredDistanceTo(n.position);
+            avg = avg.lerp(n.position, -3 / (distSqr + 0.1));
         }
 
         //clamp by buildspace
@@ -93,6 +93,6 @@ public class OrNode extends Node {
         } else if (z + orGateBlocks.getZLength() >= buildSpace.getZLength() - 3) {
             z = buildSpace.getZLength() - 3 - orGateBlocks.getZLength();
         }
-        setPosition(new Vec3d(x, y, z));
+        position = new Vec3d(x, y, z);
     }
 }

@@ -36,4 +36,12 @@ public class InputNode extends Node {
     public void setPotentialPosition(Vec3d pos) {
         //NO OP
     }
+
+    public void setPosition(Vec3d pos) {
+        position = pos;
+    }
+
+    public Vec3d getPosition() {
+        return position;
+    }
 }

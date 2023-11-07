@@ -18,23 +18,14 @@ public abstract class Node {
     public boolean used;
     public final Set<Vec4i> outputs = new HashSet<>();
     public final Set<Supplier<Vec3d>> outputNodes = new HashSet<>();
-    //TODO remove getter and setter
-    private Vec3d position;
+    protected Vec3d position;
 
     public Node(Expression owner) {
         this.owner = owner;
     }
 
-    public Vec3d getPosition() {
-        return position;
-    }
-
-    public void setPosition(Vec3d pos) {
-        this.position = pos;
-    }
-
     /**
-     * Acts similarly to {@link #setPosition} but may differ if the node does not support position adjustment
+     * Acts similarly to a setter but may differ if the node does not support position adjustment
      */
     public void setPotentialPosition(Vec3d pos) {
         this.position = pos;
