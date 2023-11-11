@@ -79,12 +79,15 @@ public class Placer {
                 .size((int) buildSpace.getXLength(), (int) buildSpace.getYLength(), (int) buildSpace.getZLength())
                 .fill(BLOCK.AIR).build();
 
-        //TODO logging substeps
+        feedback.accept(Text.of("  Placing IO..."));
         placeIO(buildSpace, graph, feedback);
+        feedback.accept(Text.of("  Placing components..."));
         placeComponents(buildSpace, grid, graph);
+        feedback.accept(Text.of("  Routing wires..."));
         //view prevents routing wires in sign space
         routeWires(new Array3DView<>(grid, 0, 0, 2, grid.getXLength(), grid.getYLength(), grid.getZLength() - 1),
                 graph, feedback);
+        feedback.accept(Text.of("  Transferring to world..."));
         transferGridToWorld(buildSpace, world, grid);
         labelIO(buildSpace, graph, world, feedback);
         //TODO repeat while adjusting buildSpace and layout to fine tune
