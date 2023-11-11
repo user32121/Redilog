@@ -145,7 +145,7 @@ public class Placer {
         }
         //repeatedly adjust so they are close to their target
         //TODO pick less arbitrary repeat constant
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 100; i++) {
             for (Node node : graph.nodes.values()) {
                 node.adjustPotentialPosition(buildSpace, graph.nodes.values());
             }
