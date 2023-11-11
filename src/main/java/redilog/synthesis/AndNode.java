@@ -13,21 +13,24 @@ import redilog.utils.Array3D;
 import redilog.utils.Vec4i;
 import redilog.utils.VecUtil;
 
-public class OrNode extends Node {
-    private final static Array3D<BLOCK> OR_GATE_BLOCKS = new Array3D.Builder<BLOCK>()
-            .size(3, 2, 3).data(new BLOCK[][][] {
-            { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK },
-                    { BLOCK.WIRE, BLOCK.REPEATER_SOUTH, BLOCK.WIRE }, },
-            { { BLOCK.AIR, BLOCK.AIR, BLOCK.BLOCK },
-                    { BLOCK.AIR, BLOCK.AIR, BLOCK.WIRE }, },
-            { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK },
-                    { BLOCK.WIRE, BLOCK.REPEATER_SOUTH, BLOCK.WIRE }, }, })
+public class AndNode extends Node {
+    private final static Array3D<BLOCK> AND_GATE_BLOCKS = new Array3D.Builder<BLOCK>()
+            .size(3, 3, 3).data(new BLOCK[][][] {
+                    { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK },
+                            { BLOCK.REPEATER_SOUTH, BLOCK.BLOCK, BLOCK.BLOCK },
+                            { BLOCK.AIR, BLOCK.TORCH, BLOCK.AIR }, },
+                    { { BLOCK.AIR, BLOCK.AIR, BLOCK.BLOCK },
+                            { BLOCK.AIR, BLOCK.BLOCK, BLOCK.TORCH_SOUTH },
+                            { BLOCK.AIR, BLOCK.WIRE, BLOCK.AIR }, },
+                    { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK },
+                            { BLOCK.REPEATER_SOUTH, BLOCK.BLOCK, BLOCK.BLOCK },
+                            { BLOCK.AIR, BLOCK.TORCH, BLOCK.AIR }, }, })
             .build();
 
     public final Node input1, input2;
     protected boolean swapInputs;
 
-    public OrNode(Expression owner, Node input1, Node input2) {
+    public AndNode(Expression owner, Node input1, Node input2) {
         super(owner);
         this.input1 = input1;
         this.input2 = input2;
@@ -48,13 +51,11 @@ public class OrNode extends Node {
         //swap inputs if more convenient
         swapInputs = input2.position.x < input1.position.x;
 
-        outputs.add(new Vec4i(VecUtil.d2i(position).add(0, 1, 2), 13));
         outputs.add(new Vec4i(VecUtil.d2i(position).add(1, 1, 2), 14));
-        outputs.add(new Vec4i(VecUtil.d2i(position).add(2, 1, 2), 13));
 
         for (BlockPos offset : BlockPos.iterate(BlockPos.ORIGIN,
-                new BlockPos(OR_GATE_BLOCKS.getSize().add(-1, -1, -1)))) {
-            grid.set(VecUtil.d2i(position).add(offset), OR_GATE_BLOCKS.get(offset));
+                new BlockPos(AND_GATE_BLOCKS.getSize().add(-1, -1, -1)))) {
+            grid.set(VecUtil.d2i(position).add(offset), AND_GATE_BLOCKS.get(offset));
         }
     }
 
@@ -81,18 +82,18 @@ public class OrNode extends Node {
         double z = avg.z;
         if (x < 0) {
             x = 0;
-        } else if (x + OR_GATE_BLOCKS.getXLength() >= buildSpace.getXLength()) {
-            x = buildSpace.getXLength() - OR_GATE_BLOCKS.getXLength();
+        } else if (x + AND_GATE_BLOCKS.getXLength() >= buildSpace.getXLength()) {
+            x = buildSpace.getXLength() - AND_GATE_BLOCKS.getXLength();
         }
         if (y < 0) {
             y = 0;
-        } else if (y + OR_GATE_BLOCKS.getYLength() >= buildSpace.getYLength()) {
-            y = buildSpace.getYLength() - OR_GATE_BLOCKS.getYLength();
+        } else if (y + AND_GATE_BLOCKS.getYLength() >= buildSpace.getYLength()) {
+            y = buildSpace.getYLength() - AND_GATE_BLOCKS.getYLength();
         }
         if (z < 2) {
             z = 2;
-        } else if (z + OR_GATE_BLOCKS.getZLength() >= buildSpace.getZLength() - 3) {
-            z = buildSpace.getZLength() - 3 - OR_GATE_BLOCKS.getZLength();
+        } else if (z + AND_GATE_BLOCKS.getZLength() >= buildSpace.getZLength() - 3) {
+            z = buildSpace.getZLength() - 3 - AND_GATE_BLOCKS.getZLength();
         }
         position = new Vec3d(x, y, z);
     }

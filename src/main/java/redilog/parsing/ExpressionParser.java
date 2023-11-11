@@ -9,8 +9,8 @@ import org.apache.commons.lang3.NotImplementedException;
 public class ExpressionParser {
 
     //higher means the operator applies first
-    public static final Map<String, Integer> OPERATOR_PRECEDENCE = Map.of("|", 0);
-    public static final Map<String, Boolean> OPERATOR_LEFT_ASSOCIATIVE = Map.of("|", true);
+    public static final Map<String, Integer> OPERATOR_PRECEDENCE = Map.of("|", 0, "&", 0);
+    public static final Map<String, Boolean> OPERATOR_LEFT_ASSOCIATIVE = Map.of("|", true, "&", true);
 
     public static Expression parseExpression(SymbolGraph graph, List<Token> tokens, int start, int end)
             throws RedilogParsingException {
@@ -103,6 +103,13 @@ public class ExpressionParser {
             Expression e1 = output.pop();
             Expression e2 = output.pop();
             output.push(new BitwiseOrExpression(token, e1, e2));
+        } else if (operator.equals("&")) {
+            if (output.size() < 2) {
+                throw new RedilogParsingException(String.format("%s requires two operands", token));
+            }
+            Expression e1 = output.pop();
+            Expression e2 = output.pop();
+            output.push(new BitwiseAndExpression(token, e1, e2));
         } else {
             throw new NotImplementedException(operator + " not implemented");
         }

@@ -16,6 +16,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.LeverBlock;
 import net.minecraft.block.RepeaterBlock;
+import net.minecraft.block.WallRedstoneTorchBlock;
 import net.minecraft.block.WallSignBlock;
 import net.minecraft.block.entity.SignBlockEntity;
 import net.minecraft.block.enums.WallMountLocation;
@@ -28,6 +29,7 @@ import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
 import redilog.init.Redilog;
 import redilog.routing.bfs.BFSStep;
+import redilog.synthesis.AndNode;
 import redilog.synthesis.ConstantNode;
 import redilog.synthesis.InputNode;
 import redilog.synthesis.LogicGraph;
@@ -52,6 +54,11 @@ public class Placer {
         REPEATER_EAST,
         REPEATER_WEST,
         REDSTONE_BLOCK,
+        TORCH,
+        TORCH_NORTH,
+        TORCH_SOUTH,
+        TORCH_EAST,
+        TORCH_WEST,
     }
 
     /**
@@ -89,19 +96,29 @@ public class Placer {
             for (int y = 0; y < buildSpace.getYLength(); ++y) {
                 for (int z = 0; z < buildSpace.getZLength(); ++z) {
                     BlockState state = switch (grid.get(x, y, z)) {
+                        //TODO encapsulate
                         case AIR -> Blocks.AIR.getDefaultState();
                         case STRICT_AIR -> Blocks.AIR.getDefaultState();
                         case WIRE -> Blocks.REDSTONE_WIRE.getDefaultState();
                         case BLOCK -> Blocks.LIGHT_BLUE_CONCRETE.getDefaultState();
                         case REDSTONE_BLOCK -> Blocks.REDSTONE_BLOCK.getDefaultState();
-                        case REPEATER_NORTH ->
-                            Blocks.REPEATER.getDefaultState().with(RepeaterBlock.FACING, Direction.SOUTH);
-                        case REPEATER_SOUTH ->
-                            Blocks.REPEATER.getDefaultState().with(RepeaterBlock.FACING, Direction.NORTH);
-                        case REPEATER_EAST ->
-                            Blocks.REPEATER.getDefaultState().with(RepeaterBlock.FACING, Direction.WEST);
-                        case REPEATER_WEST ->
-                            Blocks.REPEATER.getDefaultState().with(RepeaterBlock.FACING, Direction.EAST);
+                        case TORCH -> Blocks.REDSTONE_TORCH.getDefaultState();
+                        case REPEATER_NORTH -> Blocks.REPEATER.getDefaultState()
+                                .with(RepeaterBlock.FACING, Direction.SOUTH);
+                        case REPEATER_SOUTH -> Blocks.REPEATER.getDefaultState()
+                                .with(RepeaterBlock.FACING, Direction.NORTH);
+                        case REPEATER_EAST -> Blocks.REPEATER.getDefaultState()
+                                .with(RepeaterBlock.FACING, Direction.WEST);
+                        case REPEATER_WEST -> Blocks.REPEATER.getDefaultState()
+                                .with(RepeaterBlock.FACING, Direction.EAST);
+                        case TORCH_NORTH -> Blocks.REDSTONE_WALL_TORCH.getDefaultState()
+                                .with(WallRedstoneTorchBlock.FACING, Direction.NORTH);
+                        case TORCH_SOUTH -> Blocks.REDSTONE_WALL_TORCH.getDefaultState()
+                                .with(WallRedstoneTorchBlock.FACING, Direction.SOUTH);
+                        case TORCH_EAST -> Blocks.REDSTONE_WALL_TORCH.getDefaultState()
+                                .with(WallRedstoneTorchBlock.FACING, Direction.EAST);
+                        case TORCH_WEST -> Blocks.REDSTONE_WALL_TORCH.getDefaultState()
+                                .with(WallRedstoneTorchBlock.FACING, Direction.WEST);
                         default -> throw new NotImplementedException(grid.get(x, y, z) + " not implemented");
                     };
                     if (state != null) {
@@ -137,20 +154,28 @@ public class Placer {
 
     private static void routeWires(Array3D<BLOCK> grid, LogicGraph graph, Consumer<Text> feedback)
             throws RedilogPlacementException {
-        //TODO delegate more
+        //TODO encapsulate
         for (Node node : graph.nodes.values()) {
             if (node instanceof InputNode || node instanceof ConstantNode) {
                 //NO OP
             } else if (node instanceof OutputNode on) {
                 if (on.value != null) {
-                    routeBFS(on.value.getOutputs(), VecUtil.d2i(on.getPosition()), grid, graph, on.value, on, feedback);
+                    routeBFS(on.value.getOutputs(), VecUtil.d2i(on.getPosition()), grid, graph, on.value, node,
+                            feedback);
                 }
             } else if (node instanceof OrNode on) {
                 if (on.input1 != null) {
-                    routeBFS(on.input1.getOutputs(), on.getInput1(), grid, graph, on.input1, on, feedback);
+                    routeBFS(on.input1.getOutputs(), on.getInput1(), grid, graph, on.input1, node, feedback);
                 }
                 if (on.input2 != null) {
-                    routeBFS(on.input2.getOutputs(), on.getInput2(), grid, graph, on.input2, on, feedback);
+                    routeBFS(on.input2.getOutputs(), on.getInput2(), grid, graph, on.input2, node, feedback);
+                }
+            } else if (node instanceof AndNode an) {
+                if (an.input1 != null) {
+                    routeBFS(an.input1.getOutputs(), an.getInput1(), grid, graph, an.input1, node, feedback);
+                }
+                if (an.input2 != null) {
+                    routeBFS(an.input2.getOutputs(), an.getInput2(), grid, graph, an.input2, node, feedback);
                 }
             } else {
                 throw new NotImplementedException(node.getClass() + " not implemented");
@@ -265,7 +290,7 @@ public class Placer {
     private static void labelIO(Box buildSpace, LogicGraph graph, World world, Consumer<Text> feedback) {
         BlockPos minPos = new BlockPos(buildSpace.minX, buildSpace.minY, buildSpace.minZ);
         for (Entry<String, Node> entry : graph.nodes.entrySet()) {
-            //TODO delegate
+            //TODO encapsulate
             if (entry.getValue() instanceof InputNode in) {
                 Vec3i pos = VecUtil.d2i(in.getPosition());
                 if (pos == null) {
