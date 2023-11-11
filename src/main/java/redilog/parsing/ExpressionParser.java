@@ -9,7 +9,7 @@ import org.apache.commons.lang3.NotImplementedException;
 public class ExpressionParser {
 
     //higher means the operator applies first
-    public static final Map<String, Integer> OPERATOR_PRECEDENCE = Map.of("|", 0, "&", 0);
+    public static final Map<String, Integer> OPERATOR_PRECEDENCE = Map.of("|", 0, "&", 1);
     public static final Map<String, Boolean> OPERATOR_LEFT_ASSOCIATIVE = Map.of("|", true, "&", true);
 
     public static Expression parseExpression(SymbolGraph graph, List<Token> tokens, int start, int end)
