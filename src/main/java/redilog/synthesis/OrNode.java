@@ -15,7 +15,7 @@ import redilog.utils.VecUtil;
 
 public class OrNode extends Node {
     private final static Array3D<BLOCK> OR_GATE_BLOCKS = new Array3D.Builder<BLOCK>()
-            .size(3, 2, 3).data(new BLOCK[][][] {
+            .data(new BLOCK[][][] {
             { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK },
                     { BLOCK.WIRE, BLOCK.REPEATER_SOUTH, BLOCK.WIRE }, },
             { { BLOCK.AIR, BLOCK.AIR, BLOCK.BLOCK },

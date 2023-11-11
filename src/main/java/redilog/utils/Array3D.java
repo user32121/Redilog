@@ -22,6 +22,13 @@ public class Array3D<T> {
 
         public Builder<T> data(T[][][] data) {
             this.supplier = (x, y, z) -> data[x][y][z];
+            sizeX = data.length;
+            if (data.length > 0) {
+                sizeY = data[0].length;
+                if (data.length > 0) {
+                    sizeZ = data[0][0].length;
+                }
+            }
             return this;
         }
 
