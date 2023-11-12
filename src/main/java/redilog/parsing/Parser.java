@@ -3,13 +3,13 @@ package redilog.parsing;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
 
 import org.apache.commons.lang3.NotImplementedException;
 
 import net.minecraft.text.Text;
 import net.minecraft.util.dynamic.Range;
-import redilog.parsing.Token.Builder;
-import redilog.parsing.Token.TypeHint;
+import redilog.init.Redilog;
 
 public class Parser {
 
@@ -60,50 +60,58 @@ public class Parser {
         return input;
     }
 
-    //TODO process negative numbers correctly (or add expression evaluation)
     private static List<Token> tokenize(String input) {
-        List<Token> res = new ArrayList<>();
+        List<Token> tokens = new ArrayList<>();
 
-        Token.Builder token = null;
         int line = 1;
         int column = 1;
-
-        for (int i = 0; i < input.length(); i++) {
-            char c = input.charAt(i);
-            if (Character.isWhitespace(c)) {
-                //flush token
-                if (token != null) {
-                    res.add(token.build());
-                    token = null;
-                }
-                if (c == '\n') {
+        int cur = 0;
+        //for handling unary vs binary minus operator
+        boolean lastTokenIsValue = false;
+        while (cur < input.length()) {
+            Matcher m;
+            if (Character.isWhitespace(input.charAt(cur))) {
+                //whitespace
+                ++cur;
+                ++column;
+                if (input.charAt(cur) == '\n') {
                     ++line;
                     column = 1;
                 }
-            } else if (Character.isLetterOrDigit(c) || c == '_') {
-                if (token == null) {
-                    token = new Builder(TypeHint.LETTERS_DIGITS, line, column);
-                } else if (token.getType() != TypeHint.LETTERS_DIGITS) {
-                    res.add(token.build());
-                    token = new Builder(TypeHint.LETTERS_DIGITS, line, column);
-                }
-                token.addChar(c);
+                lastTokenIsValue = false;
+            } else if ((m = Token.WORD.matcher(input)).find(cur) && m.start() == cur) {
+                //word
+                tokens.add(Token.word(m.group(), line, column));
+                cur += m.end() - m.start();
+                column += m.end() - m.start();
+                lastTokenIsValue = true;
+            } else if ((m = (lastTokenIsValue ? Token.POSITIVE_NUMBER : Token.NUMBER).matcher(input)).find(cur)
+                    && m.start() == cur) {
+                //number
+                tokens.add(new Token(m.group(), Token.Type.NUMBER, line, column));
+                cur += m.end() - m.start();
+                column += m.end() - m.start();
+                lastTokenIsValue = true;
             } else {
-                if (token != null) {
-                    res.add(token.build());
+                //symbol
+                String symbol = "_";
+                for (String s : Token.MULTICHAR_SYMBOLS) {
+                    if (input.startsWith(s, cur)) {
+                        symbol = s;
+                    }
                 }
-                token = new Builder(TypeHint.SYMBOL, line, column);
-                token.addChar(c);
+                tokens.add(new Token(input.substring(cur, cur + symbol.length()), Token.Type.SYMBOL, line, column));
+                cur += symbol.length();
+                column += symbol.length();
+                lastTokenIsValue = false;
             }
-            ++column;
         }
-        if (token != null) {
-            res.add(token.build());
-        }
-        //make it so I don't need to check for range issues
-        res.add(Token.EOF(line, column + 1));
 
-        return res;
+        //make it so I don't need to check for range issues
+        tokens.add(Token.EOF(line, column + 1));
+
+        Redilog.LOGGER.info("{}", tokens);
+        return tokens;
     }
 
     private static SymbolGraph processTokens(List<Token> tokens) throws RedilogParsingException {
