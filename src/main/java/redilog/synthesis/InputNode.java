@@ -1,6 +1,7 @@
 package redilog.synthesis;
 
 import java.util.Collection;
+import java.util.Random;
 
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
@@ -28,7 +29,7 @@ public class InputNode extends Node {
     }
 
     @Override
-    public void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes) {
+    public void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes, Random rng) {
         //NO OP
     }
 

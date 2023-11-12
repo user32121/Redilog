@@ -1,7 +1,7 @@
 package redilog.synthesis;
 
 import java.util.Collection;
-import java.util.function.Supplier;
+import java.util.Random;
 
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -59,20 +59,17 @@ public class OrNode extends Node {
     }
 
     @Override
-    public void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes) {
-        //get average positions of inputs and outputs
-        Vec3d avg = position.add(input1.position).add(input2.position);
-        int count = 3;
-        for (Supplier<Vec3d> pos : outputNodes) {
-            avg = avg.add(pos.get());
-            ++count;
-        }
-        avg = avg.multiply(1.0 / count);
+    public void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes, Random rng) {
+        //get average positions of inputs, outputs, and self
+        Vec3d avgInputs = VecUtil.avg(input1.position, input2.position);
+        Vec3d avgOutputs = VecUtil.avg(outputNodes.stream().map(s -> s.get()).toArray(Vec3d[]::new));
+        Vec3d avg = VecUtil.avg(avgInputs, avgOutputs, avgOutputs, position);
+        avg = avg.add(rng.nextDouble(-1, 1), rng.nextDouble(-1, 1), rng.nextDouble(-1, 1));
 
         //repel from other nodes
         for (Node n : otherNodes) {
             double distSqr = avg.squaredDistanceTo(n.position);
-            avg = avg.lerp(n.position, -3 / (distSqr + 0.1));
+            avg = avg.lerp(n.position, -5 / (distSqr + 1));
         }
 
         //clamp by buildspace

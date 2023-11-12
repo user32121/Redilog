@@ -125,7 +125,7 @@ public class Placer {
         //TODO pick less arbitrary repeat constant
         for (int i = 0; i < 100; i++) {
             for (Node node : graph.nodes.values()) {
-                node.adjustPotentialPosition(buildSpace, graph.nodes.values());
+                node.adjustPotentialPosition(buildSpace, graph.nodes.values(), rng);
             }
         }
         for (Node node : graph.nodes.values()) {
@@ -136,6 +136,7 @@ public class Placer {
     private static void routeWires(Array3D<BLOCK> grid, LogicGraph graph, Consumer<Text> feedback)
             throws RedilogPlacementException {
         //TODO encapsulate
+        //TODO some kind of progress bar?
         for (Node node : graph.nodes.values()) {
             if (node instanceof InputNode || node instanceof ConstantNode) {
                 //NO OP

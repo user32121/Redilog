@@ -2,6 +2,7 @@ package redilog.synthesis;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -45,6 +46,7 @@ public abstract class Node {
      * Move potential position around so that it's close to its inputs and outputs
      * @param buildSpace the space a node must fit inside
      * @param otherNodes reference to other nodes so it doesn't get too close
+     * @param rng
      */
-    public abstract void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes);
+    public abstract void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes, Random rng);
 }

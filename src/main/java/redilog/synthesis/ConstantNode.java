@@ -1,6 +1,7 @@
 package redilog.synthesis;
 
 import java.util.Collection;
+import java.util.Random;
 import java.util.function.Supplier;
 
 import net.minecraft.util.math.Box;
@@ -29,7 +30,7 @@ public class ConstantNode extends Node {
     }
 
     @Override
-    public void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes) {
+    public void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes, Random rng) {
         //get average positions of inputs and outputs
         Vec3d avg = position.add(0, 0, -5);
         int count = 1;
@@ -38,6 +39,7 @@ public class ConstantNode extends Node {
             ++count;
         }
         avg = avg.multiply(1.0 / count);
+        avg = avg.add(rng.nextDouble(-1, 1), rng.nextDouble(-1, 1), rng.nextDouble(-1, 1));
 
         //repel from other nodes
         for (Node n : otherNodes) {

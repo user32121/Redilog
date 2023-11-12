@@ -1,6 +1,7 @@
 package redilog.synthesis;
 
 import java.util.Collection;
+import java.util.Random;
 import java.util.Set;
 
 import net.minecraft.util.math.Box;
@@ -38,7 +39,7 @@ public class OutputNode extends Node {
     }
 
     @Override
-    public void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes) {
+    public void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes, Random rng) {
         //NO OP
     }
 
