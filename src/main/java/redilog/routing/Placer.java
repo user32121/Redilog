@@ -45,20 +45,26 @@ import redilog.utils.VecUtil;
 
 public class Placer {
     public enum BLOCK {
-        AIR,
-        STRICT_AIR, //a block that must be air, such as above diagonal wires
-        WIRE,
-        BLOCK,
-        REPEATER_NORTH,
-        REPEATER_SOUTH,
-        REPEATER_EAST,
-        REPEATER_WEST,
-        REDSTONE_BLOCK,
-        TORCH,
-        TORCH_NORTH,
-        TORCH_SOUTH,
-        TORCH_EAST,
-        TORCH_WEST,
+        AIR(Blocks.AIR.getDefaultState()),
+        STRICT_AIR(Blocks.AIR.getDefaultState()), //a block that must be air, such as above diagonal wires
+        WIRE(Blocks.REDSTONE_WIRE.getDefaultState()),
+        BLOCK(Blocks.LIGHT_BLUE_CONCRETE.getDefaultState()),
+        REPEATER_NORTH(Blocks.REPEATER.getDefaultState().with(RepeaterBlock.FACING, Direction.SOUTH)),
+        REPEATER_SOUTH(Blocks.REPEATER.getDefaultState().with(RepeaterBlock.FACING, Direction.NORTH)),
+        REPEATER_EAST(Blocks.REPEATER.getDefaultState().with(RepeaterBlock.FACING, Direction.WEST)),
+        REPEATER_WEST(Blocks.REPEATER.getDefaultState().with(RepeaterBlock.FACING, Direction.EAST)),
+        REDSTONE_BLOCK(Blocks.REDSTONE_BLOCK.getDefaultState()),
+        TORCH(Blocks.REDSTONE_TORCH.getDefaultState()),
+        TORCH_NORTH(Blocks.REDSTONE_WALL_TORCH.getDefaultState().with(WallRedstoneTorchBlock.FACING, Direction.NORTH)),
+        TORCH_SOUTH(Blocks.REDSTONE_WALL_TORCH.getDefaultState().with(WallRedstoneTorchBlock.FACING, Direction.SOUTH)),
+        TORCH_EAST(Blocks.REDSTONE_WALL_TORCH.getDefaultState().with(WallRedstoneTorchBlock.FACING, Direction.EAST)),
+        TORCH_WEST(Blocks.REDSTONE_WALL_TORCH.getDefaultState().with(WallRedstoneTorchBlock.FACING, Direction.WEST));
+
+        public BlockState state;
+
+        private BLOCK(BlockState state) {
+            this.state = state;
+        }
     }
 
     /**
@@ -98,35 +104,7 @@ public class Placer {
         for (int x = 0; x < buildSpace.getXLength(); ++x) {
             for (int y = 0; y < buildSpace.getYLength(); ++y) {
                 for (int z = 0; z < buildSpace.getZLength(); ++z) {
-                    BlockState state = switch (grid.get(x, y, z)) {
-                        //TODO encapsulate
-                        case AIR -> Blocks.AIR.getDefaultState();
-                        case STRICT_AIR -> Blocks.AIR.getDefaultState();
-                        case WIRE -> Blocks.REDSTONE_WIRE.getDefaultState();
-                        case BLOCK -> Blocks.LIGHT_BLUE_CONCRETE.getDefaultState();
-                        case REDSTONE_BLOCK -> Blocks.REDSTONE_BLOCK.getDefaultState();
-                        case TORCH -> Blocks.REDSTONE_TORCH.getDefaultState();
-                        case REPEATER_NORTH -> Blocks.REPEATER.getDefaultState()
-                                .with(RepeaterBlock.FACING, Direction.SOUTH);
-                        case REPEATER_SOUTH -> Blocks.REPEATER.getDefaultState()
-                                .with(RepeaterBlock.FACING, Direction.NORTH);
-                        case REPEATER_EAST -> Blocks.REPEATER.getDefaultState()
-                                .with(RepeaterBlock.FACING, Direction.WEST);
-                        case REPEATER_WEST -> Blocks.REPEATER.getDefaultState()
-                                .with(RepeaterBlock.FACING, Direction.EAST);
-                        case TORCH_NORTH -> Blocks.REDSTONE_WALL_TORCH.getDefaultState()
-                                .with(WallRedstoneTorchBlock.FACING, Direction.NORTH);
-                        case TORCH_SOUTH -> Blocks.REDSTONE_WALL_TORCH.getDefaultState()
-                                .with(WallRedstoneTorchBlock.FACING, Direction.SOUTH);
-                        case TORCH_EAST -> Blocks.REDSTONE_WALL_TORCH.getDefaultState()
-                                .with(WallRedstoneTorchBlock.FACING, Direction.EAST);
-                        case TORCH_WEST -> Blocks.REDSTONE_WALL_TORCH.getDefaultState()
-                                .with(WallRedstoneTorchBlock.FACING, Direction.WEST);
-                        default -> throw new NotImplementedException(grid.get(x, y, z) + " not implemented");
-                    };
-                    if (state != null) {
-                        world.setBlockState(minPos.add(x, y, z), state);
-                    }
+                    world.setBlockState(minPos.add(x, y, z), grid.get(x, y, z).state);
                 }
             }
         }
