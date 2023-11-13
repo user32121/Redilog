@@ -2,12 +2,17 @@ package redilog.synthesis;
 
 import java.util.Collection;
 import java.util.Random;
+import java.util.Set;
 import java.util.function.Supplier;
+
+import org.apache.logging.log4j.util.TriConsumer;
 
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3i;
 import redilog.parsing.Expression;
 import redilog.routing.Placer.BLOCK;
+import redilog.routing.RedilogPlacementException;
 import redilog.utils.Array3D;
 import redilog.utils.Vec4i;
 import redilog.utils.VecUtil;
@@ -67,5 +72,10 @@ public class ConstantNode extends Node {
             z = buildSpace.getZLength() - 3 - 2;
         }
         position = new Vec3d(x, y, z);
+    }
+
+    @Override
+    public void routeBFS(TriConsumer<Set<Vec4i>, Vec3i, Node> bfs) throws RedilogPlacementException {
+        // NO OP
     }
 }

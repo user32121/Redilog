@@ -10,8 +10,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import org.apache.commons.lang3.NotImplementedException;
-
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.LeverBlock;
@@ -29,12 +27,9 @@ import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
 import redilog.init.Redilog;
 import redilog.routing.bfs.BFSStep;
-import redilog.synthesis.AndNode;
-import redilog.synthesis.ConstantNode;
 import redilog.synthesis.InputNode;
 import redilog.synthesis.LogicGraph;
 import redilog.synthesis.Node;
-import redilog.synthesis.OrNode;
 import redilog.synthesis.OutputNode;
 import redilog.utils.Array3D;
 import redilog.utils.Array3DView;
@@ -135,33 +130,9 @@ public class Placer {
 
     private static void routeWires(Array3D<BLOCK> grid, LogicGraph graph, Consumer<Text> feedback)
             throws RedilogPlacementException {
-        //TODO encapsulate
         //TODO some kind of progress bar?
         for (Node node : graph.nodes.values()) {
-            if (node instanceof InputNode || node instanceof ConstantNode) {
-                //NO OP
-            } else if (node instanceof OutputNode on) {
-                if (on.value != null) {
-                    routeBFS(on.value.getOutputs(), VecUtil.d2i(on.getPosition()), grid, graph, on.value, node,
-                            feedback);
-                }
-            } else if (node instanceof OrNode on) {
-                if (on.input1 != null) {
-                    routeBFS(on.input1.getOutputs(), on.getInput1(), grid, graph, on.input1, node, feedback);
-                }
-                if (on.input2 != null) {
-                    routeBFS(on.input2.getOutputs(), on.getInput2(), grid, graph, on.input2, node, feedback);
-                }
-            } else if (node instanceof AndNode an) {
-                if (an.input1 != null) {
-                    routeBFS(an.input1.getOutputs(), an.getInput1(), grid, graph, an.input1, node, feedback);
-                }
-                if (an.input2 != null) {
-                    routeBFS(an.input2.getOutputs(), an.getInput2(), grid, graph, an.input2, node, feedback);
-                }
-            } else {
-                throw new NotImplementedException(node.getClass() + " not implemented");
-            }
+            node.routeBFS((starts, end, startNode) -> routeBFS(starts, end, grid, graph, startNode, node, feedback));
         }
     }
 

@@ -40,6 +40,7 @@ public class ConstantExpression extends Expression {
 
     @Override
     public Node getNode(int index) throws IndexOutOfBoundsException {
+        //TODO don't throw when accessing nodes outside of range
         if (nodes == null) {
             nodes = new Node[range.maxInclusive() - range.minInclusive() + 1];
             int bits = value;

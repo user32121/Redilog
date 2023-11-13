@@ -4,8 +4,11 @@ import java.util.Collection;
 import java.util.Random;
 import java.util.Set;
 
+import org.apache.logging.log4j.util.TriConsumer;
+
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3i;
 import redilog.parsing.Expression;
 import redilog.routing.Placer.BLOCK;
 import redilog.routing.RedilogPlacementException;
@@ -54,5 +57,12 @@ public class OutputNode extends Node {
 
     public Vec3d getPosition() {
         return position;
+    }
+
+    @Override
+    public void routeBFS(TriConsumer<Set<Vec4i>, Vec3i, Node> bfs) throws RedilogPlacementException {
+        if (value != null) {
+            bfs.accept(value.getOutputs(), VecUtil.d2i(position), value);
+        }
     }
 }
