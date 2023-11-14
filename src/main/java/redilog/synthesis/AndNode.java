@@ -18,6 +18,9 @@ import redilog.utils.Vec4i;
 import redilog.utils.VecUtil;
 
 public class AndNode extends Node {
+    //TODO wire as output
+    //TODO strict air
+    //TODO replace repeaters with wire
     private final static Array3D<BLOCK> AND_GATE_BLOCKS = new Array3D.Builder<BLOCK>()
             .data(new BLOCK[][][] {
                     { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK },

@@ -1,28 +1,31 @@
 package redilog.synthesis;
 
-import java.util.Collection;
-import java.util.Random;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.apache.logging.log4j.util.TriConsumer;
 
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.WallSignBlock;
+import net.minecraft.block.entity.SignBlockEntity;
+import net.minecraft.text.Text;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3i;
+import net.minecraft.world.World;
 import redilog.parsing.Expression;
 import redilog.routing.Placer.BLOCK;
 import redilog.routing.RedilogPlacementException;
 import redilog.utils.Array3D;
+import redilog.utils.LoggerUtil;
 import redilog.utils.Vec4i;
 import redilog.utils.VecUtil;
 
-public class OutputNode extends Node {
+public class OutputNode extends IONode {
     public final Node value;
-    public final String name;
 
     public OutputNode(Expression owner, String name, Node value) {
-        super(owner);
-        this.name = name;
+        super(owner, name);
         this.used = true;
         this.value = value;
         if (value != null) {
@@ -42,27 +45,25 @@ public class OutputNode extends Node {
     }
 
     @Override
-    public void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes, Random rng) {
-        //NO OP
-    }
-
-    @Override
-    public void setPotentialPosition(Vec3d pos) {
-        //NO OP
-    }
-
-    public void setPosition(Vec3d pos) {
-        position = pos;
-    }
-
-    public Vec3d getPosition() {
-        return position;
-    }
-
-    @Override
     public void routeBFS(TriConsumer<Set<Vec4i>, Vec3i, Node> bfs) throws RedilogPlacementException {
         if (value != null) {
             bfs.accept(value.getOutputs(), VecUtil.d2i(position), value);
+        }
+    }
+
+    @Override
+    public void placeLabel(World world, BlockPos relativeOrigin, Consumer<Text> feedback) {
+        Vec3i pos = VecUtil.d2i(position);
+        if (pos == null) {
+            LoggerUtil.logWarnAndCreateMessage(feedback, String.format("Failed to label output %s", name));
+            return;
+        }
+        world.setBlockState(relativeOrigin.add(pos.down()), Blocks.REDSTONE_LAMP.getDefaultState());
+        world.setBlockState(relativeOrigin.add(pos), Blocks.REDSTONE_WIRE.getDefaultState());
+        world.setBlockState(relativeOrigin.add(pos).add(0, -1, 1),
+                Blocks.BIRCH_WALL_SIGN.getDefaultState().with(WallSignBlock.FACING, Direction.SOUTH));
+        if (world.getBlockEntity(relativeOrigin.add(pos).add(0, -1, 1)) instanceof SignBlockEntity sbe) {
+            sbe.setTextOnRow(0, Text.of(name));
         }
     }
 }

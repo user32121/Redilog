@@ -6,6 +6,7 @@ import redilog.routing.Placer.BLOCK;
 import redilog.utils.Array3D;
 import redilog.utils.Vec4i;
 
+//TODO wire still somehow getting cut
 public class VerticalCardinalStep extends CardinalStep {
     private int verticalOffset;
 

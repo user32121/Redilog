@@ -12,12 +12,8 @@ import java.util.function.Consumer;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.LeverBlock;
 import net.minecraft.block.RepeaterBlock;
 import net.minecraft.block.WallRedstoneTorchBlock;
-import net.minecraft.block.WallSignBlock;
-import net.minecraft.block.entity.SignBlockEntity;
-import net.minecraft.block.enums.WallMountLocation;
 import net.minecraft.entity.boss.CommandBossBar;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
@@ -29,6 +25,7 @@ import net.minecraft.world.World;
 import redilog.blocks.BlockProgressBarManager;
 import redilog.init.Redilog;
 import redilog.routing.bfs.BFSStep;
+import redilog.synthesis.IONode;
 import redilog.synthesis.InputNode;
 import redilog.synthesis.LogicGraph;
 import redilog.synthesis.Node;
@@ -249,38 +246,10 @@ public class Placer {
     }
 
     private static void labelIO(Box buildSpace, LogicGraph graph, World world, Consumer<Text> feedback) {
-        BlockPos minPos = new BlockPos(buildSpace.minX, buildSpace.minY, buildSpace.minZ);
+        BlockPos relativeOrigin = new BlockPos(buildSpace.minX, buildSpace.minY, buildSpace.minZ);
         for (Entry<String, Node> entry : graph.nodes.entrySet()) {
-            //TODO encapsulate
-            if (entry.getValue() instanceof InputNode in) {
-                Vec3i pos = VecUtil.d2i(in.getPosition());
-                if (pos == null) {
-                    LoggerUtil.logWarnAndCreateMessage(feedback,
-                            String.format("Failed to label input %s", entry.getKey()));
-                    continue;
-                }
-                world.setBlockState(minPos.add(pos.down()), Blocks.WHITE_CONCRETE.getDefaultState());
-                world.setBlockState(minPos.add(pos),
-                        Blocks.LEVER.getDefaultState().with(LeverBlock.FACE, WallMountLocation.FLOOR));
-                world.setBlockState(minPos.add(pos).add(0, -1, -1),
-                        Blocks.BIRCH_WALL_SIGN.getDefaultState().with(WallSignBlock.FACING, Direction.NORTH));
-                if (world.getBlockEntity(minPos.add(pos).add(0, -1, -1)) instanceof SignBlockEntity sbe) {
-                    sbe.setTextOnRow(0, Text.of(entry.getKey()));
-                }
-            } else if (entry.getValue() instanceof OutputNode on) {
-                Vec3i pos = VecUtil.d2i(on.getPosition());
-                if (pos == null) {
-                    LoggerUtil.logWarnAndCreateMessage(feedback,
-                            String.format("Failed to label output %s", entry.getKey()));
-                    continue;
-                }
-                world.setBlockState(minPos.add(pos.down()), Blocks.REDSTONE_LAMP.getDefaultState());
-                world.setBlockState(minPos.add(pos), Blocks.REDSTONE_WIRE.getDefaultState());
-                world.setBlockState(minPos.add(pos).add(0, -1, 1),
-                        Blocks.BIRCH_WALL_SIGN.getDefaultState().with(WallSignBlock.FACING, Direction.SOUTH));
-                if (world.getBlockEntity(minPos.add(pos).add(0, -1, 1)) instanceof SignBlockEntity sbe) {
-                    sbe.setTextOnRow(0, Text.of(entry.getKey()));
-                }
+            if (entry.getValue() instanceof IONode ion) {
+                ion.placeLabel(world, relativeOrigin, feedback);
             }
         }
     }
