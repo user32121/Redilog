@@ -18,6 +18,7 @@ import net.minecraft.block.WallRedstoneTorchBlock;
 import net.minecraft.block.WallSignBlock;
 import net.minecraft.block.entity.SignBlockEntity;
 import net.minecraft.block.enums.WallMountLocation;
+import net.minecraft.entity.boss.CommandBossBar;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -25,6 +26,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
+import redilog.blocks.BlockProgressBarManager;
 import redilog.init.Redilog;
 import redilog.routing.bfs.BFSStep;
 import redilog.synthesis.InputNode;
@@ -65,9 +67,11 @@ public class Placer {
     /**
      * Place redstone according to the logic graph in the specified cuboid region
      * @param feedback the function will add messages that should be relayed to the user
+     * @param bbpbm
      * @throws RedilogPlacementException
      */
-    public static void placeRedilog(LogicGraph graph, Box buildSpace, World world, Consumer<Text> feedback)
+    public static void placeRedilog(LogicGraph graph, Box buildSpace, World world, Consumer<Text> feedback,
+            BlockProgressBarManager bbpbm)
             throws RedilogPlacementException {
         if (buildSpace == null || (buildSpace.getAverageSideLength() == 0)) {
             throw new RedilogPlacementException(
@@ -87,7 +91,7 @@ public class Placer {
         feedback.accept(Text.of("  Routing wires..."));
         //view prevents routing wires in sign space
         routeWires(new Array3DView<>(grid, 0, 0, 2, grid.getXLength(), grid.getYLength(), grid.getZLength() - 1),
-                graph, feedback);
+                graph, feedback, bbpbm);
         feedback.accept(Text.of("  Transferring to world..."));
         transferGridToWorld(buildSpace, world, grid);
         labelIO(buildSpace, graph, world, feedback);
@@ -128,11 +132,15 @@ public class Placer {
         }
     }
 
-    private static void routeWires(Array3D<BLOCK> grid, LogicGraph graph, Consumer<Text> feedback)
+    private static void routeWires(Array3D<BLOCK> grid, LogicGraph graph, Consumer<Text> feedback,
+            BlockProgressBarManager bbpbm)
             throws RedilogPlacementException {
-        //TODO some kind of progress bar?
+        CommandBossBar cbb = bbpbm.getProgressBar("routing");
+        cbb.setMaxValue(graph.nodes.size());
+        cbb.setValue(0);
         for (Node node : graph.nodes.values()) {
             node.routeBFS((starts, end, startNode) -> routeBFS(starts, end, grid, graph, startNode, node, feedback));
+            cbb.setValue(cbb.getValue() + 1);
         }
     }
 

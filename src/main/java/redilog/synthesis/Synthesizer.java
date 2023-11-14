@@ -4,12 +4,14 @@ import java.util.Map.Entry;
 import java.util.function.Consumer;
 
 import net.minecraft.text.Text;
+import redilog.blocks.BlockProgressBarManager;
 import redilog.parsing.Expression;
 import redilog.parsing.SymbolGraph;
 import redilog.utils.LoggerUtil;
 
 public class Synthesizer {
-    public static LogicGraph synthesize(SymbolGraph sGraph, Consumer<Text> feedback) throws RedilogSynthesisException {
+    public static LogicGraph synthesize(SymbolGraph sGraph, Consumer<Text> feedback,
+            BlockProgressBarManager bbpbm) throws RedilogSynthesisException {
         LogicGraph lGraph = convertGraph(sGraph, feedback);
         warnUnused(lGraph, feedback);
         return lGraph;

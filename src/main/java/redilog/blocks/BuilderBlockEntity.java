@@ -68,17 +68,21 @@ public class BuilderBlockEntity extends BlockEntity implements ExtendedScreenHan
         markDirty();
     }
 
+    //TODO async
     public void build(ServerPlayerEntity player) {
         try {
+            BlockProgressBarManager bbpbm = new BlockProgressBarManager("builder", getPos(),
+                    player.server.getBossBarManager());
+
             Redilog.LOGGER.info("Begin parsing stage");
             player.sendMessage(Text.of("Parsing..."));
-            SymbolGraph sGraph = Parser.parseRedilog(redilog, player::sendMessage);
+            SymbolGraph sGraph = Parser.parseRedilog(redilog, player::sendMessage, bbpbm);
             Redilog.LOGGER.info("Begin synthesize stage");
             player.sendMessage(Text.of("Synthesizing..."));
-            LogicGraph lGraph = Synthesizer.synthesize(sGraph, player::sendMessage);
+            LogicGraph lGraph = Synthesizer.synthesize(sGraph, player::sendMessage, bbpbm);
             Redilog.LOGGER.info("Begin placing and routing stage");
             player.sendMessage(Text.of("Placing..."));
-            Placer.placeRedilog(lGraph, buildSpace, world, player::sendMessage);
+            Placer.placeRedilog(lGraph, buildSpace, world, player::sendMessage, bbpbm);
 
             player.sendMessage(Text.of("Build finished."));
         } catch (RedilogParsingException e) {

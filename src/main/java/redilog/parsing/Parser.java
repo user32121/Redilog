@@ -9,6 +9,7 @@ import org.apache.commons.lang3.NotImplementedException;
 
 import net.minecraft.text.Text;
 import net.minecraft.util.dynamic.Range;
+import redilog.blocks.BlockProgressBarManager;
 import redilog.init.Redilog;
 
 public class Parser {
@@ -16,10 +17,12 @@ public class Parser {
     /**
      * Converts redilog code into a graph that relates the outputs to the inputs, similar to verilog synthesis.
      * @param feedback the function will add messages that should be relayed to the user
+     * @param bbpbm
      * @return a graph representation of the redilog
      * @throws RedilogParsingException
      */
-    public static SymbolGraph parseRedilog(String redilog, Consumer<Text> feedback) throws RedilogParsingException {
+    public static SymbolGraph parseRedilog(String redilog, Consumer<Text> feedback,
+            BlockProgressBarManager bbpbm) throws RedilogParsingException {
         redilog = stripComments(redilog);
         List<Token> tokens = tokenize(redilog);
         SymbolGraph sGraph = processTokens(tokens);
@@ -72,12 +75,12 @@ public class Parser {
             Matcher m;
             if (Character.isWhitespace(input.charAt(cur))) {
                 //whitespace
-                ++cur;
                 ++column;
                 if (input.charAt(cur) == '\n') {
                     ++line;
                     column = 1;
                 }
+                ++cur;
                 lastTokenIsValue = false;
             } else if ((m = Token.WORD.matcher(input)).find(cur) && m.start() == cur) {
                 //word
