@@ -18,20 +18,18 @@ import redilog.utils.Vec4i;
 import redilog.utils.VecUtil;
 
 public class AndNode extends Node {
-    //TODO wire as output
     //TODO strict air
-    //TODO replace repeaters with wire
     private final static Array3D<BLOCK> AND_GATE_BLOCKS = new Array3D.Builder<BLOCK>()
             .data(new BLOCK[][][] {
-                    { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK },
-                            { BLOCK.WIRE, BLOCK.REPEATER_SOUTH, BLOCK.BLOCK, BLOCK.BLOCK },
-                            { BLOCK.AIR, BLOCK.AIR, BLOCK.TORCH, BLOCK.AIR }, },
-                    { { BLOCK.AIR, BLOCK.AIR, BLOCK.AIR, BLOCK.BLOCK },
-                            { BLOCK.AIR, BLOCK.AIR, BLOCK.BLOCK, BLOCK.TORCH_SOUTH },
-                            { BLOCK.AIR, BLOCK.AIR, BLOCK.WIRE, BLOCK.AIR }, },
-                    { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK },
-                            { BLOCK.WIRE, BLOCK.REPEATER_SOUTH, BLOCK.BLOCK, BLOCK.BLOCK },
-                            { BLOCK.AIR, BLOCK.AIR, BLOCK.TORCH, BLOCK.AIR }, }, })
+                    { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.AIR, BLOCK.AIR, BLOCK.AIR },
+                            { BLOCK.WIRE, BLOCK.WIRE, BLOCK.BLOCK, BLOCK.AIR, BLOCK.AIR },
+                            { BLOCK.AIR, BLOCK.AIR, BLOCK.TORCH, BLOCK.AIR, BLOCK.AIR }, },
+                    { { BLOCK.AIR, BLOCK.AIR, BLOCK.AIR, BLOCK.AIR, BLOCK.BLOCK },
+                            { BLOCK.AIR, BLOCK.AIR, BLOCK.BLOCK, BLOCK.TORCH_SOUTH, BLOCK.WIRE },
+                            { BLOCK.AIR, BLOCK.AIR, BLOCK.WIRE, BLOCK.AIR, BLOCK.AIR }, },
+                    { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.AIR, BLOCK.AIR, BLOCK.AIR },
+                            { BLOCK.WIRE, BLOCK.WIRE, BLOCK.BLOCK, BLOCK.AIR, BLOCK.AIR },
+                            { BLOCK.AIR, BLOCK.AIR, BLOCK.TORCH, BLOCK.AIR, BLOCK.AIR }, }, })
             .build();
 
     public final Node input1, input2;
@@ -58,7 +56,7 @@ public class AndNode extends Node {
         //swap inputs if more convenient
         swapInputs = input2.position.x < input1.position.x;
 
-        outputs.add(new Vec4i(VecUtil.d2i(position).add(1, 1, 3), 14));
+        outputs.add(new Vec4i(VecUtil.d2i(position).add(1, 1, 4), 15));
 
         for (BlockPos offset : BlockPos.iterate(BlockPos.ORIGIN,
                 new BlockPos(AND_GATE_BLOCKS.getSize().add(-1, -1, -1)))) {
