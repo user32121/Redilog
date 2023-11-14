@@ -27,6 +27,10 @@ public class RepeaterCardinalStep extends CardinalStep {
                 || !grid.isValue(nextNext.to3i().down(), BLOCK.AIR))) {
             return null;
         }
+        //reached target
+        if (nextNext.to3i().equals(target)) {
+            return nextNext;
+        }
         //make sure not adjacent to other wires
         for (Direction dir : new Direction[] { direction, direction.rotateYClockwise(),
                 direction.rotateYCounterclockwise() }) {

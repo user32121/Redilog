@@ -38,7 +38,7 @@ public class InputNode extends IONode {
     }
 
     @Override
-    public void routeBFS(TriConsumer<Set<Vec4i>, Vec3i, Node> bfs) throws RedilogPlacementException {
+    public void routeBFS(TriConsumer<Set<Vec4i>, Vec4i, Node> bfs) throws RedilogPlacementException {
         // NO OP
     }
 

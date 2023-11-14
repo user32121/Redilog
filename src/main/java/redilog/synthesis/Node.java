@@ -10,7 +10,6 @@ import org.apache.logging.log4j.util.TriConsumer;
 
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3i;
 import redilog.parsing.Expression;
 import redilog.routing.Placer.BLOCK;
 import redilog.routing.RedilogPlacementException;
@@ -53,5 +52,5 @@ public abstract class Node {
      */
     public abstract void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes, Random rng);
 
-    public abstract void routeBFS(TriConsumer<Set<Vec4i>, Vec3i, Node> bfs) throws RedilogPlacementException;
+    public abstract void routeBFS(TriConsumer<Set<Vec4i>, Vec4i, Node> bfs) throws RedilogPlacementException;
 }

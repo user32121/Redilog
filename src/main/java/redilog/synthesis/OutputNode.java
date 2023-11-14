@@ -45,9 +45,9 @@ public class OutputNode extends IONode {
     }
 
     @Override
-    public void routeBFS(TriConsumer<Set<Vec4i>, Vec3i, Node> bfs) throws RedilogPlacementException {
+    public void routeBFS(TriConsumer<Set<Vec4i>, Vec4i, Node> bfs) throws RedilogPlacementException {
         if (value != null) {
-            bfs.accept(value.getOutputs(), VecUtil.d2i(position), value);
+            bfs.accept(value.getOutputs(), new Vec4i(VecUtil.d2i(position), 1), value);
         }
     }
 

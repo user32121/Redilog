@@ -101,12 +101,12 @@ public class AndNode extends Node {
     }
 
     @Override
-    public void routeBFS(TriConsumer<Set<Vec4i>, Vec3i, Node> bfs) throws RedilogPlacementException {
+    public void routeBFS(TriConsumer<Set<Vec4i>, Vec4i, Node> bfs) throws RedilogPlacementException {
         if (input1 != null) {
-            bfs.accept(input1.getOutputs(), getInput1(), input1);
+            bfs.accept(input1.getOutputs(), new Vec4i(getInput1(), 2), input1);
         }
         if (input2 != null) {
-            bfs.accept(input2.getOutputs(), getInput2(), input2);
+            bfs.accept(input2.getOutputs(), new Vec4i(getInput2(), 2), input2);
         }
     }
 }

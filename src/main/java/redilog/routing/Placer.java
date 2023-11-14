@@ -141,8 +141,12 @@ public class Placer {
         }
     }
 
-    //constructs a path from one of starts to end
-    private static void routeBFS(Set<Vec4i> starts, Vec3i end, Array3D<BLOCK> grid, LogicGraph graph,
+    /**
+     * Constructs a path from one of starts to end.
+     * @param starts any allowable starting position
+     * @param end target of BFS; w component indicates <i>minimum</i> signal strength needed
+     */
+    private static void routeBFS(Set<Vec4i> starts, Vec4i end, Array3D<BLOCK> grid, LogicGraph graph,
             Node startNode, Node endNode, Consumer<Text> feedback) {
         //(4th dimension represents signal strength)
         Queue<Vec4i> toProcess = new LinkedList<>();
@@ -159,7 +163,7 @@ public class Placer {
         while (!toProcess.isEmpty()) {
             Vec4i cur = toProcess.remove();
             for (BFSStep step : BFSStep.STEPS) {
-                Vec4i move = step.getValidMove(grid, cur, end);
+                Vec4i move = step.getValidMove(grid, cur, end.to3i());
                 if (move != null && cost.inBounds(move) && cost.get(cur) + step.getCost() < cost.get(move)) {
                     visitedFrom.set(move, cur);
                     cost.set(move, cost.get(cur) + step.getCost());
@@ -174,9 +178,9 @@ public class Placer {
         //check if path exists
         int bestPathCost = Integer.MAX_VALUE;
         int bestPathEnd = -1;
-        for (int i = 1; i < 16; ++i) {
-            if (cost.get(new Vec4i(end, i)) < bestPathCost) {
-                bestPathCost = cost.get(new Vec4i(end, i));
+        for (int i = end.getW(); i < 16; ++i) {
+            if (cost.get(new Vec4i(end.to3i(), i)) < bestPathCost) {
+                bestPathCost = cost.get(new Vec4i(end.to3i(), i));
                 bestPathEnd = i;
             }
         }
@@ -188,7 +192,7 @@ public class Placer {
                             startNode.owner.declaration, endNode.owner.declaration));
         } else {
             //trace path
-            Vec4i cur = visitedFrom.get(new Vec4i(end, bestPathEnd));
+            Vec4i cur = visitedFrom.get(new Vec4i(end.to3i(), bestPathEnd));
             while (!starts.contains(cur)) {
                 if (endNode.isDebug()) {
                     Redilog.LOGGER.info("{}", cur);

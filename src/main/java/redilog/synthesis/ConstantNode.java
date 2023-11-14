@@ -9,7 +9,6 @@ import org.apache.logging.log4j.util.TriConsumer;
 
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3i;
 import redilog.parsing.Expression;
 import redilog.routing.Placer.BLOCK;
 import redilog.routing.RedilogPlacementException;
@@ -75,7 +74,7 @@ public class ConstantNode extends Node {
     }
 
     @Override
-    public void routeBFS(TriConsumer<Set<Vec4i>, Vec3i, Node> bfs) throws RedilogPlacementException {
+    public void routeBFS(TriConsumer<Set<Vec4i>, Vec4i, Node> bfs) throws RedilogPlacementException {
         // NO OP
     }
 }
