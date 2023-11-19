@@ -59,6 +59,7 @@ public class Placer {
         private BLOCK(BlockState state) {
             this.state = state;
         }
+        //TODO canPlaceAir/canPlaceBlock/... methods
     }
 
     /**
