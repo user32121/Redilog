@@ -10,6 +10,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.RepeaterBlock;
@@ -84,16 +85,17 @@ public class Placer {
 
         feedback.accept(Text.of("  Placing IO..."));
         placeIO(buildSpace, graph, feedback);
+        //TODO repeat while adjusting buildSpace and layout to fine tune
         feedback.accept(Text.of("  Placing components..."));
         placeComponents(buildSpace, grid, graph);
         feedback.accept(Text.of("  Routing wires..."));
         //view prevents routing wires in sign space
         routeWires(new Array3DView<>(grid, 0, 0, 2, grid.getXLength(), grid.getYLength(), grid.getZLength() - 1),
                 graph, feedback, bbpbm);
+        //TODO run in synchronous main thread (through WorldAccess.createAndScheduleBlockTick) (check to ensure scheduled ticks are processed on the main thread)
         feedback.accept(Text.of("  Transferring to world..."));
         transferGridToWorld(buildSpace, world, grid);
         labelIO(buildSpace, graph, world, feedback);
-        //TODO repeat while adjusting buildSpace and layout to fine tune
     }
 
     private static void transferGridToWorld(Box buildSpace, World world, Array3D<BLOCK> grid) {
@@ -101,7 +103,7 @@ public class Placer {
         for (int x = 0; x < buildSpace.getXLength(); ++x) {
             for (int y = 0; y < buildSpace.getYLength(); ++y) {
                 for (int z = 0; z < buildSpace.getZLength(); ++z) {
-                    world.setBlockState(minPos.add(x, y, z), grid.get(x, y, z).state);
+                    world.setBlockState(minPos.add(x, y, z), grid.get(x, y, z).state, Block.NOTIFY_LISTENERS);
                 }
             }
         }
