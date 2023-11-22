@@ -73,6 +73,7 @@ public class AndNode extends Node {
         avg = avg.add(rng.nextDouble(-1, 1), rng.nextDouble(-1, 1), rng.nextDouble(-1, 1));
 
         //repel from other nodes
+        //TODO snap away from other nodes
         for (Node n : otherNodes) {
             double distSqr = avg.squaredDistanceTo(n.position);
             avg = avg.lerp(n.position, -5 / (distSqr + 1));

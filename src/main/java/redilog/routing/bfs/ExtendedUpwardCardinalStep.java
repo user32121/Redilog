@@ -6,7 +6,6 @@ import redilog.routing.Placer.BLOCK;
 import redilog.utils.Array3D;
 import redilog.utils.Vec4i;
 
-//TODO for some reason not placing anything right before node inputs
 public class ExtendedUpwardCardinalStep extends CardinalStep {
 
     public ExtendedUpwardCardinalStep(Direction direction) {

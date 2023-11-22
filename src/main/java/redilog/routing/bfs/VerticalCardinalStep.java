@@ -6,7 +6,7 @@ import redilog.routing.Placer.BLOCK;
 import redilog.utils.Array3D;
 import redilog.utils.Vec4i;
 
-//TODO wire still somehow getting cut
+//TODO wire still getting cut; prevent step from reversing (e.g. south right after north)
 public class VerticalCardinalStep extends CardinalStep {
     private int verticalOffset;
 
