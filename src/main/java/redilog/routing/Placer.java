@@ -41,6 +41,7 @@ public class Placer {
     public enum BLOCK {
         AIR(Blocks.AIR.getDefaultState()),
         STRICT_AIR(Blocks.AIR.getDefaultState()), //a block that must be air, such as above diagonal wires
+        GLASS(Blocks.GLASS.getDefaultState()), //debug block
         WIRE(Blocks.REDSTONE_WIRE.getDefaultState()),
         BLOCK(Blocks.LIGHT_BLUE_CONCRETE.getDefaultState()),
         REPEATER_NORTH(Blocks.REPEATER.getDefaultState().with(RepeaterBlock.FACING, Direction.SOUTH)),
@@ -149,6 +150,7 @@ public class Placer {
      */
     private static void routeBFS(Set<Vec4i> starts, Vec4i end, Array3D<BLOCK> grid, LogicGraph graph,
             Node startNode, Node endNode, Consumer<Text> feedback) {
+        //TODO make faster, maybe with A*
         //(4th dimension represents signal strength)
         Queue<Vec4i> toProcess = new LinkedList<>();
         Array4D<Vec4i> visitedFrom = new Array4D.Builder<Vec4i>().size(new Vec4i(grid.getSize(), 16)).build();
@@ -193,7 +195,7 @@ public class Placer {
                             startNode.owner.declaration, endNode.owner.declaration));
         } else {
             //trace path
-            Vec4i cur = visitedFrom.get(new Vec4i(end.to3i(), bestPathEnd));
+            Vec4i cur = new Vec4i(end.to3i(), bestPathEnd);
             while (!starts.contains(cur)) {
                 if (endNode.isDebug()) {
                     Redilog.LOGGER.info("{}", cur);
