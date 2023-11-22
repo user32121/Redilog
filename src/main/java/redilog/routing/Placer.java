@@ -55,12 +55,11 @@ public class Placer {
         TORCH_EAST(Blocks.REDSTONE_WALL_TORCH.getDefaultState().with(WallRedstoneTorchBlock.FACING, Direction.EAST)),
         TORCH_WEST(Blocks.REDSTONE_WALL_TORCH.getDefaultState().with(WallRedstoneTorchBlock.FACING, Direction.WEST));
 
-        public BlockState state;
+        public final BlockState state;
 
         private BLOCK(BlockState state) {
             this.state = state;
         }
-        //TODO canPlaceAir/canPlaceBlock/... methods
     }
 
     /**
