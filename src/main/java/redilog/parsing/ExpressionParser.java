@@ -1,17 +1,9 @@
 package redilog.parsing;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Stack;
 
-import org.apache.commons.lang3.NotImplementedException;
-
 public class ExpressionParser {
-
-    //TODO OOP this
-    //higher means the operator applies first
-    public static final Map<String, Integer> OPERATOR_PRECEDENCE = Map.of("|", 0, "&", 1, "~", 2);
-    public static final Map<String, Boolean> OPERATOR_LEFT_ASSOCIATIVE = Map.of("|", true, "&", true, "~", false);
 
     public static Expression parseExpression(SymbolGraph graph, List<Token> tokens, int start, int end)
             throws RedilogParsingException {
@@ -38,17 +30,17 @@ public class ExpressionParser {
                 output.add(graph.expressions.get(value));
             } else if (token.getType() == Token.Type.SYMBOL) {
                 String o1 = token.getValue();
-                if (OPERATOR_PRECEDENCE.containsKey(o1)) {
+                if (Operator.OPERATORS.containsKey(o1)) {
                     //operator
                     while (!operators.empty()) {
                         String o2 = operators.peek().getValue();
                         boolean o2GtO1 = false, o2EqO1 = false;
                         boolean notLParen = !o2.equals("(");
                         if (notLParen) {
-                            o2GtO1 = OPERATOR_PRECEDENCE.get(o2) > OPERATOR_PRECEDENCE.get(o1);
-                            o2EqO1 = OPERATOR_PRECEDENCE.get(o2) == OPERATOR_PRECEDENCE.get(o1);
+                            o2GtO1 = Operator.OPERATORS.get(o2).precedence > Operator.OPERATORS.get(o1).precedence;
+                            o2EqO1 = Operator.OPERATORS.get(o2).precedence == Operator.OPERATORS.get(o1).precedence;
                         }
-                        boolean leftAssoc = OPERATOR_LEFT_ASSOCIATIVE.get(o1);
+                        boolean leftAssoc = Operator.OPERATORS.get(o1).leftAssociative;
                         if (!(notLParen && (o2GtO1 || (o2EqO1 && leftAssoc)))) {
                             break;
                         }
@@ -97,29 +89,7 @@ public class ExpressionParser {
     private static void applyOperator(Stack<Expression> output, Token token, SymbolGraph graph)
             throws RedilogParsingException {
         String operator = token.getValue();
-        if (operator.equals("|")) {
-            if (output.size() < 2) {
-                throw new RedilogParsingException(String.format("%s requires 2 operands", token));
-            }
-            Expression e1 = output.pop();
-            Expression e2 = output.pop();
-            output.push(new BitwiseOrExpression(token, e1, e2));
-        } else if (operator.equals("&")) {
-            if (output.size() < 2) {
-                throw new RedilogParsingException(String.format("%s requires 2 operands", token));
-            }
-            Expression e1 = output.pop();
-            Expression e2 = output.pop();
-            output.push(new BitwiseAndExpression(token, e1, e2));
-        } else if (operator.equals("~")) {
-            if (output.size() < 1) {
-                throw new RedilogParsingException(String.format("%s requires 1 operand", token));
-            }
-            Expression e1 = output.pop();
-            output.push(new BitwiseNotExpression(token, e1));
-        } else {
-            throw new NotImplementedException(operator + " not implemented");
-        }
+        Operator.OPERATORS.get(operator).applyOperator(token, output);
         graph.expressions.put(String.format("intermediate %s", output.peek()), output.peek());
     }
 }
