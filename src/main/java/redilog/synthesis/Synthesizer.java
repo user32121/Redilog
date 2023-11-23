@@ -36,6 +36,7 @@ public class Synthesizer {
         return lGraph;
     }
 
+    //TODO warn on unused inputs
     private static void warnUnused(LogicGraph graph, Consumer<Text> feedback) {
         for (Entry<String, Node> entry : graph.nodes.entrySet()) {
             if (!entry.getValue().used) {
