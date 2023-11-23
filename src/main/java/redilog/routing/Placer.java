@@ -67,9 +67,10 @@ public class Placer {
      * Place redstone according to the logic graph in the specified cuboid region
      * @param feedback the function will add messages that should be relayed to the user
      * @param bbpbm
+     * @return 
      * @throws RedilogPlacementException
      */
-    public static void placeRedilog(LogicGraph graph, Box buildSpace, World world, Consumer<Text> feedback,
+    public static Array3D<BLOCK> placeAndRoute(LogicGraph graph, Box buildSpace, Consumer<Text> feedback,
             BlockProgressBarManager bbpbm)
             throws RedilogPlacementException {
         if (buildSpace == null || (buildSpace.getAverageSideLength() == 0)) {
@@ -92,21 +93,12 @@ public class Placer {
         //view prevents routing wires in sign space
         routeWires(new Array3DView<>(grid, 0, 0, 2, grid.getXLength(), grid.getYLength(), grid.getZLength() - 1),
                 graph, feedback, bbpbm);
-        //TODO run in synchronous main thread (through WorldAccess.createAndScheduleBlockTick) (check to ensure scheduled ticks are processed on the main thread)
-        feedback.accept(Text.of("  Transferring to world..."));
-        transferGridToWorld(buildSpace, world, grid);
-        labelIO(buildSpace, graph, world, feedback);
+        return grid;
     }
 
-    private static void transferGridToWorld(Box buildSpace, World world, Array3D<BLOCK> grid) {
+    public static void transferGridToWorld(Box buildSpace, World world, Array3D<BLOCK> grid, BlockPos pos) {
         BlockPos minPos = new BlockPos(buildSpace.minX, buildSpace.minY, buildSpace.minZ);
-        for (int x = 0; x < buildSpace.getXLength(); ++x) {
-            for (int y = 0; y < buildSpace.getYLength(); ++y) {
-                for (int z = 0; z < buildSpace.getZLength(); ++z) {
-                    world.setBlockState(minPos.add(x, y, z), grid.get(x, y, z).state, Block.NOTIFY_LISTENERS);
-                }
-            }
-        }
+        world.setBlockState(minPos.add(pos), grid.get(pos).state, Block.NOTIFY_LISTENERS);
     }
 
     private static void placeComponents(Box buildSpace, Array3D<BLOCK> grid, LogicGraph graph) {
@@ -253,7 +245,7 @@ public class Placer {
         }
     }
 
-    private static void labelIO(Box buildSpace, LogicGraph graph, World world, Consumer<Text> feedback) {
+    public static void labelIO(Box buildSpace, LogicGraph graph, World world, Consumer<Text> feedback) {
         BlockPos relativeOrigin = new BlockPos(buildSpace.minX, buildSpace.minY, buildSpace.minZ);
         for (Entry<String, Node> entry : graph.nodes.entrySet()) {
             if (entry.getValue() instanceof IONode ion) {
