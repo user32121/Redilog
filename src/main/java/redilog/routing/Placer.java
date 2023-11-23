@@ -9,6 +9,7 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -71,7 +72,7 @@ public class Placer {
      * @throws RedilogPlacementException
      */
     public static Array3D<BLOCK> placeAndRoute(LogicGraph graph, Box buildSpace, Consumer<Text> feedback,
-            BlockProgressBarManager bbpbm)
+            BlockProgressBarManager bbpbm, Supplier<Boolean> shouldStop)
             throws RedilogPlacementException {
         if (buildSpace == null || (buildSpace.getAverageSideLength() == 0)) {
             throw new RedilogPlacementException(
@@ -92,7 +93,7 @@ public class Placer {
         feedback.accept(Text.of("  Routing wires..."));
         //view prevents routing wires in sign space
         routeWires(new Array3DView<>(grid, 0, 0, 2, grid.getXLength(), grid.getYLength(), grid.getZLength() - 1),
-                graph, feedback, bbpbm);
+                graph, feedback, bbpbm, shouldStop);
         return grid;
     }
 
@@ -125,12 +126,15 @@ public class Placer {
     }
 
     private static void routeWires(Array3D<BLOCK> grid, LogicGraph graph, Consumer<Text> feedback,
-            BlockProgressBarManager bbpbm)
+            BlockProgressBarManager bbpbm, Supplier<Boolean> shouldStop)
             throws RedilogPlacementException {
         CommandBossBar cbb = bbpbm.getProgressBar("routing");
         cbb.setMaxValue(graph.nodes.size());
         cbb.setValue(0);
         for (Node node : graph.nodes.values()) {
+            if (shouldStop.get()) {
+                break;
+            }
             node.routeBFS((starts, end, startNode) -> routeBFS(starts, end, grid, graph, startNode, node, feedback));
             cbb.setValue(cbb.getValue() + 1);
         }
@@ -143,7 +147,7 @@ public class Placer {
      */
     private static void routeBFS(Set<Vec4i> starts, Vec4i end, Array3D<BLOCK> grid, LogicGraph graph,
             Node startNode, Node endNode, Consumer<Text> feedback) {
-        //TODO make faster, maybe with A*
+        //TODO make faster, maybe with A star
         //(4th dimension represents signal strength)
         Queue<Vec4i> toProcess = new LinkedList<>();
         Array4D<Vec4i> visitedFrom = new Array4D.Builder<Vec4i>().size(new Vec4i(grid.getSize(), 16)).build();

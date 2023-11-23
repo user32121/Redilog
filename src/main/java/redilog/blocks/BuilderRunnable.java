@@ -30,7 +30,6 @@ public class BuilderRunnable implements Runnable {
     public final String redilog;
     public final Box buildSpace;
 
-    //TODO use
     public volatile boolean shouldStop = false;
     public volatile LogicGraph lGraph;
     public volatile Array3D<BLOCK> blocks;
@@ -49,36 +48,44 @@ public class BuilderRunnable implements Runnable {
             BlockProgressBarManager bbpbm = new BlockProgressBarManager("builder", owner.getPos(),
                     player.server.getBossBarManager());
 
+            if (shouldStop) {
+                return;
+            }
             Redilog.LOGGER.info("Begin parsing stage");
             player.sendMessage(Text.of("Parsing..."));
             SymbolGraph sGraph = Parser.parseRedilog(redilog, player::sendMessage, bbpbm);
             Redilog.LOGGER.info("Begin synthesize stage");
+            if (shouldStop) {
+                return;
+            }
             player.sendMessage(Text.of("Synthesizing..."));
             lGraph = Synthesizer.synthesize(sGraph, player::sendMessage, bbpbm);
+            if (shouldStop) {
+                return;
+            }
             Redilog.LOGGER.info("Begin placing and routing stage");
             player.sendMessage(Text.of("Placing..."));
-            blocks = Placer.placeAndRoute(lGraph, buildSpace, player::sendMessage, bbpbm);
+            blocks = Placer.placeAndRoute(lGraph, buildSpace, player::sendMessage, bbpbm, this::getShouldStop);
             poss = BlockPos.iterate(BlockPos.ORIGIN, new BlockPos(blocks.getSize().add(-1, -1, -1))).iterator();
+            if (shouldStop) {
+                return;
+            }
             player.sendMessage(Text.of("  Transferring to world..."));
         } catch (RedilogParsingException e) {
             player.sendMessage(Text.literal("An error occurred during parsing.\n")
                     .append(Text.literal(e.toString()).setStyle(Style.EMPTY.withColor(Formatting.RED))));
             Redilog.LOGGER.error("An error occurred during parsing", e);
-            return;
         } catch (RedilogSynthesisException e) {
             player.sendMessage(Text.literal("An error occurred during synthesis.\n")
                     .append(Text.literal(e.toString()).setStyle(Style.EMPTY.withColor(Formatting.RED))));
             Redilog.LOGGER.error("An error occurred during synthesis", e);
-            return;
         } catch (RedilogPlacementException e) {
             player.sendMessage(Text.literal("An error occurred during placement.\n")
                     .append(Text.literal(e.toString()).setStyle(Style.EMPTY.withColor(Formatting.RED))));
             Redilog.LOGGER.error("An error occurred during placement", e);
-            return;
         } catch (Exception e) {
             player.sendMessage(Text.of("An internal error occurred. See server log for more details."));
             Redilog.LOGGER.error("An internal error occurred", e);
-            return;
         }
     }
 
@@ -110,5 +117,9 @@ public class BuilderRunnable implements Runnable {
             Redilog.LOGGER.error("An internal error occurred", e);
         }
         return true;
+    }
+
+    public boolean getShouldStop() {
+        return shouldStop;
     }
 }
