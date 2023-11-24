@@ -67,7 +67,7 @@ public class BuilderBlockEntity extends BlockEntity implements ExtendedScreenHan
             LoggerUtil.logWarnAndCreateMessage(player::sendMessage, "Cancelling last build.");
             currentBuild.shouldStop = true;
         }
-        currentBuild = new BuilderRunnable(this, player, redilog, buildSpace);
+        currentBuild = new BuilderRunnable(this, player, redilog, buildSpace, world);
         currentBuildThread = new Thread(currentBuild);
         currentBuildThread.start();
         world.createAndScheduleBlockTick(pos, RedilogBlocks.BUILDER, 1);
@@ -105,7 +105,7 @@ public class BuilderBlockEntity extends BlockEntity implements ExtendedScreenHan
             return;
         }
         //perform world operations on main thread
-        if (!currentBuild.mainThreadOperations(world)) {
+        if (!currentBuild.mainThreadOperations()) {
             world.createAndScheduleBlockTick(pos, RedilogBlocks.BUILDER, 1);
             return;
         }

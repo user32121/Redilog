@@ -26,6 +26,7 @@ import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
 import redilog.blocks.BlockProgressBarManager;
 import redilog.init.Redilog;
+import redilog.init.RedilogGamerules;
 import redilog.routing.bfs.BFSStep;
 import redilog.synthesis.IONode;
 import redilog.synthesis.InputNode;
@@ -72,7 +73,7 @@ public class Placer {
      * @throws RedilogPlacementException
      */
     public static Array3D<BLOCK> placeAndRoute(LogicGraph graph, Box buildSpace, Consumer<Text> feedback,
-            BlockProgressBarManager bbpbm, Supplier<Boolean> shouldStop)
+            BlockProgressBarManager bbpbm, World world, Supplier<Boolean> shouldStop)
             throws RedilogPlacementException {
         if (buildSpace == null || (buildSpace.getAverageSideLength() == 0)) {
             throw new RedilogPlacementException(
@@ -89,7 +90,7 @@ public class Placer {
         placeIO(buildSpace, graph, feedback);
         //TODO repeat while adjusting buildSpace and layout to fine tune
         feedback.accept(Text.of("  Placing components..."));
-        placeComponents(buildSpace, grid, graph);
+        placeComponents(buildSpace, grid, graph, bbpbm, world);
         feedback.accept(Text.of("  Routing wires..."));
         //view prevents routing wires in sign space
         routeWires(new Array3DView<>(grid, 0, 0, 2, grid.getXLength(), grid.getYLength(), grid.getZLength() - 1),
@@ -102,7 +103,8 @@ public class Placer {
         world.setBlockState(minPos.add(pos), grid.get(pos).state, Block.NOTIFY_LISTENERS);
     }
 
-    private static void placeComponents(Box buildSpace, Array3D<BLOCK> grid, LogicGraph graph) {
+    private static void placeComponents(Box buildSpace, Array3D<BLOCK> grid, LogicGraph graph,
+            BlockProgressBarManager bbpbm, World world) {
         //TODO make better deterministic (maybe supply seed as parameter?)
         Random rng = new Random(100);
         //check for nodes that are not placed
@@ -113,12 +115,15 @@ public class Placer {
                     rng.nextInt((int) buildSpace.getZLength()));
             node.setPotentialPosition(pos);
         }
+        CommandBossBar cbb = bbpbm.getProgressBar("placing");
+        cbb.setMaxValue(world.getGameRules().getInt(RedilogGamerules.PLACEMENT_GRAPH_ITERATIONS));
+        cbb.setValue(0);
         //repeatedly adjust so they are close to their target
-        //TODO pick less arbitrary repeat constant
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < world.getGameRules().getInt(RedilogGamerules.PLACEMENT_GRAPH_ITERATIONS); i++) {
             for (Node node : graph.nodes.values()) {
                 node.adjustPotentialPosition(buildSpace, graph.nodes.values(), rng);
             }
+            cbb.setValue(i + 1);
         }
         for (Node node : graph.nodes.values()) {
             node.placeAtPotentialPos(grid);

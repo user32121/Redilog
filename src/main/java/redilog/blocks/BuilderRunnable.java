@@ -13,6 +13,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.World;
 import redilog.init.Redilog;
+import redilog.init.RedilogGamerules;
 import redilog.parsing.Parser;
 import redilog.parsing.RedilogParsingException;
 import redilog.parsing.SymbolGraph;
@@ -29,17 +30,20 @@ public class BuilderRunnable implements Runnable {
     public final ServerPlayerEntity player;
     public final String redilog;
     public final Box buildSpace;
+    public final World world;
 
     public volatile boolean shouldStop = false;
     public volatile LogicGraph lGraph;
     public volatile Array3D<BLOCK> blocks;
     public volatile Iterator<BlockPos> poss;
 
-    public BuilderRunnable(BuilderBlockEntity owner, ServerPlayerEntity player, String redilog, Box buildSpace) {
+    public BuilderRunnable(BuilderBlockEntity owner, ServerPlayerEntity player, String redilog, Box buildSpace,
+            World world) {
         this.owner = owner;
         this.player = player;
         this.redilog = redilog;
         this.buildSpace = buildSpace;
+        this.world = world;
     }
 
     @Override
@@ -65,7 +69,7 @@ public class BuilderRunnable implements Runnable {
             }
             Redilog.LOGGER.info("Begin placing and routing stage");
             player.sendMessage(Text.of("Placing..."));
-            blocks = Placer.placeAndRoute(lGraph, buildSpace, player::sendMessage, bbpbm, this::getShouldStop);
+            blocks = Placer.placeAndRoute(lGraph, buildSpace, player::sendMessage, bbpbm, world, this::getShouldStop);
             poss = BlockPos.iterate(BlockPos.ORIGIN, new BlockPos(blocks.getSize().add(-1, -1, -1))).iterator();
             if (shouldStop) {
                 return;
@@ -90,19 +94,18 @@ public class BuilderRunnable implements Runnable {
     }
 
     /**
-     * @param world
      * @return false if there are more operations to be performed.
      * (e.g. This can occur if it takes took long to place all blocks)
      */
-    public boolean mainThreadOperations(World world) {
+    public boolean mainThreadOperations() {
         try {
             if (poss == null) {
                 return true;
             }
             if (poss.hasNext()) {
                 Stopwatch sw = Stopwatch.createStarted();
-                //TODO configure interval
-                while (sw.elapsed(TimeUnit.MILLISECONDS) < 1 && this.poss.hasNext()) {
+                while (sw.elapsed(TimeUnit.MILLISECONDS) < world.getGameRules()
+                        .getInt(RedilogGamerules.MS_TRANSFERRING_PER_TICK) && this.poss.hasNext()) {
                     BlockPos curPos = poss.next();
                     Placer.transferGridToWorld(buildSpace, world, blocks, curPos);
                 }
