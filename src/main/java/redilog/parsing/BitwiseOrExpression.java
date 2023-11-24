@@ -39,12 +39,18 @@ public class BitwiseOrExpression extends Expression {
             OrNode node = new OrNode(this, input1.getNode(index), input2.getNode(index));
             nodes[index] = node;
         }
-        nodes[index].used = true;
         return nodes[index];
     }
 
     @Override
     public void setValue(Expression expression) throws RedilogParsingException {
         throw new RedilogParsingException("Ambiguous input assignment to dual input " + getClass());
+    }
+
+    @Override
+    public void setUsed(int index) {
+        super.setUsed(index);
+        input1.setUsed(index);
+        input2.setUsed(index);
     }
 }

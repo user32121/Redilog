@@ -37,12 +37,17 @@ public class BitwiseNotExpression extends Expression {
             NotNode node = new NotNode(this, input1.getNode(index));
             nodes[index] = node;
         }
-        nodes[index].used = true;
         return nodes[index];
     }
 
     @Override
     public void setValue(Expression expression) throws RedilogParsingException {
         input1 = expression;
+    }
+
+    @Override
+    public void setUsed(int index) {
+        super.setUsed(index);
+        input1.setUsed(index);
     }
 }

@@ -37,12 +37,19 @@ public class WireExpression extends Expression {
                     nodeValue);
             nodes[index] = node;
         }
-        nodes[index].used = true;
         return nodes[index];
     }
 
     @Override
     public void setValue(Expression expression) throws RedilogParsingException {
         value = expression;
+    }
+
+    @Override
+    public void setUsed(int index) {
+        super.setUsed(index);
+        if (value != null) {
+            value.setUsed(index);
+        }
     }
 }

@@ -29,5 +29,9 @@ public abstract class Expression {
      */
     public abstract Node getNode(int index) throws IndexOutOfBoundsException;
 
+    public void setUsed(int index) {
+        getNode(index).used = true;
+    }
+
     public abstract void setValue(Expression expression) throws RedilogParsingException;
 }

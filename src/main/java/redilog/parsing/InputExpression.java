@@ -29,7 +29,6 @@ public class InputExpression extends Expression {
                 nodes[i] = new InputNode(this, String.format("%s[%s]", name, i + range.minInclusive()));
             }
         }
-        nodes[index].used = true;
         return nodes[index];
     }
 

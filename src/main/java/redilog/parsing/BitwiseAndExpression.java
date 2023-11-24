@@ -17,7 +17,6 @@ public class BitwiseAndExpression extends BitwiseOrExpression {
             AndNode node = new AndNode(this, input1.getNode(index), input2.getNode(index));
             nodes[index] = node;
         }
-        nodes[index].used = true;
         return nodes[index];
     }
 }

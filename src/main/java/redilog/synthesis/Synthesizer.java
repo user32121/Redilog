@@ -5,7 +5,9 @@ import java.util.function.Consumer;
 
 import net.minecraft.text.Text;
 import redilog.blocks.BlockProgressBarManager;
+import redilog.init.Redilog;
 import redilog.parsing.Expression;
+import redilog.parsing.OutputExpression;
 import redilog.parsing.SymbolGraph;
 import redilog.utils.LoggerUtil;
 
@@ -30,15 +32,19 @@ public class Synthesizer {
                 Node node = expression.getNode(i);
                 String name = entry.getKey() + "[" + i + "]";
                 lGraph.nodes.put(name, node);
+                if (expression instanceof OutputExpression) {
+                    expression.setUsed(i);
+                }
             }
         }
 
         return lGraph;
     }
 
-    //TODO warn on unused inputs
     private static void warnUnused(LogicGraph graph, Consumer<Text> feedback) {
         for (Entry<String, Node> entry : graph.nodes.entrySet()) {
+            Redilog.LOGGER.info("{}: {}", entry, entry.getValue().used);
+
             if (!entry.getValue().used) {
                 LoggerUtil.logWarnAndCreateMessage(feedback,
                         String.format("Value of node %s is not used", entry.getKey()));

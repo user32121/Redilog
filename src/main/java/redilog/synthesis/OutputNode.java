@@ -26,7 +26,6 @@ public class OutputNode extends IONode {
 
     public OutputNode(Expression owner, String name, Node value) {
         super(owner, name);
-        this.used = true;
         this.value = value;
         if (value != null) {
             value.outputNodes.add(() -> getPosition());

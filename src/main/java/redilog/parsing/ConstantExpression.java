@@ -49,7 +49,6 @@ public class ConstantExpression extends Expression {
                 bits >>= 1;
             }
         }
-        nodes[index].used = true;
         return nodes[index];
     }
 
