@@ -1,4 +1,4 @@
-package redilog.synthesis;
+package redilog.synthesis.nodes;
 
 import java.util.Collection;
 import java.util.Random;
@@ -10,8 +10,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
-import redilog.parsing.Expression;
 import redilog.routing.Placer.BLOCK;
+import redilog.parsing.expressions.Expression;
 import redilog.routing.RedilogPlacementException;
 import redilog.utils.Array3D;
 import redilog.utils.Vec4i;
@@ -20,12 +20,12 @@ import redilog.utils.VecUtil;
 public class OrNode extends Node {
     private final static Array3D<BLOCK> OR_GATE_BLOCKS = new Array3D.Builder<BLOCK>()
             .data(new BLOCK[][][] {
-            { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK },
-                    { BLOCK.WIRE, BLOCK.REPEATER_SOUTH, BLOCK.WIRE }, },
-            { { BLOCK.AIR, BLOCK.AIR, BLOCK.BLOCK },
-                    { BLOCK.AIR, BLOCK.AIR, BLOCK.WIRE }, },
-            { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK },
-                    { BLOCK.WIRE, BLOCK.REPEATER_SOUTH, BLOCK.WIRE }, }, })
+                    { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK },
+                            { BLOCK.WIRE, BLOCK.REPEATER_SOUTH, BLOCK.WIRE }, },
+                    { { BLOCK.AIR, BLOCK.AIR, BLOCK.BLOCK },
+                            { BLOCK.AIR, BLOCK.AIR, BLOCK.WIRE }, },
+                    { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK },
+                            { BLOCK.WIRE, BLOCK.REPEATER_SOUTH, BLOCK.WIRE }, }, })
             .build();
 
     public final Node input1, input2;
@@ -99,12 +99,12 @@ public class OrNode extends Node {
     }
 
     @Override
-    public void routeBFS(TriConsumer<Set<Vec4i>, Vec4i, Node> bfs) throws RedilogPlacementException {
+    public void route(TriConsumer<Set<Vec4i>, Vec4i, Node> routeWire) throws RedilogPlacementException {
         if (input1 != null) {
-            bfs.accept(input1.getOutputs(), new Vec4i(getInput1(), 1), input1);
+            routeWire.accept(input1.getOutputs(), new Vec4i(getInput1(), 1), input1);
         }
         if (input2 != null) {
-            bfs.accept(input2.getOutputs(), new Vec4i(getInput2(), 1), input2);
+            routeWire.accept(input2.getOutputs(), new Vec4i(getInput2(), 1), input2);
         }
     }
 }

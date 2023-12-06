@@ -11,6 +11,10 @@ import net.minecraft.text.Text;
 import net.minecraft.util.dynamic.Range;
 import redilog.blocks.BlockProgressBarManager;
 import redilog.init.Redilog;
+import redilog.parsing.expressions.Expression;
+import redilog.parsing.expressions.InputExpression;
+import redilog.parsing.expressions.NamedExpression;
+import redilog.parsing.expressions.OutputExpression;
 
 public class Parser {
 

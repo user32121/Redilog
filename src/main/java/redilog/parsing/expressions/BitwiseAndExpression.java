@@ -1,7 +1,8 @@
-package redilog.parsing;
+package redilog.parsing.expressions;
 
-import redilog.synthesis.AndNode;
-import redilog.synthesis.Node;
+import redilog.parsing.Token;
+import redilog.synthesis.nodes.AndNode;
+import redilog.synthesis.nodes.Node;
 
 public class BitwiseAndExpression extends BitwiseOrExpression {
     public BitwiseAndExpression(Token declaration, Expression input1, Expression input2) {

@@ -1,4 +1,4 @@
-package redilog.routing.bfs;
+package redilog.routing.steps;
 
 import org.apache.commons.lang3.NotImplementedException;
 

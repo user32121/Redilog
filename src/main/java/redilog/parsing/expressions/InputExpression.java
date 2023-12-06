@@ -1,8 +1,10 @@
-package redilog.parsing;
+package redilog.parsing.expressions;
 
 import net.minecraft.util.dynamic.Range;
-import redilog.synthesis.InputNode;
-import redilog.synthesis.Node;
+import redilog.parsing.RedilogParsingException;
+import redilog.parsing.Token;
+import redilog.synthesis.nodes.InputNode;
+import redilog.synthesis.nodes.Node;
 
 public class InputExpression extends NamedExpression {
 

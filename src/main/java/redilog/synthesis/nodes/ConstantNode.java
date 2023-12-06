@@ -1,4 +1,4 @@
-package redilog.synthesis;
+package redilog.synthesis.nodes;
 
 import java.util.Collection;
 import java.util.Random;
@@ -9,8 +9,8 @@ import org.apache.logging.log4j.util.TriConsumer;
 
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
-import redilog.parsing.Expression;
 import redilog.routing.Placer.BLOCK;
+import redilog.parsing.expressions.Expression;
 import redilog.routing.RedilogPlacementException;
 import redilog.utils.Array3D;
 import redilog.utils.Vec4i;
@@ -74,7 +74,7 @@ public class ConstantNode extends Node {
     }
 
     @Override
-    public void routeBFS(TriConsumer<Set<Vec4i>, Vec4i, Node> bfs) throws RedilogPlacementException {
+    public void route(TriConsumer<Set<Vec4i>, Vec4i, Node> routeWire) throws RedilogPlacementException {
         // NO OP
     }
 }

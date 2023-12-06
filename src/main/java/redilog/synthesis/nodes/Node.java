@@ -1,4 +1,4 @@
-package redilog.synthesis;
+package redilog.synthesis.nodes;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -10,13 +10,12 @@ import org.apache.logging.log4j.util.TriConsumer;
 
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
-import redilog.parsing.Expression;
 import redilog.routing.Placer.BLOCK;
+import redilog.parsing.expressions.Expression;
 import redilog.routing.RedilogPlacementException;
 import redilog.utils.Array3D;
 import redilog.utils.Vec4i;
 
-//TODO make folder for nodes
 public abstract class Node {
     public final Expression owner;
     public boolean used;
@@ -53,5 +52,5 @@ public abstract class Node {
      */
     public abstract void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes, Random rng);
 
-    public abstract void routeBFS(TriConsumer<Set<Vec4i>, Vec4i, Node> bfs) throws RedilogPlacementException;
+    public abstract void route(TriConsumer<Set<Vec4i>, Vec4i, Node> routeWire) throws RedilogPlacementException;
 }

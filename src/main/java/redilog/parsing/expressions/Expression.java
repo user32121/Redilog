@@ -1,11 +1,12 @@
-package redilog.parsing;
+package redilog.parsing.expressions;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import redilog.synthesis.Node;
+import redilog.parsing.RedilogParsingException;
+import redilog.parsing.Token;
+import redilog.synthesis.nodes.Node;
 
-//TODO make folder for expressions
 public abstract class Expression {
     public Token declaration;
 

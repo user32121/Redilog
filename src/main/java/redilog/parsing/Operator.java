@@ -4,6 +4,11 @@ import java.util.Map;
 import java.util.Stack;
 import java.util.function.BiConsumer;
 
+import redilog.parsing.expressions.BitwiseAndExpression;
+import redilog.parsing.expressions.BitwiseNotExpression;
+import redilog.parsing.expressions.BitwiseOrExpression;
+import redilog.parsing.expressions.Expression;
+
 public class Operator {
     public final static Map<String, Operator> OPERATORS = Map.of(
             "|", new Operator(0, true, 2,

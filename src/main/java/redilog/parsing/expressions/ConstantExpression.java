@@ -1,7 +1,9 @@
-package redilog.parsing;
+package redilog.parsing.expressions;
 
-import redilog.synthesis.ConstantNode;
-import redilog.synthesis.Node;
+import redilog.parsing.RedilogParsingException;
+import redilog.parsing.Token;
+import redilog.synthesis.nodes.ConstantNode;
+import redilog.synthesis.nodes.Node;
 
 /**
  * Has a constant numerical value. Constant in this context means it won't change in the circuit,

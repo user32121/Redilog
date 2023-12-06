@@ -4,8 +4,10 @@ import java.util.function.Consumer;
 
 import net.minecraft.text.Text;
 import redilog.blocks.BlockProgressBarManager;
-import redilog.parsing.NamedExpression;
 import redilog.parsing.SymbolGraph;
+import redilog.parsing.expressions.NamedExpression;
+import redilog.synthesis.nodes.Node;
+import redilog.synthesis.nodes.OutputNode;
 import redilog.utils.LoggerUtil;
 
 public class Synthesizer {

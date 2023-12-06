@@ -3,6 +3,8 @@ package redilog.parsing;
 import java.util.HashSet;
 import java.util.Set;
 
+import redilog.parsing.expressions.Expression;
+import redilog.parsing.expressions.NamedExpression;
 import redilog.synthesis.LogicGraph;
 import redilog.synthesis.RedilogSynthesisException;
 

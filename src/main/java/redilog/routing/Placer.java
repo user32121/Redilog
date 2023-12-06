@@ -26,12 +26,12 @@ import net.minecraft.world.World;
 import redilog.blocks.BlockProgressBarManager;
 import redilog.init.Redilog;
 import redilog.init.RedilogGamerules;
-import redilog.routing.bfs.BFSStep;
-import redilog.synthesis.IONode;
-import redilog.synthesis.InputNode;
+import redilog.routing.steps.RoutingStep;
 import redilog.synthesis.LogicGraph;
-import redilog.synthesis.Node;
-import redilog.synthesis.OutputNode;
+import redilog.synthesis.nodes.IONode;
+import redilog.synthesis.nodes.InputNode;
+import redilog.synthesis.nodes.Node;
+import redilog.synthesis.nodes.OutputNode;
 import redilog.utils.Array3D;
 import redilog.utils.Array3DView;
 import redilog.utils.Array4D;
@@ -139,7 +139,7 @@ public class Placer {
             if (shouldStop.get()) {
                 break;
             }
-            node.routeBFS((starts, end, startNode) -> routeBFS(starts, end, grid, graph, startNode, node, feedback));
+            node.route((starts, end, startNode) -> routeWire(starts, end, grid, graph, startNode, node, feedback));
             cbb.setValue(cbb.getValue() + 1);
         }
     }
@@ -149,7 +149,7 @@ public class Placer {
      * @param starts any allowable starting position
      * @param end target of BFS; w component indicates <i>minimum</i> signal strength needed
      */
-    private static void routeBFS(Set<Vec4i> starts, Vec4i end, Array3D<BLOCK> grid, LogicGraph graph,
+    private static void routeWire(Set<Vec4i> starts, Vec4i end, Array3D<BLOCK> grid, LogicGraph graph,
             Node startNode, Node endNode, Consumer<Text> feedback) {
         //TODO make faster, maybe with A star
         //(4th dimension represents signal strength)
@@ -157,7 +157,7 @@ public class Placer {
         Array4D<Vec4i> visitedFrom = new Array4D.Builder<Vec4i>().size(new Vec4i(grid.getSize(), 16)).build();
         Array4D<Integer> cost = new Array4D.Builder<Integer>().size(new Vec4i(grid.getSize(), 16))
                 .fill(Integer.MAX_VALUE).build();
-        Array4D<BFSStep> wireType = new Array4D.Builder<BFSStep>().size(new Vec4i(grid.getSize(), 16)).build();
+        Array4D<RoutingStep> wireType = new Array4D.Builder<RoutingStep>().size(new Vec4i(grid.getSize(), 16)).build();
 
         //NOTE: since bfs stores limited state, it may be possible for the wire to loop on itself and override its path
         for (Vec4i pos : starts) {
@@ -166,7 +166,7 @@ public class Placer {
         }
         while (!toProcess.isEmpty()) {
             Vec4i cur = toProcess.remove();
-            for (BFSStep step : BFSStep.STEPS) {
+            for (RoutingStep step : RoutingStep.STEPS) {
                 Vec4i move = step.getValidMove(grid, cur, end.to3i());
                 if (move != null && cost.inBounds(move) && cost.get(cur) + step.getCost() < cost.get(move)) {
                     visitedFrom.set(move, cur);

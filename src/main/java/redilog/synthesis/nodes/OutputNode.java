@@ -1,4 +1,4 @@
-package redilog.synthesis;
+package redilog.synthesis.nodes;
 
 import java.util.Set;
 import java.util.function.Consumer;
@@ -13,8 +13,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
-import redilog.parsing.Expression;
 import redilog.routing.Placer.BLOCK;
+import redilog.parsing.expressions.Expression;
 import redilog.routing.RedilogPlacementException;
 import redilog.utils.Array3D;
 import redilog.utils.LoggerUtil;
@@ -44,9 +44,9 @@ public class OutputNode extends IONode {
     }
 
     @Override
-    public void routeBFS(TriConsumer<Set<Vec4i>, Vec4i, Node> bfs) throws RedilogPlacementException {
+    public void route(TriConsumer<Set<Vec4i>, Vec4i, Node> routeWire) throws RedilogPlacementException {
         if (value != null) {
-            bfs.accept(value.getOutputs(), new Vec4i(VecUtil.d2i(position), 1), value);
+            routeWire.accept(value.getOutputs(), new Vec4i(VecUtil.d2i(position), 1), value);
         }
     }
 

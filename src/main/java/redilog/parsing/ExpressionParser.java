@@ -3,6 +3,10 @@ package redilog.parsing;
 import java.util.List;
 import java.util.Stack;
 
+import redilog.parsing.expressions.ConstantExpression;
+import redilog.parsing.expressions.Expression;
+import redilog.parsing.expressions.NamedExpression;
+
 public class ExpressionParser {
 
     public static Expression parseExpression(SymbolGraph graph, List<Token> tokens, int start, int end)

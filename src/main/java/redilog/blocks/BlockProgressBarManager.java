@@ -6,6 +6,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 
+//TODO auto add player
 public class BlockProgressBarManager {
 
     private String blockName;

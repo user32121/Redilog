@@ -1,9 +1,10 @@
-package redilog.parsing;
+package redilog.parsing.expressions;
 
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.util.dynamic.Range;
-import redilog.synthesis.Node;
+import redilog.parsing.Token;
+import redilog.synthesis.nodes.Node;
 
 /**
  * Represents an expression that has a name and an arbitrary node range

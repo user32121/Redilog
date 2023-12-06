@@ -1,4 +1,4 @@
-package redilog.routing.bfs;
+package redilog.routing.steps;
 
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3i;
@@ -6,7 +6,7 @@ import redilog.routing.Placer.BLOCK;
 import redilog.utils.Array3D;
 import redilog.utils.Vec4i;
 
-public class CardinalStep implements BFSStep {
+public class CardinalStep implements RoutingStep {
     protected final Direction direction;
 
     public CardinalStep(Direction direction) {

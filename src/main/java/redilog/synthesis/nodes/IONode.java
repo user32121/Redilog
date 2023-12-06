@@ -1,4 +1,4 @@
-package redilog.synthesis;
+package redilog.synthesis.nodes;
 
 import java.util.Collection;
 import java.util.Random;
@@ -9,7 +9,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-import redilog.parsing.Expression;
+import redilog.parsing.expressions.Expression;
 
 public abstract class IONode extends Node {
     public final String name;

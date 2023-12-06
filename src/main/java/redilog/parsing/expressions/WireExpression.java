@@ -1,10 +1,12 @@
-package redilog.parsing;
+package redilog.parsing.expressions;
 
 import com.google.common.collect.Iterables;
 
 import net.minecraft.util.dynamic.Range;
-import redilog.synthesis.Node;
-import redilog.synthesis.OutputNode;
+import redilog.parsing.RedilogParsingException;
+import redilog.parsing.Token;
+import redilog.synthesis.nodes.Node;
+import redilog.synthesis.nodes.OutputNode;
 
 public class WireExpression extends NamedExpression {
     public Expression value;

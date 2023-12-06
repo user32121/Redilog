@@ -1,4 +1,4 @@
-package redilog.routing.bfs;
+package redilog.routing.steps;
 
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3i;

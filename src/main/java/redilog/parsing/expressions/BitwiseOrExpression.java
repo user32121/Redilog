@@ -1,9 +1,11 @@
-package redilog.parsing;
+package redilog.parsing.expressions;
 
 import com.google.common.collect.Iterables;
 
-import redilog.synthesis.Node;
-import redilog.synthesis.OrNode;
+import redilog.parsing.RedilogParsingException;
+import redilog.parsing.Token;
+import redilog.synthesis.nodes.Node;
+import redilog.synthesis.nodes.OrNode;
 
 public class BitwiseOrExpression extends Expression {
     public Expression input1, input2;
