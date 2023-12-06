@@ -10,13 +10,12 @@ public class BitwiseAndExpression extends BitwiseOrExpression {
 
     @Override
     public Node getNode(int index) throws IndexOutOfBoundsException {
-        if (nodes == null) {
-            nodes = new Node[range.maxInclusive() - range.minInclusive() + 1];
+        while (nodes.size() <= index) {
+            nodes.add(null);
         }
-        if (nodes[index] == null) {
-            AndNode node = new AndNode(this, input1.getNode(index), input2.getNode(index));
-            nodes[index] = node;
+        if (nodes.get(index) == null) {
+            nodes.set(index, new AndNode(this, input1.getNode(index), input2.getNode(index)));
         }
-        return nodes[index];
+        return nodes.get(index);
     }
 }

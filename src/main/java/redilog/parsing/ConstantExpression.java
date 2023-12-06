@@ -1,6 +1,5 @@
 package redilog.parsing;
 
-import net.minecraft.util.dynamic.Range;
 import redilog.synthesis.ConstantNode;
 import redilog.synthesis.Node;
 
@@ -9,51 +8,32 @@ import redilog.synthesis.Node;
  * not necessarily during parsing.
  */
 public class ConstantExpression extends Expression {
-    int value;
 
     public ConstantExpression(Token declaration, int value) {
-        super(declaration, new Range<>(0, getMSBNeeded(value)));
-        this.value = value;
-    }
-
-    private static int getMSBNeeded(int x) {
-        int i = 0;
-        while (true) {
-            ++i;
-            x >>= 1;
-            if (x == 0) {
-                return i - 1;
-            } else if (x == -1) {
-                return i;
-            }
+        super(declaration);
+        while (value != 0 && value != -1) {
+            nodes.add(new ConstantNode(this, (value & 1) == 1));
+            value >>= 1;
         }
     }
 
     @Override
-    public boolean resolveRange() {
-        if (range != null) {
-            return true;
-        }
-        range = new Range<>(0, getMSBNeeded(value));
-        return true;
+    public int resolveRange() {
+        return nodes.size();
     }
 
     @Override
     public Node getNode(int index) throws IndexOutOfBoundsException {
-        //TODO don't throw when accessing nodes outside of range
-        if (nodes == null) {
-            nodes = new Node[range.maxInclusive() - range.minInclusive() + 1];
-            int bits = value;
-            for (int i = 0; i < nodes.length; ++i) {
-                nodes[i] = new ConstantNode(this, (bits & 1) == 1);
-                bits >>= 1;
-            }
-        }
-        return nodes[index];
+        return nodes.get(index);
     }
 
     @Override
     public void setValue(Expression expression) throws RedilogParsingException {
         throw new RedilogParsingException(getClass() + " cannot be assigned an expression");
+    }
+
+    @Override
+    public Iterable<Node> getAllNodes() {
+        return nodes;
     }
 }

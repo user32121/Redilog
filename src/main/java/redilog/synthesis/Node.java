@@ -16,6 +16,7 @@ import redilog.routing.RedilogPlacementException;
 import redilog.utils.Array3D;
 import redilog.utils.Vec4i;
 
+//TODO make folder for nodes
 public abstract class Node {
     public final Expression owner;
     public boolean used;

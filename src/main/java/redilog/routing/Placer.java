@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
@@ -109,7 +108,7 @@ public class Placer {
         Random rng = new Random(100);
         //check for nodes that are not placed
         //give a random initial position
-        for (Node node : graph.nodes.values()) {
+        for (Node node : graph.nodes) {
             Vec3d pos = new Vec3d(rng.nextInt((int) buildSpace.getXLength()),
                     rng.nextInt((int) buildSpace.getYLength()),
                     rng.nextInt((int) buildSpace.getZLength()));
@@ -120,12 +119,12 @@ public class Placer {
         cbb.setValue(0);
         //repeatedly adjust so they are close to their target
         for (int i = 0; i < world.getGameRules().getInt(RedilogGamerules.PLACEMENT_GRAPH_ITERATIONS); i++) {
-            for (Node node : graph.nodes.values()) {
-                node.adjustPotentialPosition(buildSpace, graph.nodes.values(), rng);
+            for (Node node : graph.nodes) {
+                node.adjustPotentialPosition(buildSpace, graph.nodes, rng);
             }
             cbb.setValue(i + 1);
         }
-        for (Node node : graph.nodes.values()) {
+        for (Node node : graph.nodes) {
             node.placeAtPotentialPos(grid);
         }
     }
@@ -136,7 +135,7 @@ public class Placer {
         CommandBossBar cbb = bbpbm.getProgressBar("routing");
         cbb.setMaxValue(graph.nodes.size());
         cbb.setValue(0);
-        for (Node node : graph.nodes.values()) {
+        for (Node node : graph.nodes) {
             if (shouldStop.get()) {
                 break;
             }
@@ -224,7 +223,7 @@ public class Placer {
         }
         List<InputNode> inputs = new ArrayList<>();
         List<OutputNode> outputs = new ArrayList<>();
-        for (Node n : graph.nodes.values()) {
+        for (Node n : graph.nodes) {
             if (n instanceof InputNode in) {
                 inputs.add(in);
             } else if (n instanceof OutputNode on) {
@@ -256,8 +255,8 @@ public class Placer {
 
     public static void labelIO(Box buildSpace, LogicGraph graph, World world, Consumer<Text> feedback) {
         BlockPos relativeOrigin = new BlockPos(buildSpace.minX, buildSpace.minY, buildSpace.minZ);
-        for (Entry<String, Node> entry : graph.nodes.entrySet()) {
-            if (entry.getValue() instanceof IONode ion) {
+        for (Node node : graph.nodes) {
+            if (node instanceof IONode ion) {
                 ion.placeLabel(world, relativeOrigin, feedback);
             }
         }

@@ -1,43 +1,32 @@
 package redilog.parsing;
 
+import com.google.common.collect.Iterables;
+
 import net.minecraft.util.dynamic.Range;
 import redilog.synthesis.Node;
 import redilog.synthesis.OutputNode;
 
-public class WireExpression extends Expression {
-    public final String name;
+public class WireExpression extends NamedExpression {
     public Expression value;
 
     public WireExpression(Token declaration, String name, Range<Integer> range) {
-        super(declaration, range);
-        this.name = name;
-    }
-
-    @Override
-    public boolean resolveRange() {
-        if (range != null) {
-            return true;
-        }
-        if (value == null) {
-            range = new Range<Integer>(0, 0);
-            return true;
-        }
-        range = value.range;
-        return range != null;
+        super(declaration, name, range);
     }
 
     @Override
     public Node getNode(int index) throws IndexOutOfBoundsException {
-        if (nodes == null) {
-            nodes = new Node[range.maxInclusive() - range.minInclusive() + 1];
+        if (range != null) {
+            index = Math.min(index, range.maxInclusive() - range.minInclusive() + 1);
         }
-        if (nodes[index] == null) {
+        while (nodes.size() <= index) {
+            nodes.add(null);
+        }
+        if (nodes.get(index) == null) {
             Node nodeValue = value != null ? value.getNode(index) : null;
-            OutputNode node = new OutputNode(this, String.format("%s[%s]", name, index + range.minInclusive()),
-                    nodeValue);
-            nodes[index] = node;
+            OutputNode node = new OutputNode(this, String.format("%s[%s]", name, index + getRangeMin()), nodeValue);
+            nodes.set(index, node);
         }
-        return nodes[index];
+        return nodes.get(index);
     }
 
     @Override
@@ -50,6 +39,23 @@ public class WireExpression extends Expression {
         super.setUsed(index);
         if (value != null) {
             value.setUsed(index);
+        }
+    }
+
+    @Override
+    public Iterable<Node> getAllNodes() {
+        for (int i = 0; i < nodes.size(); ++i) {
+            getNode(i);
+        }
+        return Iterables.concat(nodes, value.getAllNodes());
+    }
+
+    @Override
+    public int resolveRange() {
+        if (range == null) {
+            return Math.max(super.resolveRange(), value.resolveRange());
+        } else {
+            return super.resolveRange();
         }
     }
 }

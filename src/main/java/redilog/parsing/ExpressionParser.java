@@ -20,14 +20,19 @@ public class ExpressionParser {
                 //number
                 ConstantExpression ce = new ConstantExpression(token, token.parseAsInt());
                 output.add(ce);
-                graph.expressions.put("Constant_" + token, ce);
             } else if (token.getType() == Token.Type.VARIABLE) {
                 //value
                 String value = token.getValue();
-                if (!graph.expressions.containsKey(value)) {
+                NamedExpression ne2 = null;
+                for (NamedExpression ne : graph.expressions) {
+                    if (ne.name.equals(value)) {
+                        ne2 = ne;
+                    }
+                }
+                if (ne2 == null) {
                     throw new RedilogParsingException(String.format("%s not defined", token));
                 }
-                output.add(graph.expressions.get(value));
+                output.add(ne2);
             } else if (token.getType() == Token.Type.SYMBOL) {
                 String o1 = token.getValue();
                 if (Operator.OPERATORS.containsKey(o1)) {
@@ -44,7 +49,7 @@ public class ExpressionParser {
                         if (!(notLParen && (o2GtO1 || (o2EqO1 && leftAssoc)))) {
                             break;
                         }
-                        applyOperator(output, operators.pop(), graph);
+                        applyOperator(output, operators.pop());
                     }
                     operators.push(token);
                 } else if (o1.equals("(")) {
@@ -61,7 +66,7 @@ public class ExpressionParser {
                         if (o2.getValue().equals("(")) {
                             break;
                         }
-                        applyOperator(output, o2, graph);
+                        applyOperator(output, o2);
                     }
                 } else {
                     throw new RedilogParsingException(String.format("Unrecognized symbol %s", tokens.get(i)));
@@ -73,7 +78,7 @@ public class ExpressionParser {
             if (t.getValue().equals("(")) {
                 throw new RedilogParsingException(String.format("Mismatched parentheses, extra %s", t));
             }
-            applyOperator(output, t, graph);
+            applyOperator(output, t);
         }
         if (output.empty()) {
             throw new RedilogParsingException(
@@ -86,10 +91,9 @@ public class ExpressionParser {
         return output.pop();
     }
 
-    private static void applyOperator(Stack<Expression> output, Token token, SymbolGraph graph)
+    private static void applyOperator(Stack<Expression> output, Token token)
             throws RedilogParsingException {
         String operator = token.getValue();
         Operator.OPERATORS.get(operator).applyOperator(token, output);
-        graph.expressions.put(String.format("intermediate %s", output.peek()), output.peek());
     }
 }

@@ -4,36 +4,33 @@ import net.minecraft.util.dynamic.Range;
 import redilog.synthesis.InputNode;
 import redilog.synthesis.Node;
 
-public class InputExpression extends Expression {
-    public final String name;
+public class InputExpression extends NamedExpression {
 
     public InputExpression(Token declaration, String name, Range<Integer> range) {
-        super(declaration, range);
-        this.name = name;
-    }
-
-    @Override
-    public boolean resolveRange() {
-        if (range != null) {
-            return true;
-        }
-        range = new Range<>(0, 0);
-        return true;
+        super(declaration, name, range);
     }
 
     @Override
     public Node getNode(int index) throws IndexOutOfBoundsException {
-        if (nodes == null) {
-            nodes = new Node[range.maxInclusive() - range.minInclusive() + 1];
-            for (int i = 0; i < nodes.length; ++i) {
-                nodes[i] = new InputNode(this, String.format("%s[%s]", name, i + range.minInclusive()));
-            }
+        if (range != null) {
+            index = Math.min(index, range.maxInclusive() - range.minInclusive() + 1);
         }
-        return nodes[index];
+        while (nodes.size() <= index) {
+            nodes.add(null);
+        }
+        if (nodes.get(index) == null) {
+            nodes.set(index, new InputNode(this, String.format("%s[%s]", name, index + getRangeMin())));
+        }
+        return nodes.get(index);
     }
 
     @Override
     public void setValue(Expression expression) throws RedilogParsingException {
         throw new RedilogParsingException(getClass() + " cannot be assigned");
+    }
+
+    @Override
+    public Iterable<Node> getAllNodes() {
+        return nodes;
     }
 }

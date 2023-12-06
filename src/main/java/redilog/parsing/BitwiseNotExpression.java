@@ -1,6 +1,7 @@
 package redilog.parsing;
 
-import net.minecraft.util.dynamic.Range;
+import com.google.common.collect.Iterables;
+
 import redilog.synthesis.Node;
 import redilog.synthesis.NotNode;
 
@@ -8,36 +9,25 @@ public class BitwiseNotExpression extends Expression {
     public Expression input1;
 
     public BitwiseNotExpression(Token declaration, Expression input1) {
-        super(declaration, null);
+        super(declaration);
         this.input1 = input1;
     }
 
-    private static int getMSBNeeded(Range<Integer> r1) {
-        return r1.maxInclusive() - r1.minInclusive();
-    }
-
     @Override
-    public boolean resolveRange() {
-        if (range != null) {
-            return true;
-        }
-        if (input1.range == null) {
-            return false;
-        }
-        range = new Range<>(0, getMSBNeeded(input1.range));
-        return true;
+    public int resolveRange() {
+        int range1 = input1.resolveRange();
+        return range1;
     }
 
     @Override
     public Node getNode(int index) throws IndexOutOfBoundsException {
-        if (nodes == null) {
-            nodes = new Node[range.maxInclusive() - range.minInclusive() + 1];
+        while (nodes.size() <= index) {
+            nodes.add(null);
         }
-        if (nodes[index] == null) {
-            NotNode node = new NotNode(this, input1.getNode(index));
-            nodes[index] = node;
+        if (nodes.get(index) == null) {
+            nodes.set(index, new NotNode(this, input1.getNode(index)));
         }
-        return nodes[index];
+        return nodes.get(index);
     }
 
     @Override
@@ -49,5 +39,13 @@ public class BitwiseNotExpression extends Expression {
     public void setUsed(int index) {
         super.setUsed(index);
         input1.setUsed(index);
+    }
+
+    @Override
+    public Iterable<Node> getAllNodes() {
+        for (int i = 0; i < nodes.size(); ++i) {
+            getNode(i);
+        }
+        return Iterables.concat(nodes, input1.getAllNodes());
     }
 }

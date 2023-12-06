@@ -157,11 +157,12 @@ public class Parser {
             }
         }
         for (Token token : newVariables) {
-            Expression expression;
+            NamedExpression expression;
             String name = token.getValue(Token.Type.VARIABLE);
-            if (graph.expressions.containsKey(name)) {
-                throw new RedilogParsingException(
-                        String.format("%s already defined at %s", token, graph.expressions.get(name).declaration));
+            for (NamedExpression ne : graph.expressions) {
+                if (ne.name.equals(name)) {
+                    throw new RedilogParsingException(String.format("%s already defined at %s", token, ne.declaration));
+                }
             }
             if (variableType.equals("input")) {
                 InputExpression ie = new InputExpression(token, name, range);
@@ -172,13 +173,14 @@ public class Parser {
             } else {
                 throw new NotImplementedException(variableType + " not implemented");
             }
-            graph.expressions.put(name, expression);
+            graph.expressions.add(expression);
         }
 
         return i;
     }
 
     private static int processAssignment(SymbolGraph graph, List<Token> tokens, int i) throws RedilogParsingException {
+        //TODO prevent double assignment    
         tokens.get(i++).require(Token.Type.KEYWORD, "assign");
 
         Token name = tokens.get(i++);
@@ -197,10 +199,12 @@ public class Parser {
         }
         Expression expression = ExpressionParser.parseExpression(graph, tokens, i, j - 1);
 
-        if (!graph.expressions.containsKey(name.getValue(Token.Type.VARIABLE))) {
-            throw new RedilogParsingException(String.format("%s not defined", name));
+        for (NamedExpression ne : graph.expressions) {
+            if (ne.name.equals(name.getValue(Token.Type.VARIABLE))) {
+                ne.setValue(expression);
+                return j + 1;
+            }
         }
-        graph.expressions.get(name.getValue(Token.Type.VARIABLE)).setValue(expression);
-        return j + 1;
+        throw new RedilogParsingException(String.format("%s not defined", name));
     }
 }

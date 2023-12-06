@@ -1,6 +1,7 @@
 package redilog.parsing;
 
-import net.minecraft.util.dynamic.Range;
+import com.google.common.collect.Iterables;
+
 import redilog.synthesis.Node;
 import redilog.synthesis.OrNode;
 
@@ -8,38 +9,27 @@ public class BitwiseOrExpression extends Expression {
     public Expression input1, input2;
 
     public BitwiseOrExpression(Token declaration, Expression input1, Expression input2) {
-        super(declaration, null);
+        super(declaration);
         this.input1 = input1;
         this.input2 = input2;
     }
 
-    private static int getMSBNeeded(Range<Integer> r1, Range<Integer> r2) {
-        return Math.max(r1.maxInclusive() - r1.minInclusive(),
-                r2.maxInclusive() - r2.minInclusive());
+    @Override
+    public int resolveRange() {
+        int range1 = input1.resolveRange();
+        int range2 = input2.resolveRange();
+        return Math.max(range1, range2);
     }
 
     @Override
-    public boolean resolveRange() {
-        if (range != null) {
-            return true;
+    public Node getNode(int index) {
+        while (nodes.size() <= index) {
+            nodes.add(null);
         }
-        if (input1.range == null || input2.range == null) {
-            return false;
+        if (nodes.get(index) == null) {
+            nodes.set(index, new OrNode(this, input1.getNode(index), input2.getNode(index)));
         }
-        range = new Range<>(0, getMSBNeeded(input1.range, input2.range));
-        return true;
-    }
-
-    @Override
-    public Node getNode(int index) throws IndexOutOfBoundsException {
-        if (nodes == null) {
-            nodes = new Node[range.maxInclusive() - range.minInclusive() + 1];
-        }
-        if (nodes[index] == null) {
-            OrNode node = new OrNode(this, input1.getNode(index), input2.getNode(index));
-            nodes[index] = node;
-        }
-        return nodes[index];
+        return nodes.get(index);
     }
 
     @Override
@@ -52,5 +42,13 @@ public class BitwiseOrExpression extends Expression {
         super.setUsed(index);
         input1.setUsed(index);
         input2.setUsed(index);
+    }
+
+    @Override
+    public Iterable<Node> getAllNodes() {
+        for (int i = 0; i < nodes.size(); ++i) {
+            getNode(i);
+        }
+        return Iterables.concat(nodes, input1.getAllNodes(), input2.getAllNodes());
     }
 }
