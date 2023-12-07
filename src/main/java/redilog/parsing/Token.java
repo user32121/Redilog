@@ -15,7 +15,7 @@ public class Token {
     public static final Set<String> KEYWORDS = Set.of("input", "output", "assign");
     public static final Set<String> MULTICHAR_SYMBOLS = Set.of();
 
-    public static final Pattern WORD = Pattern.compile("[a-z_]+");
+    public static final Pattern WORD = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
     public static final Pattern POSITIVE_NUMBER = Pattern.compile("0x[0-9a-fA-F]+|0o[0-8]+|0b[01]+|[0-9]+");
     public static final Pattern NUMBER = Pattern.compile("-?0x[0-9a-fA-F]+|-?0o[0-8]+|-?0b[01]+|-?[0-9]+");
 
