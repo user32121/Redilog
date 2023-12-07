@@ -2,21 +2,23 @@ package redilog.blocks;
 
 import net.minecraft.entity.boss.BossBarManager;
 import net.minecraft.entity.boss.CommandBossBar;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import redilog.init.RedilogGamerules;
 
 //TODO auto add player
 public class BlockProgressBarManager {
 
     private String blockName;
     private BlockPos pos;
-    private BossBarManager bbm;
+    private ServerPlayerEntity player;
 
-    public BlockProgressBarManager(String blockName, BlockPos pos, BossBarManager bossBarManager) {
+    public BlockProgressBarManager(String blockName, BlockPos pos, ServerPlayerEntity player) {
         this.blockName = blockName;
         this.pos = pos;
-        this.bbm = bossBarManager;
+        this.player = player;
     }
 
     private Identifier getID(String name) {
@@ -29,11 +31,24 @@ public class BlockProgressBarManager {
      */
     public CommandBossBar getProgressBar(String name) {
         Identifier id = getID(name);
+        BossBarManager bbm = player.server.getBossBarManager();
         if (bbm.get(id) == null) {
             bbm.add(id, Text.of(String.format(
                     "%s (%d,%d,%d) %s", blockName, pos.getX(), pos.getY(), pos.getZ(), name)));
         }
-        return bbm.get(id);
+        CommandBossBar cbb = bbm.get(id);
+        if (player.server.getGameRules().getBoolean(RedilogGamerules.ADD_PLAYER_TO_PROGRESSBAR)) {
+            cbb.addPlayer(player);
+        }
+        return cbb;
     }
 
+    /**
+     * Indicate that this progressbar has finished
+     */
+    public void finishProgressBar(CommandBossBar cbb) {
+        if (player.server.getGameRules().getBoolean(RedilogGamerules.REMOVE_PLAYER_FROM_PROGRESSBAR)) {
+            cbb.removePlayer(player);
+        }
+    }
 }

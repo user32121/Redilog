@@ -49,8 +49,7 @@ public class BuilderRunnable implements Runnable {
     @Override
     public void run() {
         try {
-            BlockProgressBarManager bbpbm = new BlockProgressBarManager("builder", owner.getPos(),
-                    player.server.getBossBarManager());
+            BlockProgressBarManager bbpbm = new BlockProgressBarManager("builder", owner.getPos(), player);
 
             if (shouldStop) {
                 return;

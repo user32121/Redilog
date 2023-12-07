@@ -124,6 +124,7 @@ public class Placer {
             }
             cbb.setValue(i + 1);
         }
+        bbpbm.finishProgressBar(cbb);
         for (Node node : graph.nodes) {
             node.placeAtPotentialPos(grid);
         }
@@ -142,6 +143,7 @@ public class Placer {
             node.route((starts, end, startNode) -> routeWire(starts, end, grid, graph, startNode, node, feedback));
             cbb.setValue(cbb.getValue() + 1);
         }
+        bbpbm.finishProgressBar(cbb);
     }
 
     /**
