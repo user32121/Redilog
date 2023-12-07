@@ -9,8 +9,8 @@ import org.apache.logging.log4j.util.TriConsumer;
 
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
-import redilog.routing.Placer.BLOCK;
 import redilog.parsing.expressions.Expression;
+import redilog.routing.BLOCK;
 import redilog.routing.RedilogPlacementException;
 import redilog.utils.Array3D;
 import redilog.utils.Vec4i;

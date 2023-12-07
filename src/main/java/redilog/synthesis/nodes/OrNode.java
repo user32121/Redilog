@@ -10,14 +10,15 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
-import redilog.routing.Placer.BLOCK;
 import redilog.parsing.expressions.Expression;
+import redilog.routing.BLOCK;
 import redilog.routing.RedilogPlacementException;
 import redilog.utils.Array3D;
 import redilog.utils.Vec4i;
 import redilog.utils.VecUtil;
 
 public class OrNode extends Node {
+    //TODO nbt
     private final static Array3D<BLOCK> OR_GATE_BLOCKS = new Array3D.Builder<BLOCK>()
             .data(new BLOCK[][][] {
                     { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK },

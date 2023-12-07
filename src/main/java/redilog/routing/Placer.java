@@ -11,15 +11,10 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.RepeaterBlock;
-import net.minecraft.block.WallRedstoneTorchBlock;
 import net.minecraft.entity.boss.CommandBossBar;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
@@ -40,30 +35,6 @@ import redilog.utils.Vec4i;
 import redilog.utils.VecUtil;
 
 public class Placer {
-    public enum BLOCK {
-        AIR(Blocks.AIR.getDefaultState()),
-        STRICT_AIR(Blocks.AIR.getDefaultState()), //a block that must be air, such as above diagonal wires
-        GLASS(Blocks.GLASS.getDefaultState()), //debug block
-        WIRE(Blocks.REDSTONE_WIRE.getDefaultState()),
-        BLOCK(Blocks.LIGHT_BLUE_CONCRETE.getDefaultState()),
-        REPEATER_NORTH(Blocks.REPEATER.getDefaultState().with(RepeaterBlock.FACING, Direction.SOUTH)),
-        REPEATER_SOUTH(Blocks.REPEATER.getDefaultState().with(RepeaterBlock.FACING, Direction.NORTH)),
-        REPEATER_EAST(Blocks.REPEATER.getDefaultState().with(RepeaterBlock.FACING, Direction.WEST)),
-        REPEATER_WEST(Blocks.REPEATER.getDefaultState().with(RepeaterBlock.FACING, Direction.EAST)),
-        REDSTONE_BLOCK(Blocks.REDSTONE_BLOCK.getDefaultState()),
-        TORCH(Blocks.REDSTONE_TORCH.getDefaultState()),
-        TORCH_NORTH(Blocks.REDSTONE_WALL_TORCH.getDefaultState().with(WallRedstoneTorchBlock.FACING, Direction.NORTH)),
-        TORCH_SOUTH(Blocks.REDSTONE_WALL_TORCH.getDefaultState().with(WallRedstoneTorchBlock.FACING, Direction.SOUTH)),
-        TORCH_EAST(Blocks.REDSTONE_WALL_TORCH.getDefaultState().with(WallRedstoneTorchBlock.FACING, Direction.EAST)),
-        TORCH_WEST(Blocks.REDSTONE_WALL_TORCH.getDefaultState().with(WallRedstoneTorchBlock.FACING, Direction.WEST));
-
-        public final BlockState state;
-
-        private BLOCK(BlockState state) {
-            this.state = state;
-        }
-    }
-
     /**
      * Place redstone according to the logic graph in the specified cuboid region
      * @param feedback the function will add messages that should be relayed to the user
@@ -99,7 +70,7 @@ public class Placer {
 
     public static void transferGridToWorld(Box buildSpace, World world, Array3D<BLOCK> grid, BlockPos pos) {
         BlockPos minPos = new BlockPos(buildSpace.minX, buildSpace.minY, buildSpace.minZ);
-        world.setBlockState(minPos.add(pos), grid.get(pos).state, Block.NOTIFY_LISTENERS);
+        world.setBlockState(minPos.add(pos), grid.get(pos).states[0], Block.NOTIFY_LISTENERS);
     }
 
     private static void placeComponents(Box buildSpace, Array3D<BLOCK> grid, LogicGraph graph,

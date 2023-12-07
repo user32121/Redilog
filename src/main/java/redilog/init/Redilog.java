@@ -31,5 +31,6 @@ public class Redilog implements ModInitializer {
 
         RedilogBlocks.init();
         RedilogGamerules.init();
+        RedilogComponents.init();
     }
 }

@@ -2,7 +2,7 @@ package redilog.routing.steps;
 
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3i;
-import redilog.routing.Placer.BLOCK;
+import redilog.routing.BLOCK;
 import redilog.utils.Array3D;
 import redilog.utils.Vec4i;
 
