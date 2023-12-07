@@ -57,7 +57,7 @@ public class WireExpression extends NamedExpression {
 
     @Override
     public int resolveRange() {
-        if (range == null) {
+        if (range == null && value != null) {
             return Math.max(super.resolveRange(), value.resolveRange());
         } else {
             return super.resolveRange();
