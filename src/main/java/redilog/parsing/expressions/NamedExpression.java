@@ -41,9 +41,11 @@ public abstract class NamedExpression extends Expression {
 
     @Override
     public String nodeAsString(Node node) {
-        for (int i = range.minInclusive(); i <= range.maxInclusive(); ++i) {
-            if (getNodeWithAddress(i) == node) {
-                return String.format("%s[%d]", name, i);
+        if (range != null) {
+            for (int i = range.minInclusive(); i <= range.maxInclusive(); ++i) {
+                if (getNodeWithAddress(i) == node) {
+                    return String.format("%s[%d]", name, i);
+                }
             }
         }
         return super.nodeAsString(node);

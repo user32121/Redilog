@@ -52,6 +52,9 @@ public class WireExpression extends NamedExpression {
         for (int i = 0; i < nodes.size(); ++i) {
             getNode(i);
         }
+        if (value == null) {
+            return nodes;
+        }
         return Iterables.concat(nodes, value.getAllNodes());
     }
 
