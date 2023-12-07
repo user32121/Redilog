@@ -33,6 +33,9 @@ public class WireExpression extends NamedExpression {
 
     @Override
     public void setValue(Expression expression) throws RedilogParsingException {
+        if (value != null) {
+            throw new RedilogParsingException(String.format("%s assigned twice", declaration));
+        }
         value = expression;
     }
 

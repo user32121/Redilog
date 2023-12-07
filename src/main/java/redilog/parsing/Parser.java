@@ -184,7 +184,6 @@ public class Parser {
     }
 
     private static int processAssignment(SymbolGraph graph, List<Token> tokens, int i) throws RedilogParsingException {
-        //TODO prevent double assignment    
         tokens.get(i++).require(Token.Type.KEYWORD, "assign");
 
         Token name = tokens.get(i++);
