@@ -149,7 +149,7 @@ public class Placer {
     /**
      * Constructs a path from one of starts to end.
      * @param starts any allowable starting position
-     * @param end target of BFS; w component indicates <i>minimum</i> signal strength needed
+     * @param end target of routing; w component indicates <i>minimum</i> signal strength needed
      */
     private static void routeWire(Set<Vec4i> starts, Vec4i end, Array3D<BLOCK> grid, LogicGraph graph,
             Node startNode, Node endNode, Consumer<Text> feedback) {
@@ -161,7 +161,7 @@ public class Placer {
                 .fill(Integer.MAX_VALUE).build();
         Array4D<RoutingStep> wireType = new Array4D.Builder<RoutingStep>().size(new Vec4i(grid.getSize(), 16)).build();
 
-        //NOTE: since bfs stores limited state, it may be possible for the wire to loop on itself and override its path
+        //NOTE: since routing stores limited state, it may be possible for the wire to loop on itself and override its path
         for (Vec4i pos : starts) {
             toProcess.add(pos);
             cost.set(pos, 0);
@@ -169,7 +169,7 @@ public class Placer {
         while (!toProcess.isEmpty()) {
             Vec4i cur = toProcess.remove();
             for (RoutingStep step : RoutingStep.STEPS) {
-                Vec4i move = step.getValidMove(grid, cur, end.to3i());
+                Vec4i move = step.getValidMove(grid, cur, end.to3i(), wireType.get(cur));
                 if (move != null && cost.inBounds(move) && cost.get(cur) + step.getCost() < cost.get(move)) {
                     visitedFrom.set(move, cur);
                     cost.set(move, cost.get(cur) + step.getCost());

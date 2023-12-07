@@ -14,7 +14,11 @@ public class CardinalStep implements RoutingStep {
     }
 
     @Override
-    public Vec4i getValidMove(Array3D<BLOCK> grid, Vec4i pos, Vec3i target) {
+    public Vec4i getValidMove(Array3D<BLOCK> grid, Vec4i pos, Vec3i target, RoutingStep prevStep) {
+        //cannot reverse direction
+        if (prevStep instanceof CardinalStep cs && cs.direction == direction.getOpposite()) {
+            return null;
+        }
         Vec4i next = getNextPosition(pos);
         //reached target
         if (next.to3i().equals(target)) {

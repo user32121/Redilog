@@ -34,7 +34,7 @@ public interface RoutingStep {
      * @return a tile the wire can extend to
      */
     @Nullable
-    Vec4i getValidMove(Array3D<BLOCK> grid, Vec4i cur, Vec3i target);
+    Vec4i getValidMove(Array3D<BLOCK> grid, Vec4i cur, Vec3i target, RoutingStep prevStep);
 
     /**
      * @param pos the position to place from

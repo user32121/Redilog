@@ -15,7 +15,7 @@ public class RepeaterCardinalStep extends CardinalStep {
     }
 
     @Override
-    public Vec4i getValidMove(Array3D<BLOCK> grid, Vec4i pos, Vec3i target) {
+    public Vec4i getValidMove(Array3D<BLOCK> grid, Vec4i pos, Vec3i target, RoutingStep prevStep) {
         Vec4i next = getNextPosition(pos);
         next.setW(0); //repeater does not provide power except in output direction
         Vec4i nextNext = getNextPosition(next);

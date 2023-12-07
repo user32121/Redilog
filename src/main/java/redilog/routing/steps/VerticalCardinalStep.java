@@ -6,7 +6,6 @@ import redilog.routing.Placer.BLOCK;
 import redilog.utils.Array3D;
 import redilog.utils.Vec4i;
 
-//TODO wire still getting cut; prevent step from reversing (e.g. south right after north)
 public class VerticalCardinalStep extends CardinalStep {
     private int verticalOffset;
 
@@ -26,14 +25,14 @@ public class VerticalCardinalStep extends CardinalStep {
     }
 
     @Override
-    public Vec4i getValidMove(Array3D<BLOCK> grid, Vec4i pos, Vec3i target) {
+    public Vec4i getValidMove(Array3D<BLOCK> grid, Vec4i pos, Vec3i target, RoutingStep prevStep) {
         //make sure wire not cut
         Vec4i next = getNextPosition(pos);
         Vec4i lower = next.getY() < pos.getY() ? next : pos;
         if (!grid.isValue(lower.to3i().up(), BLOCK.AIR)) {
             return null;
         }
-        return super.getValidMove(grid, pos, target);
+        return super.getValidMove(grid, pos, target, prevStep);
     }
 
     @Override
