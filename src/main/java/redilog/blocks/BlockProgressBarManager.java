@@ -8,7 +8,6 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import redilog.init.RedilogGamerules;
 
-//TODO auto add player
 public class BlockProgressBarManager {
 
     private String blockName;
