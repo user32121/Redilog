@@ -10,6 +10,7 @@ import net.minecraft.block.WallSignBlock;
 import net.minecraft.block.entity.SignBlockEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
@@ -33,7 +34,7 @@ public class OutputNode extends IONode {
     }
 
     @Override
-    public void placeAtPotentialPos(Array3D<BLOCK> grid) {
+    public void placeAtPotentialPos(Array3D<BLOCK> grid, Box buildSpace) {
         grid.set(VecUtil.d2i(getPosition()), BLOCK.WIRE);
         grid.set(VecUtil.d2i(getPosition().add(0, -1, 0)), BLOCK.BLOCK);
     }
@@ -64,5 +65,10 @@ public class OutputNode extends IONode {
         if (world.getBlockEntity(relativeOrigin.add(pos).add(0, -1, 1)) instanceof SignBlockEntity sbe) {
             sbe.setTextOnRow(0, Text.of(name));
         }
+    }
+
+    @Override
+    public Box getBoundingBox() {
+        return new Box(new BlockPos(position));
     }
 }

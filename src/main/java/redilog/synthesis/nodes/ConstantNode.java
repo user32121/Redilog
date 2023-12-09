@@ -25,7 +25,7 @@ public class ConstantNode extends Node {
     }
 
     @Override
-    public void placeAtPotentialPos(Array3D<BLOCK> grid) {
+    public void placeAtPotentialPos(Array3D<BLOCK> grid, Box buildSpace) {
         grid.set(VecUtil.d2i(position).add(0, 0, 0), BLOCK.BLOCK);
         grid.set(VecUtil.d2i(position).add(0, 1, 0), bit ? BLOCK.REDSTONE_BLOCK : BLOCK.WIRE);
         grid.set(VecUtil.d2i(position).add(0, 0, 1), BLOCK.BLOCK);
@@ -76,5 +76,10 @@ public class ConstantNode extends Node {
     @Override
     public void route(TriConsumer<Set<Vec4i>, Vec4i, Node> routeWire) throws RedilogPlacementException {
         // NO OP
+    }
+
+    @Override
+    public Box getBoundingBox() {
+        return new Box(position, position.add(1, 2, 2));
     }
 }

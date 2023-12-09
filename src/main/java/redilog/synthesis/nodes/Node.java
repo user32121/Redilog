@@ -39,11 +39,13 @@ public abstract class Node {
         return owner.declaration.getValue().contains("DEBUG");
     }
 
-    public abstract void placeAtPotentialPos(Array3D<BLOCK> grid);
+    public abstract void placeAtPotentialPos(Array3D<BLOCK> grid, Box buildSpace);
 
     public Set<Vec4i> getOutputs() throws RedilogPlacementException {
         return outputs;
     }
+
+    public abstract Box getBoundingBox();
 
     /**
      * Move potential position around so that it's close to its inputs and outputs

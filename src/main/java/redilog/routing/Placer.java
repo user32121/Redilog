@@ -97,7 +97,7 @@ public class Placer {
         }
         bbpbm.finishProgressBar(cbb);
         for (Node node : graph.nodes) {
-            node.placeAtPotentialPos(grid);
+            node.placeAtPotentialPos(grid, buildSpace);
         }
     }
 
