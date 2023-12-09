@@ -16,7 +16,7 @@ public class WireExpression extends NamedExpression {
     }
 
     @Override
-    public Node getNode(int index) throws IndexOutOfBoundsException {
+    public Node getNode(int index) {
         if (range != null) {
             index = Math.min(index, range.maxInclusive() - range.minInclusive() + 1);
         }

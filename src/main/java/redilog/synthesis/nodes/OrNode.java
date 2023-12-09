@@ -10,6 +10,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
+import redilog.init.RedilogComponents;
 import redilog.parsing.expressions.Expression;
 import redilog.routing.BLOCK;
 import redilog.routing.RedilogPlacementException;
@@ -18,34 +19,22 @@ import redilog.utils.Vec4i;
 import redilog.utils.VecUtil;
 
 public class OrNode extends Node {
-    //TODO nbt
-    private final static Array3D<BLOCK> OR_GATE_BLOCKS = new Array3D.Builder<BLOCK>()
-            .data(new BLOCK[][][] {
-                    { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK },
-                            { BLOCK.WIRE, BLOCK.REPEATER_SOUTH, BLOCK.WIRE }, },
-                    { { BLOCK.AIR, BLOCK.AIR, BLOCK.BLOCK },
-                            { BLOCK.AIR, BLOCK.AIR, BLOCK.WIRE }, },
-                    { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.BLOCK },
-                            { BLOCK.WIRE, BLOCK.REPEATER_SOUTH, BLOCK.WIRE }, }, })
-            .build();
-
     public final Node input1, input2;
     protected boolean swapInputs;
 
     public OrNode(Expression owner, Node input1, Node input2) {
         super(owner);
+        if (RedilogComponents.NOT_GATE == null) {
+            throw new IllegalStateException("Could not access or gate nbt");
+        }
         this.input1 = input1;
         this.input2 = input2;
-        input1.outputNodes.add(() -> VecUtil.i2d(getInput1()));
-        input2.outputNodes.add(() -> VecUtil.i2d(getInput2()));
+        input1.outputNodes.add(() -> VecUtil.i2d(getInput(0)));
+        input2.outputNodes.add(() -> VecUtil.i2d(getInput(1)));
     }
 
-    public Vec3i getInput1() {
-        return VecUtil.d2i(position).add(swapInputs ? 2 : 0, 1, 0);
-    }
-
-    public Vec3i getInput2() {
-        return VecUtil.d2i(position).add(swapInputs ? 0 : 2, 1, 0);
+    public Vec3i getInput(int index) {
+        return VecUtil.d2i(position).add(RedilogComponents.OR_GATE.inputs.get(index));
     }
 
     @Override
@@ -53,13 +42,16 @@ public class OrNode extends Node {
         //swap inputs if more convenient
         swapInputs = input2.position.x < input1.position.x;
 
-        outputs.add(new Vec4i(VecUtil.d2i(position).add(0, 1, 2), 13));
-        outputs.add(new Vec4i(VecUtil.d2i(position).add(1, 1, 2), 14));
-        outputs.add(new Vec4i(VecUtil.d2i(position).add(2, 1, 2), 13));
+        for (Vec4i output : RedilogComponents.OR_GATE.outputs) {
+            outputs.add(new Vec4i(VecUtil.d2i(position), 0).add(output));
+        }
 
         for (BlockPos offset : BlockPos.iterate(BlockPos.ORIGIN,
-                new BlockPos(OR_GATE_BLOCKS.getSize().add(-1, -1, -1)))) {
-            grid.set(VecUtil.d2i(position).add(offset), OR_GATE_BLOCKS.get(offset));
+                new BlockPos(RedilogComponents.OR_GATE.blocks.getSize().add(-1, -1, -1)))) {
+            BLOCK b = RedilogComponents.OR_GATE.blocks.get(offset);
+            if (b != null) {
+                grid.set(VecUtil.d2i(position).add(offset), b);
+            }
         }
     }
 
@@ -83,18 +75,18 @@ public class OrNode extends Node {
         double z = avg.z;
         if (x < 0) {
             x = 0;
-        } else if (x + OR_GATE_BLOCKS.getXLength() >= buildSpace.getXLength()) {
-            x = buildSpace.getXLength() - OR_GATE_BLOCKS.getXLength();
+        } else if (x + RedilogComponents.OR_GATE.blocks.getXLength() >= buildSpace.getXLength()) {
+            x = buildSpace.getXLength() - RedilogComponents.OR_GATE.blocks.getXLength();
         }
         if (y < 0) {
             y = 0;
-        } else if (y + OR_GATE_BLOCKS.getYLength() >= buildSpace.getYLength()) {
-            y = buildSpace.getYLength() - OR_GATE_BLOCKS.getYLength();
+        } else if (y + RedilogComponents.OR_GATE.blocks.getYLength() >= buildSpace.getYLength()) {
+            y = buildSpace.getYLength() - RedilogComponents.OR_GATE.blocks.getYLength();
         }
         if (z < 2) {
             z = 2;
-        } else if (z + OR_GATE_BLOCKS.getZLength() >= buildSpace.getZLength() - 3) {
-            z = buildSpace.getZLength() - 3 - OR_GATE_BLOCKS.getZLength();
+        } else if (z + RedilogComponents.OR_GATE.blocks.getZLength() >= buildSpace.getZLength() - 3) {
+            z = buildSpace.getZLength() - 3 - RedilogComponents.OR_GATE.blocks.getZLength();
         }
         position = new Vec3d(x, y, z);
     }
@@ -102,10 +94,10 @@ public class OrNode extends Node {
     @Override
     public void route(TriConsumer<Set<Vec4i>, Vec4i, Node> routeWire) throws RedilogPlacementException {
         if (input1 != null) {
-            routeWire.accept(input1.getOutputs(), new Vec4i(getInput1(), 1), input1);
+            routeWire.accept(input1.getOutputs(), new Vec4i(getInput(0), 1), input1);
         }
         if (input2 != null) {
-            routeWire.accept(input2.getOutputs(), new Vec4i(getInput2(), 1), input2);
+            routeWire.accept(input2.getOutputs(), new Vec4i(getInput(1), 1), input2);
         }
     }
 }

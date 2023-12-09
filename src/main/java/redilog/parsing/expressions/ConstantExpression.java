@@ -25,7 +25,7 @@ public class ConstantExpression extends Expression {
     }
 
     @Override
-    public Node getNode(int index) throws IndexOutOfBoundsException {
+    public Node getNode(int index) {
         return nodes.get(index);
     }
 

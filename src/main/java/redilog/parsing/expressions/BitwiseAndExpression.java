@@ -10,7 +10,7 @@ public class BitwiseAndExpression extends BitwiseOrExpression {
     }
 
     @Override
-    public Node getNode(int index) throws IndexOutOfBoundsException {
+    public Node getNode(int index) {
         while (nodes.size() <= index) {
             nodes.add(null);
         }

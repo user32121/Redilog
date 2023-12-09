@@ -11,7 +11,7 @@ public class OutputExpression extends WireExpression {
     }
 
     @Override
-    public Node getNode(int index) throws IndexOutOfBoundsException {
+    public Node getNode(int index) {
         Node node = super.getNode(index);
         if (!node.used) {
             node.used = true;

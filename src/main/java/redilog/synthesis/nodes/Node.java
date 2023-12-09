@@ -1,7 +1,5 @@
 package redilog.synthesis.nodes;
 
-import java.io.DataInputStream;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Random;
@@ -10,13 +8,8 @@ import java.util.function.Supplier;
 
 import org.apache.logging.log4j.util.TriConsumer;
 
-import net.minecraft.nbt.NbtIo;
-import net.minecraft.resource.Resource;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
-import redilog.init.Redilog;
 import redilog.parsing.expressions.Expression;
 import redilog.routing.BLOCK;
 import redilog.routing.RedilogPlacementException;
@@ -24,17 +17,6 @@ import redilog.utils.Array3D;
 import redilog.utils.Vec4i;
 
 public abstract class Node {
-    public static Array3D<BLOCK> loadNBTAsBLOCKS(ResourceManager rm, Identifier id) {
-        try {
-            Resource resource = rm.getResourceOrThrow(id);
-            NbtIo.read(new DataInputStream(resource.getInputStream()));
-        } catch (IOException ioe) {
-            Redilog.LOGGER.error(String.format("Failed to read %s", id), ioe);
-        }
-        //TODO
-        return null;
-    }
-
     public final Expression owner;
     public boolean used;
     public final Set<Vec4i> outputs = new HashSet<>();

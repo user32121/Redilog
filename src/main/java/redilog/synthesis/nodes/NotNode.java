@@ -10,6 +10,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
+import redilog.init.RedilogComponents;
 import redilog.parsing.expressions.Expression;
 import redilog.routing.BLOCK;
 import redilog.routing.RedilogPlacementException;
@@ -18,34 +19,33 @@ import redilog.utils.Vec4i;
 import redilog.utils.VecUtil;
 
 public class NotNode extends Node {
-    //TODO strict air
-    //TODO nbt
-    private final static Array3D<BLOCK> AND_GATE_BLOCKS = new Array3D.Builder<BLOCK>()
-            .data(new BLOCK[][][] {
-                    { { BLOCK.BLOCK, BLOCK.BLOCK, BLOCK.AIR, BLOCK.AIR },
-                            { BLOCK.WIRE, BLOCK.WIRE, BLOCK.BLOCK, BLOCK.BLOCK },
-                            { BLOCK.AIR, BLOCK.AIR, BLOCK.TORCH, BLOCK.WIRE }, }, })
-            .build();
-
     public final Node input1;
 
     public NotNode(Expression owner, Node input1) {
         super(owner);
+        if (RedilogComponents.NOT_GATE == null) {
+            throw new IllegalStateException("Could not access not gate nbt");
+        }
         this.input1 = input1;
-        input1.outputNodes.add(() -> VecUtil.i2d(getInput1()));
+        input1.outputNodes.add(() -> VecUtil.i2d(getInput(0)));
     }
 
-    public Vec3i getInput1() {
-        return VecUtil.d2i(position).add(0, 1, 0);
+    public Vec3i getInput(int index) {
+        return VecUtil.d2i(position).add(RedilogComponents.NOT_GATE.inputs.get(index));
     }
 
     @Override
     public void placeAtPotentialPos(Array3D<BLOCK> grid) {
-        outputs.add(new Vec4i(VecUtil.d2i(position).add(0, 2, 3), 15));
+        for (Vec4i output : RedilogComponents.NOT_GATE.outputs) {
+            outputs.add(new Vec4i(VecUtil.d2i(position), 0).add(output));
+        }
 
         for (BlockPos offset : BlockPos.iterate(BlockPos.ORIGIN,
-                new BlockPos(AND_GATE_BLOCKS.getSize().add(-1, -1, -1)))) {
-            grid.set(VecUtil.d2i(position).add(offset), AND_GATE_BLOCKS.get(offset));
+                new BlockPos(RedilogComponents.NOT_GATE.blocks.getSize().add(-1, -1, -1)))) {
+            BLOCK b = RedilogComponents.NOT_GATE.blocks.get(offset);
+            if (b != null) {
+                grid.set(VecUtil.d2i(position).add(offset), b);
+            }
         }
     }
 
@@ -69,18 +69,18 @@ public class NotNode extends Node {
         double z = avg.z;
         if (x < 0) {
             x = 0;
-        } else if (x + AND_GATE_BLOCKS.getXLength() >= buildSpace.getXLength()) {
-            x = buildSpace.getXLength() - AND_GATE_BLOCKS.getXLength();
+        } else if (x + RedilogComponents.NOT_GATE.blocks.getXLength() >= buildSpace.getXLength()) {
+            x = buildSpace.getXLength() - RedilogComponents.NOT_GATE.blocks.getXLength();
         }
         if (y < 0) {
             y = 0;
-        } else if (y + AND_GATE_BLOCKS.getYLength() >= buildSpace.getYLength()) {
-            y = buildSpace.getYLength() - AND_GATE_BLOCKS.getYLength();
+        } else if (y + RedilogComponents.NOT_GATE.blocks.getYLength() >= buildSpace.getYLength()) {
+            y = buildSpace.getYLength() - RedilogComponents.NOT_GATE.blocks.getYLength();
         }
         if (z < 2) {
             z = 2;
-        } else if (z + AND_GATE_BLOCKS.getZLength() >= buildSpace.getZLength() - 3) {
-            z = buildSpace.getZLength() - 3 - AND_GATE_BLOCKS.getZLength();
+        } else if (z + RedilogComponents.NOT_GATE.blocks.getZLength() >= buildSpace.getZLength() - 3) {
+            z = buildSpace.getZLength() - 3 - RedilogComponents.NOT_GATE.blocks.getZLength();
         }
         position = new Vec3d(x, y, z);
     }
@@ -88,7 +88,7 @@ public class NotNode extends Node {
     @Override
     public void route(TriConsumer<Set<Vec4i>, Vec4i, Node> routeWire) throws RedilogPlacementException {
         if (input1 != null) {
-            routeWire.accept(input1.getOutputs(), new Vec4i(getInput1(), 2), input1);
+            routeWire.accept(input1.getOutputs(), new Vec4i(getInput(0), 2), input1);
         }
     }
 }

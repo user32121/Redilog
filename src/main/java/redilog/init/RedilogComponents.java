@@ -21,10 +21,14 @@ import redilog.utils.Vec4i;
 
 public class RedilogComponents {
     public static Component OR_GATE;
+    public static Component AND_GATE;
+    public static Component NOT_GATE;
 
     public static void init() {
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             OR_GATE = loadComponent(server.getResourceManager(), new Identifier("redilog", "components/or_gate.nbt"));
+            AND_GATE = loadComponent(server.getResourceManager(), new Identifier("redilog", "components/and_gate.nbt"));
+            NOT_GATE = loadComponent(server.getResourceManager(), new Identifier("redilog", "components/not_gate.nbt"));
         });
     }
 
@@ -32,19 +36,36 @@ public class RedilogComponents {
         try {
             NbtCompound nbt = NbtIo.readCompressed(rm.open(id));
             Component c = new Component(readv3i(nbt.get("size")));
+
             for (NbtElement e : nbt.getList("inputs", NbtElement.INT_ARRAY_TYPE)) {
                 c.inputs.add(readv3i(e));
             }
+            if (c.inputs.size() == 0) {
+                Redilog.LOGGER.warn(String.format("%s has 0 inputs", id));
+            }
+
             for (NbtElement e : nbt.getList("outputs", NbtElement.INT_ARRAY_TYPE)) {
                 c.outputs.add(readv4i(e));
             }
+            if (c.outputs.size() == 0) {
+                Redilog.LOGGER.warn(String.format("%s has 0 outputs", id));
+            }
+
             List<BlockState> states = new ArrayList<>();
-            for (NbtElement e : nbt.getList("blocks", NbtElement.COMPOUND_TYPE)) {
+            for (NbtElement e : nbt.getList("palette", NbtElement.COMPOUND_TYPE)) {
                 states.add(NbtHelper.toBlockState((NbtCompound) e));
             }
+            boolean nonAir = false;
             for (NbtElement e : nbt.getList("blocks", NbtElement.COMPOUND_TYPE)) {
                 NbtCompound e2 = (NbtCompound) e;
-                c.blocks.set(readv3i(e2.get("pos")), BLOCK.fromState(states.get(e2.getInt("state"))));
+                BlockState state = states.get(e2.getInt("state"));
+                c.blocks.set(readv3i(e2.get("pos")), BLOCK.fromState(state));
+                if (!state.isAir()) {
+                    nonAir = true;
+                }
+            }
+            if (!nonAir) {
+                Redilog.LOGGER.warn(String.format("%s has only air blocks", id));
             }
             return c;
         } catch (IOException | AssertionError e) {
