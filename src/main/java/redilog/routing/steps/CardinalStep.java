@@ -1,12 +1,12 @@
-package redilog.routing.bfs;
+package redilog.routing.steps;
 
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3i;
-import redilog.routing.Placer.BLOCK;
+import redilog.routing.BLOCK;
 import redilog.utils.Array3D;
 import redilog.utils.Vec4i;
 
-public class CardinalStep implements BFSStep {
+public class CardinalStep implements RoutingStep {
     protected final Direction direction;
 
     public CardinalStep(Direction direction) {
@@ -14,11 +14,18 @@ public class CardinalStep implements BFSStep {
     }
 
     @Override
-    public Vec4i getValidMove(Array3D<BLOCK> grid, Vec4i pos, Vec3i target) {
+    public Vec4i getValidMove(Array3D<BLOCK> grid, Vec4i pos, Vec3i target, RoutingStep prevStep) {
+        //cannot reverse direction
+        if (prevStep instanceof CardinalStep cs && cs.direction == direction.getOpposite()) {
+            return null;
+        }
         Vec4i next = getNextPosition(pos);
+        //reached target
+        if (next.to3i().equals(target)) {
+            return next;
+        }
         //next cannot already have something there (unless it's the target)
-        if (!next.to3i().equals(target)
-                && (!grid.isValue(next.to3i(), BLOCK.AIR) || !grid.isValue(next.to3i().down(), BLOCK.AIR))) {
+        if ((!grid.isValue(next.to3i(), BLOCK.AIR) || !grid.isValue(next.to3i().down(), BLOCK.AIR))) {
             return null;
         }
         //make sure not adjacent to other wires

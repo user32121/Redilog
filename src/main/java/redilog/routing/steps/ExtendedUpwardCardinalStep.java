@@ -1,8 +1,8 @@
-package redilog.routing.bfs;
+package redilog.routing.steps;
 
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3i;
-import redilog.routing.Placer.BLOCK;
+import redilog.routing.BLOCK;
 import redilog.utils.Array3D;
 import redilog.utils.Vec4i;
 
@@ -13,11 +13,15 @@ public class ExtendedUpwardCardinalStep extends CardinalStep {
     }
 
     @Override
-    public Vec4i getValidMove(Array3D<BLOCK> grid, Vec4i pos, Vec3i target) {
+    public Vec4i getValidMove(Array3D<BLOCK> grid, Vec4i pos, Vec3i target, RoutingStep prevStep) {
+        //cannot reverse direction
+        if (prevStep instanceof CardinalStep cs && cs.direction == direction.getOpposite()) {
+            return null;
+        }
         Vec4i next = getNextPosition(pos);
         Vec4i nextNext = getNextPosition(next);
         //next cannot already have something there (unless it's the target)
-        if (!next.to3i().equals(target) && (!grid.isValue(next.to3i(), BLOCK.AIR)
+        if (!nextNext.to3i().equals(target) && (!grid.isValue(next.to3i(), BLOCK.AIR)
                 || !grid.isValue(next.to3i().down(), BLOCK.AIR)
                 || !grid.isValue(nextNext.to3i(), BLOCK.AIR)
                 || !grid.isValue(nextNext.to3i().down(), BLOCK.AIR))) {
@@ -33,14 +37,16 @@ public class ExtendedUpwardCardinalStep extends CardinalStep {
                 }
             }
         }
-        //nextNext not adjacent to wires
-        for (Direction dir : new Direction[] { direction, direction.rotateYClockwise(),
-                direction.rotateYCounterclockwise() }) {
-            for (int y = -1; y <= 1; ++y) {
-                Vec3i adjacent = nextNext.to3i().offset(dir).add(0, y, 0);
-                if (!adjacent.equals(target) //ok to be adjacent to target
-                        && grid.isValue(adjacent, BLOCK.WIRE)) {
-                    return null;
+        //nextNext not adjacent to wires unless it's target
+        if (!nextNext.to3i().equals(target)) {
+            for (Direction dir : new Direction[] { direction, direction.rotateYClockwise(),
+                    direction.rotateYCounterclockwise() }) {
+                for (int y = -1; y <= 1; ++y) {
+                    Vec3i adjacent = nextNext.to3i().offset(dir).add(0, y, 0);
+                    if (!adjacent.equals(target) //ok to be adjacent to target
+                            && grid.isValue(adjacent, BLOCK.WIRE)) {
+                        return null;
+                    }
                 }
             }
         }

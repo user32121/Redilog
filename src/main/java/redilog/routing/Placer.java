@@ -2,40 +2,31 @@ package redilog.routing;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map.Entry;
+import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
-import org.apache.commons.lang3.NotImplementedException;
-
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.LeverBlock;
-import net.minecraft.block.RepeaterBlock;
-import net.minecraft.block.WallRedstoneTorchBlock;
-import net.minecraft.block.WallSignBlock;
-import net.minecraft.block.entity.SignBlockEntity;
-import net.minecraft.block.enums.WallMountLocation;
+import net.minecraft.block.Block;
+import net.minecraft.entity.boss.CommandBossBar;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
+import redilog.blocks.BlockProgressBarManager;
 import redilog.init.Redilog;
-import redilog.routing.bfs.BFSStep;
-import redilog.synthesis.AndNode;
-import redilog.synthesis.ConstantNode;
-import redilog.synthesis.InputNode;
+import redilog.init.RedilogGamerules;
+import redilog.routing.steps.RoutingStep;
 import redilog.synthesis.LogicGraph;
-import redilog.synthesis.Node;
-import redilog.synthesis.OrNode;
-import redilog.synthesis.OutputNode;
+import redilog.synthesis.nodes.IONode;
+import redilog.synthesis.nodes.InputNode;
+import redilog.synthesis.nodes.Node;
+import redilog.synthesis.nodes.OutputNode;
 import redilog.utils.Array3D;
 import redilog.utils.Array3DView;
 import redilog.utils.Array4D;
@@ -44,29 +35,15 @@ import redilog.utils.Vec4i;
 import redilog.utils.VecUtil;
 
 public class Placer {
-    public enum BLOCK {
-        AIR,
-        STRICT_AIR, //a block that must be air, such as above diagonal wires
-        WIRE,
-        BLOCK,
-        REPEATER_NORTH,
-        REPEATER_SOUTH,
-        REPEATER_EAST,
-        REPEATER_WEST,
-        REDSTONE_BLOCK,
-        TORCH,
-        TORCH_NORTH,
-        TORCH_SOUTH,
-        TORCH_EAST,
-        TORCH_WEST,
-    }
-
     /**
      * Place redstone according to the logic graph in the specified cuboid region
      * @param feedback the function will add messages that should be relayed to the user
+     * @param bbpbm
+     * @return 
      * @throws RedilogPlacementException
      */
-    public static void placeRedilog(LogicGraph graph, Box buildSpace, World world, Consumer<Text> feedback)
+    public static Array3D<BLOCK> placeAndRoute(LogicGraph graph, Box buildSpace, Consumer<Text> feedback,
+            BlockProgressBarManager bbpbm, World world, Supplier<Boolean> shouldStop)
             throws RedilogPlacementException {
         if (buildSpace == null || (buildSpace.getAverageSideLength() == 0)) {
             throw new RedilogPlacementException(
@@ -79,135 +56,120 @@ public class Placer {
                 .size((int) buildSpace.getXLength(), (int) buildSpace.getYLength(), (int) buildSpace.getZLength())
                 .fill(BLOCK.AIR).build();
 
-        //TODO logging substeps
+        if (shouldStop.get()) {
+            return grid;
+        }
+        feedback.accept(Text.of("  Placing IO..."));
         placeIO(buildSpace, graph, feedback);
-        placeComponents(buildSpace, grid, graph);
+        //TODO repeat while adjusting buildSpace and layout to fine tune
+        if (shouldStop.get()) {
+            return grid;
+        }
+        feedback.accept(Text.of("  Placing components..."));
+        placeComponents(buildSpace, grid, graph, bbpbm, world, shouldStop);
+        if (shouldStop.get()) {
+            return grid;
+        }
+        feedback.accept(Text.of("  Routing wires..."));
         //view prevents routing wires in sign space
         routeWires(new Array3DView<>(grid, 0, 0, 2, grid.getXLength(), grid.getYLength(), grid.getZLength() - 1),
-                graph, feedback);
-        transferGridToWorld(buildSpace, world, grid);
-        labelIO(buildSpace, graph, world, feedback);
-        //TODO repeat while adjusting buildSpace and layout to fine tune
+                graph, feedback, bbpbm, shouldStop);
+        return grid;
     }
 
-    private static void transferGridToWorld(Box buildSpace, World world, Array3D<BLOCK> grid) {
+    public static void transferGridToWorld(Box buildSpace, World world, Array3D<BLOCK> grid, BlockPos pos) {
         BlockPos minPos = new BlockPos(buildSpace.minX, buildSpace.minY, buildSpace.minZ);
-        for (int x = 0; x < buildSpace.getXLength(); ++x) {
-            for (int y = 0; y < buildSpace.getYLength(); ++y) {
-                for (int z = 0; z < buildSpace.getZLength(); ++z) {
-                    BlockState state = switch (grid.get(x, y, z)) {
-                        //TODO encapsulate
-                        case AIR -> Blocks.AIR.getDefaultState();
-                        case STRICT_AIR -> Blocks.AIR.getDefaultState();
-                        case WIRE -> Blocks.REDSTONE_WIRE.getDefaultState();
-                        case BLOCK -> Blocks.LIGHT_BLUE_CONCRETE.getDefaultState();
-                        case REDSTONE_BLOCK -> Blocks.REDSTONE_BLOCK.getDefaultState();
-                        case TORCH -> Blocks.REDSTONE_TORCH.getDefaultState();
-                        case REPEATER_NORTH -> Blocks.REPEATER.getDefaultState()
-                                .with(RepeaterBlock.FACING, Direction.SOUTH);
-                        case REPEATER_SOUTH -> Blocks.REPEATER.getDefaultState()
-                                .with(RepeaterBlock.FACING, Direction.NORTH);
-                        case REPEATER_EAST -> Blocks.REPEATER.getDefaultState()
-                                .with(RepeaterBlock.FACING, Direction.WEST);
-                        case REPEATER_WEST -> Blocks.REPEATER.getDefaultState()
-                                .with(RepeaterBlock.FACING, Direction.EAST);
-                        case TORCH_NORTH -> Blocks.REDSTONE_WALL_TORCH.getDefaultState()
-                                .with(WallRedstoneTorchBlock.FACING, Direction.NORTH);
-                        case TORCH_SOUTH -> Blocks.REDSTONE_WALL_TORCH.getDefaultState()
-                                .with(WallRedstoneTorchBlock.FACING, Direction.SOUTH);
-                        case TORCH_EAST -> Blocks.REDSTONE_WALL_TORCH.getDefaultState()
-                                .with(WallRedstoneTorchBlock.FACING, Direction.EAST);
-                        case TORCH_WEST -> Blocks.REDSTONE_WALL_TORCH.getDefaultState()
-                                .with(WallRedstoneTorchBlock.FACING, Direction.WEST);
-                        default -> throw new NotImplementedException(grid.get(x, y, z) + " not implemented");
-                    };
-                    if (state != null) {
-                        world.setBlockState(minPos.add(x, y, z), state);
-                    }
-                }
-            }
-        }
+        world.setBlockState(minPos.add(pos), grid.get(pos).states[0], Block.NOTIFY_LISTENERS);
     }
 
-    private static void placeComponents(Box buildSpace, Array3D<BLOCK> grid, LogicGraph graph) {
-        //TODO make better deterministic (maybe supply seed as parameter?)
-        Random rng = new Random(100);
+    private static void placeComponents(Box buildSpace, Array3D<BLOCK> grid, LogicGraph graph,
+            BlockProgressBarManager bbpbm, World world, Supplier<Boolean> shouldStop) {
+        Random rng = new Random();
         //check for nodes that are not placed
         //give a random initial position
-        for (Node node : graph.nodes.values()) {
+        for (Node node : graph.nodes) {
             Vec3d pos = new Vec3d(rng.nextInt((int) buildSpace.getXLength()),
                     rng.nextInt((int) buildSpace.getYLength()),
                     rng.nextInt((int) buildSpace.getZLength()));
             node.setPotentialPosition(pos);
         }
+        CommandBossBar cbb = bbpbm.getProgressBar("placing");
+        cbb.setMaxValue(world.getGameRules().getInt(RedilogGamerules.PLACEMENT_GRAPH_ITERATIONS));
+        cbb.setValue(0);
         //repeatedly adjust so they are close to their target
-        //TODO pick less arbitrary repeat constant
-        for (int i = 0; i < 10; i++) {
-            for (Node node : graph.nodes.values()) {
-                node.adjustPotentialPosition(buildSpace, graph.nodes.values());
+        for (int i = 0; i < world.getGameRules().getInt(RedilogGamerules.PLACEMENT_GRAPH_ITERATIONS); i++) {
+            if (shouldStop.get()) {
+                return;
             }
+            for (Node node : graph.nodes) {
+                node.adjustPotentialPosition(buildSpace, graph.nodes, rng);
+            }
+            cbb.setValue(i + 1);
         }
-        for (Node node : graph.nodes.values()) {
-            node.placeAtPotentialPos(grid);
+        bbpbm.finishProgressBar(cbb);
+        for (Node node : graph.nodes) {
+            node.placeAtPotentialPos(grid, buildSpace);
         }
     }
 
-    private static void routeWires(Array3D<BLOCK> grid, LogicGraph graph, Consumer<Text> feedback)
+    private static void routeWires(Array3D<BLOCK> grid, LogicGraph graph, Consumer<Text> feedback,
+            BlockProgressBarManager bbpbm, Supplier<Boolean> shouldStop)
             throws RedilogPlacementException {
-        //TODO encapsulate
-        for (Node node : graph.nodes.values()) {
-            if (node instanceof InputNode || node instanceof ConstantNode) {
-                //NO OP
-            } else if (node instanceof OutputNode on) {
-                if (on.value != null) {
-                    routeBFS(on.value.getOutputs(), VecUtil.d2i(on.getPosition()), grid, graph, on.value, node,
-                            feedback);
-                }
-            } else if (node instanceof OrNode on) {
-                if (on.input1 != null) {
-                    routeBFS(on.input1.getOutputs(), on.getInput1(), grid, graph, on.input1, node, feedback);
-                }
-                if (on.input2 != null) {
-                    routeBFS(on.input2.getOutputs(), on.getInput2(), grid, graph, on.input2, node, feedback);
-                }
-            } else if (node instanceof AndNode an) {
-                if (an.input1 != null) {
-                    routeBFS(an.input1.getOutputs(), an.getInput1(), grid, graph, an.input1, node, feedback);
-                }
-                if (an.input2 != null) {
-                    routeBFS(an.input2.getOutputs(), an.getInput2(), grid, graph, an.input2, node, feedback);
-                }
-            } else {
-                throw new NotImplementedException(node.getClass() + " not implemented");
+        CommandBossBar cbb = bbpbm.getProgressBar("routing");
+        cbb.setMaxValue(graph.nodes.size());
+        cbb.setValue(0);
+        for (Node node : graph.nodes) {
+            if (shouldStop.get()) {
+                return;
             }
+            node.route((starts, end, startNode) -> routeWire(starts, end, grid, graph, startNode, node, feedback));
+            cbb.setValue(cbb.getValue() + 1);
         }
+        bbpbm.finishProgressBar(cbb);
     }
 
-    //constructs a path from one of starts to end
-    private static void routeBFS(Set<Vec4i> starts, Vec3i end, Array3D<BLOCK> grid, LogicGraph graph,
+    /**
+     * Constructs a path from one of starts to end.
+     * @param starts any allowable starting position
+     * @param end target of routing; w component indicates <i>minimum</i> signal strength needed
+     */
+    //TODO sometimes fails to route even though a clear path exists (maybe detects its own wires as obstacles?)
+    private static void routeWire(Set<Vec4i> starts, Vec4i end, Array3D<BLOCK> grid, LogicGraph graph,
             Node startNode, Node endNode, Consumer<Text> feedback) {
         //(4th dimension represents signal strength)
-        Queue<Vec4i> toProcess = new LinkedList<>();
         Array4D<Vec4i> visitedFrom = new Array4D.Builder<Vec4i>().size(new Vec4i(grid.getSize(), 16)).build();
         Array4D<Integer> cost = new Array4D.Builder<Integer>().size(new Vec4i(grid.getSize(), 16))
                 .fill(Integer.MAX_VALUE).build();
-        Array4D<BFSStep> wireType = new Array4D.Builder<BFSStep>().size(new Vec4i(grid.getSize(), 16)).build();
+        Queue<Vec4i> toProcess = new PriorityQueue<>(
+                (v1, v2) -> cost.get(v1) + 10 * v1.to3i().getManhattanDistance(end.to3i())
+                        - cost.get(v2) - 10 * v2.to3i().getManhattanDistance(end.to3i()));
+        Array4D<RoutingStep> wireType = new Array4D.Builder<RoutingStep>().size(new Vec4i(grid.getSize(), 16)).build();
 
-        //NOTE: since bfs stores limited state, it may be possible for the wire to loop on itself and override its path
+        //NOTE: since routing stores limited state, it may be possible for the wire to loop on itself and override its path
         for (Vec4i pos : starts) {
             toProcess.add(pos);
             cost.set(pos, 0);
         }
-        while (!toProcess.isEmpty()) {
+        boolean terminate = false;
+        while (!toProcess.isEmpty() && !terminate) {
             Vec4i cur = toProcess.remove();
-            for (BFSStep step : BFSStep.STEPS) {
-                Vec4i move = step.getValidMove(grid, cur, end);
+            for (RoutingStep step : RoutingStep.STEPS) {
+                Vec4i move = step.getValidMove(grid, cur, end.to3i(), wireType.get(cur));
                 if (move != null && cost.inBounds(move) && cost.get(cur) + step.getCost() < cost.get(move)) {
                     visitedFrom.set(move, cur);
                     cost.set(move, cost.get(cur) + step.getCost());
                     wireType.set(move, step);
                     if (move.getW() > 0) { //blocks with 0 power don't need to be explored
                         toProcess.add(move);
+                    }
+                    if (end.to3i().equals(move.to3i())) {
+                        //end reached, check if any paths potentially have lower cost
+                        Vec4i bestPath = toProcess.peek();
+                        if (cost.get(bestPath) + 10 * bestPath.to3i().getManhattanDistance(end.to3i()) >= cost
+                                .get(move)) {
+                            //found optimal path, terminate
+                            terminate = true;
+                        }
                     }
                 }
             }
@@ -216,9 +178,9 @@ public class Placer {
         //check if path exists
         int bestPathCost = Integer.MAX_VALUE;
         int bestPathEnd = -1;
-        for (int i = 1; i < 16; ++i) {
-            if (cost.get(new Vec4i(end, i)) < bestPathCost) {
-                bestPathCost = cost.get(new Vec4i(end, i));
+        for (int i = end.getW(); i < 16; ++i) {
+            if (cost.get(new Vec4i(end.to3i(), i)) < bestPathCost) {
+                bestPathCost = cost.get(new Vec4i(end.to3i(), i));
                 bestPathEnd = i;
             }
         }
@@ -230,11 +192,12 @@ public class Placer {
                             startNode.owner.declaration, endNode.owner.declaration));
         } else {
             //trace path
-            Vec4i cur = visitedFrom.get(new Vec4i(end, bestPathEnd));
+            Vec4i cur = new Vec4i(end.to3i(), bestPathEnd);
             while (!starts.contains(cur)) {
                 if (endNode.isDebug()) {
                     Redilog.LOGGER.info("{}", cur);
                 }
+                //TODO wireType sometimes has a null in it, but inconsistent
                 Vec4i[] placeds = wireType.get(cur).place(visitedFrom.get(cur), grid);
                 for (Vec4i placed : placeds) {
                     starts.add(placed);
@@ -257,7 +220,7 @@ public class Placer {
         }
         List<InputNode> inputs = new ArrayList<>();
         List<OutputNode> outputs = new ArrayList<>();
-        for (Node n : graph.nodes.values()) {
+        for (Node n : graph.nodes) {
             if (n instanceof InputNode in) {
                 inputs.add(in);
             } else if (n instanceof OutputNode on) {
@@ -287,39 +250,11 @@ public class Placer {
         }
     }
 
-    private static void labelIO(Box buildSpace, LogicGraph graph, World world, Consumer<Text> feedback) {
-        BlockPos minPos = new BlockPos(buildSpace.minX, buildSpace.minY, buildSpace.minZ);
-        for (Entry<String, Node> entry : graph.nodes.entrySet()) {
-            //TODO encapsulate
-            if (entry.getValue() instanceof InputNode in) {
-                Vec3i pos = VecUtil.d2i(in.getPosition());
-                if (pos == null) {
-                    LoggerUtil.logWarnAndCreateMessage(feedback,
-                            String.format("Failed to label input %s", entry.getKey()));
-                    continue;
-                }
-                world.setBlockState(minPos.add(pos.down()), Blocks.WHITE_CONCRETE.getDefaultState());
-                world.setBlockState(minPos.add(pos),
-                        Blocks.LEVER.getDefaultState().with(LeverBlock.FACE, WallMountLocation.FLOOR));
-                world.setBlockState(minPos.add(pos).add(0, -1, -1),
-                        Blocks.BIRCH_WALL_SIGN.getDefaultState().with(WallSignBlock.FACING, Direction.NORTH));
-                if (world.getBlockEntity(minPos.add(pos).add(0, -1, -1)) instanceof SignBlockEntity sbe) {
-                    sbe.setTextOnRow(0, Text.of(entry.getKey()));
-                }
-            } else if (entry.getValue() instanceof OutputNode on) {
-                Vec3i pos = VecUtil.d2i(on.getPosition());
-                if (pos == null) {
-                    LoggerUtil.logWarnAndCreateMessage(feedback,
-                            String.format("Failed to label output %s", entry.getKey()));
-                    continue;
-                }
-                world.setBlockState(minPos.add(pos.down()), Blocks.REDSTONE_LAMP.getDefaultState());
-                world.setBlockState(minPos.add(pos), Blocks.REDSTONE_WIRE.getDefaultState());
-                world.setBlockState(minPos.add(pos).add(0, -1, 1),
-                        Blocks.BIRCH_WALL_SIGN.getDefaultState().with(WallSignBlock.FACING, Direction.SOUTH));
-                if (world.getBlockEntity(minPos.add(pos).add(0, -1, 1)) instanceof SignBlockEntity sbe) {
-                    sbe.setTextOnRow(0, Text.of(entry.getKey()));
-                }
+    public static void labelIO(Box buildSpace, LogicGraph graph, World world, Consumer<Text> feedback) {
+        BlockPos relativeOrigin = new BlockPos(buildSpace.minX, buildSpace.minY, buildSpace.minZ);
+        for (Node node : graph.nodes) {
+            if (node instanceof IONode ion) {
+                ion.placeLabel(world, relativeOrigin, feedback);
             }
         }
     }

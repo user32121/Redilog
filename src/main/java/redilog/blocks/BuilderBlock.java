@@ -17,6 +17,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.World;
@@ -90,6 +91,13 @@ public class BuilderBlock extends BlockWithEntity {
             for (BlockPos marker : connections) {
                 world.breakBlock(marker, false);
             }
+        }
+    }
+
+    @Override
+    public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
+        if (world.getBlockEntity(pos) instanceof BuilderBlockEntity bbe) {
+            bbe.scheduledTick();
         }
     }
 }

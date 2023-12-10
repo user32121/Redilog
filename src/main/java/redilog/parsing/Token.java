@@ -1,48 +1,9 @@
 package redilog.parsing;
 
 import java.util.Set;
-
-import org.apache.commons.lang3.NotImplementedException;
+import java.util.regex.Pattern;
 
 public class Token {
-    public static class Builder {
-        private String value = "";
-        private final TypeHint type;
-        private final int line;
-        private final int column;
-
-        public Builder(TypeHint type, int line, int column) {
-            this.type = type;
-            this.line = line;
-            this.column = column;
-        }
-
-        public Builder addChar(char c) {
-            value += c;
-            return this;
-        }
-
-        public Token build() {
-            return new Token(value, type, line, column);
-        }
-
-        public String getValue() {
-            return value;
-        }
-
-        public TypeHint getType() {
-            return type;
-        }
-
-        public int getLine() {
-            return line;
-        }
-
-        public int getColumn() {
-            return column;
-        }
-    }
-
     enum Type {
         KEYWORD,
         VARIABLE,
@@ -51,48 +12,31 @@ public class Token {
         EOF,
     }
 
-    enum TypeHint {
-        LETTERS_DIGITS,
-        SYMBOL,
-        EOF,
-    }
-
     public static final Set<String> KEYWORDS = Set.of("input", "output", "assign");
+    public static final Set<String> MULTICHAR_SYMBOLS = Set.of();
 
-    public static Token EOF(int line, int column) {
-        return new Token("<EOF>", TypeHint.EOF, line, column);
-    }
+    public static final Pattern WORD = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
+    public static final Pattern POSITIVE_NUMBER = Pattern.compile("0x[0-9a-fA-F]+|0o[0-8]+|0b[01]+|[0-9]+");
+    public static final Pattern NUMBER = Pattern.compile("-?0x[0-9a-fA-F]+|-?0o[0-8]+|-?0b[01]+|-?[0-9]+");
 
     private final String value;
     private final Type type;
     private final int line;
     private final int column;
 
-    public Token(String value, TypeHint hint, int line, int column) {
+    public static Token EOF(int line, int column) {
+        return new Token("<EOF>", Type.EOF, line, column);
+    }
+
+    public static Token word(String value, int line, int column) {
+        return new Token(value, KEYWORDS.contains(value) ? Type.KEYWORD : Type.VARIABLE, line, column);
+    }
+
+    public Token(String value, Type type, int line, int column) {
         this.value = value;
+        this.type = type;
         this.line = line;
         this.column = column;
-        switch (hint) {
-            case LETTERS_DIGITS:
-                if (Character.isDigit(value.charAt(0))) {
-                    type = Type.NUMBER;
-                } else {
-                    if (KEYWORDS.contains(value)) {
-                        type = Type.KEYWORD;
-                    } else {
-                        type = Type.VARIABLE;
-                    }
-                }
-                break;
-            case SYMBOL:
-                type = Type.SYMBOL;
-                break;
-            case EOF:
-                type = Type.EOF;
-                break;
-            default:
-                throw new NotImplementedException(String.format("%s handling not implemented", hint));
-        }
     }
 
     public int getLine() {

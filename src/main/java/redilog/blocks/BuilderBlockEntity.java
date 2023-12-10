@@ -14,29 +14,22 @@ import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerContext;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Style;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
-import redilog.init.Redilog;
 import redilog.init.RedilogBlocks;
-import redilog.parsing.Parser;
-import redilog.parsing.RedilogParsingException;
-import redilog.parsing.SymbolGraph;
-import redilog.routing.Placer;
-import redilog.routing.RedilogPlacementException;
-import redilog.synthesis.LogicGraph;
-import redilog.synthesis.RedilogSynthesisException;
-import redilog.synthesis.Synthesizer;
+import redilog.utils.LoggerUtil;
 
 public class BuilderBlockEntity extends BlockEntity implements ExtendedScreenHandlerFactory {
+
     private static final String REDILOG_KEY = "Redilog";
     private static final String BUILD_MIN_KEY = "BuildSpaceMin";
     private static final String BUILD_MAX_KEY = "BuildSpaceMax";
 
     private String redilog = "";
     private Box buildSpace = new Box(0, 0, 0, 0, 0, 0);
+    BuilderRunnable currentBuild = null;
+    Thread currentBuildThread = null;
 
     public BuilderBlockEntity(BlockPos pos, BlockState state) {
         super(RedilogBlocks.BUILDER_ENTITY, pos, state);
@@ -69,38 +62,15 @@ public class BuilderBlockEntity extends BlockEntity implements ExtendedScreenHan
     }
 
     public void build(ServerPlayerEntity player) {
-        try {
-            Redilog.LOGGER.info("Begin parsing stage");
-            player.sendMessage(Text.of("Parsing..."));
-            SymbolGraph sGraph = Parser.parseRedilog(redilog, player::sendMessage);
-            Redilog.LOGGER.info("Begin synthesize stage");
-            player.sendMessage(Text.of("Synthesizing..."));
-            LogicGraph lGraph = Synthesizer.synthesize(sGraph, player::sendMessage);
-            Redilog.LOGGER.info("Begin placing and routing stage");
-            player.sendMessage(Text.of("Placing..."));
-            Placer.placeRedilog(lGraph, buildSpace, world, player::sendMessage);
-
-            player.sendMessage(Text.of("Build finished."));
-        } catch (RedilogParsingException e) {
-            player.sendMessage(Text.literal("An error occurred during parsing.\n")
-                    .append(Text.literal(e.toString()).setStyle(Style.EMPTY.withColor(Formatting.RED))));
-            Redilog.LOGGER.error("An error occurred during parsing", e);
-            return;
-        } catch (RedilogSynthesisException e) {
-            player.sendMessage(Text.literal("An error occurred during synthesis.\n")
-                    .append(Text.literal(e.toString()).setStyle(Style.EMPTY.withColor(Formatting.RED))));
-            Redilog.LOGGER.error("An error occurred during synthesis", e);
-            return;
-        } catch (RedilogPlacementException e) {
-            player.sendMessage(Text.literal("An error occurred during placement.\n")
-                    .append(Text.literal(e.toString()).setStyle(Style.EMPTY.withColor(Formatting.RED))));
-            Redilog.LOGGER.error("An error occurred during placement", e);
-            return;
-        } catch (Exception e) {
-            player.sendMessage(Text.of("An internal error occurred. See server log for more details."));
-            Redilog.LOGGER.error("An internal error occurred", e);
-            return;
+        if (currentBuildThread != null && currentBuildThread.isAlive()) {
+            //cancel previous build
+            LoggerUtil.logWarnAndCreateMessage(player::sendMessage, "Cancelling last build.");
+            currentBuild.shouldStop = true;
         }
+        currentBuild = new BuilderRunnable(this, player, redilog, buildSpace, world);
+        currentBuildThread = new Thread(currentBuild);
+        currentBuildThread.start();
+        world.createAndScheduleBlockTick(pos, RedilogBlocks.BUILDER, 1);
     }
 
     @Override
@@ -123,6 +93,22 @@ public class BuilderBlockEntity extends BlockEntity implements ExtendedScreenHan
     @Override
     public NbtCompound toInitialChunkDataNbt() {
         return createNbt();
+    }
+
+    public void scheduledTick() {
+        if (currentBuildThread == null) {
+            return;
+        }
+        //wait until thread is done
+        if (currentBuildThread.isAlive()) {
+            world.createAndScheduleBlockTick(pos, RedilogBlocks.BUILDER, 1);
+            return;
+        }
+        //perform world operations on main thread
+        if (!currentBuild.mainThreadOperations()) {
+            world.createAndScheduleBlockTick(pos, RedilogBlocks.BUILDER, 1);
+            return;
+        }
     }
 
     @Override

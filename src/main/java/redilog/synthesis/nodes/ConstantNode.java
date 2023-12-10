@@ -1,12 +1,17 @@
-package redilog.synthesis;
+package redilog.synthesis.nodes;
 
 import java.util.Collection;
+import java.util.Random;
+import java.util.Set;
 import java.util.function.Supplier;
+
+import org.apache.logging.log4j.util.TriConsumer;
 
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
-import redilog.parsing.Expression;
-import redilog.routing.Placer.BLOCK;
+import redilog.parsing.expressions.Expression;
+import redilog.routing.BLOCK;
+import redilog.routing.RedilogPlacementException;
 import redilog.utils.Array3D;
 import redilog.utils.Vec4i;
 import redilog.utils.VecUtil;
@@ -20,7 +25,7 @@ public class ConstantNode extends Node {
     }
 
     @Override
-    public void placeAtPotentialPos(Array3D<BLOCK> grid) {
+    public void placeAtPotentialPos(Array3D<BLOCK> grid, Box buildSpace) {
         grid.set(VecUtil.d2i(position).add(0, 0, 0), BLOCK.BLOCK);
         grid.set(VecUtil.d2i(position).add(0, 1, 0), bit ? BLOCK.REDSTONE_BLOCK : BLOCK.WIRE);
         grid.set(VecUtil.d2i(position).add(0, 0, 1), BLOCK.BLOCK);
@@ -29,7 +34,7 @@ public class ConstantNode extends Node {
     }
 
     @Override
-    public void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes) {
+    public void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes, Random rng) {
         //get average positions of inputs and outputs
         Vec3d avg = position.add(0, 0, -5);
         int count = 1;
@@ -38,6 +43,7 @@ public class ConstantNode extends Node {
             ++count;
         }
         avg = avg.multiply(1.0 / count);
+        avg = avg.add(rng.nextDouble(-1, 1), rng.nextDouble(-1, 1), rng.nextDouble(-1, 1));
 
         //repel from other nodes
         for (Node n : otherNodes) {
@@ -65,5 +71,15 @@ public class ConstantNode extends Node {
             z = buildSpace.getZLength() - 3 - 2;
         }
         position = new Vec3d(x, y, z);
+    }
+
+    @Override
+    public void route(TriConsumer<Set<Vec4i>, Vec4i, Node> routeWire) throws RedilogPlacementException {
+        // NO OP
+    }
+
+    @Override
+    public Box getBoundingBox() {
+        return new Box(position, position.add(1, 2, 2));
     }
 }

@@ -3,23 +3,30 @@ package redilog.parsing;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
 
 import org.apache.commons.lang3.NotImplementedException;
 
 import net.minecraft.text.Text;
 import net.minecraft.util.dynamic.Range;
-import redilog.parsing.Token.Builder;
-import redilog.parsing.Token.TypeHint;
+import redilog.blocks.BlockProgressBarManager;
+import redilog.init.Redilog;
+import redilog.parsing.expressions.Expression;
+import redilog.parsing.expressions.InputExpression;
+import redilog.parsing.expressions.NamedExpression;
+import redilog.parsing.expressions.OutputExpression;
 
 public class Parser {
 
     /**
      * Converts redilog code into a graph that relates the outputs to the inputs, similar to verilog synthesis.
      * @param feedback the function will add messages that should be relayed to the user
+     * @param bbpbm
      * @return a graph representation of the redilog
      * @throws RedilogParsingException
      */
-    public static SymbolGraph parseRedilog(String redilog, Consumer<Text> feedback) throws RedilogParsingException {
+    public static SymbolGraph parseRedilog(String redilog, Consumer<Text> feedback,
+            BlockProgressBarManager bbpbm) throws RedilogParsingException {
         redilog = stripComments(redilog);
         List<Token> tokens = tokenize(redilog);
         SymbolGraph sGraph = processTokens(tokens);
@@ -60,50 +67,58 @@ public class Parser {
         return input;
     }
 
-    //TODO process negative numbers correctly (or add expression evaluation)
     private static List<Token> tokenize(String input) {
-        List<Token> res = new ArrayList<>();
+        List<Token> tokens = new ArrayList<>();
 
-        Token.Builder token = null;
         int line = 1;
         int column = 1;
-
-        for (int i = 0; i < input.length(); i++) {
-            char c = input.charAt(i);
-            if (Character.isWhitespace(c)) {
-                //flush token
-                if (token != null) {
-                    res.add(token.build());
-                    token = null;
-                }
-                if (c == '\n') {
+        int cur = 0;
+        //for handling unary vs binary minus operator
+        boolean lastTokenIsValue = false;
+        while (cur < input.length()) {
+            Matcher m;
+            if (Character.isWhitespace(input.charAt(cur))) {
+                //whitespace
+                ++column;
+                if (input.charAt(cur) == '\n') {
                     ++line;
                     column = 1;
                 }
-            } else if (Character.isLetterOrDigit(c) || c == '_') {
-                if (token == null) {
-                    token = new Builder(TypeHint.LETTERS_DIGITS, line, column);
-                } else if (token.getType() != TypeHint.LETTERS_DIGITS) {
-                    res.add(token.build());
-                    token = new Builder(TypeHint.LETTERS_DIGITS, line, column);
-                }
-                token.addChar(c);
+                ++cur;
+                lastTokenIsValue = false;
+            } else if ((m = Token.WORD.matcher(input)).find(cur) && m.start() == cur) {
+                //word
+                tokens.add(Token.word(m.group(), line, column));
+                cur += m.end() - m.start();
+                column += m.end() - m.start();
+                lastTokenIsValue = true;
+            } else if ((m = (lastTokenIsValue ? Token.POSITIVE_NUMBER : Token.NUMBER).matcher(input)).find(cur)
+                    && m.start() == cur) {
+                //number
+                tokens.add(new Token(m.group(), Token.Type.NUMBER, line, column));
+                cur += m.end() - m.start();
+                column += m.end() - m.start();
+                lastTokenIsValue = true;
             } else {
-                if (token != null) {
-                    res.add(token.build());
+                //symbol
+                String symbol = "_";
+                for (String s : Token.MULTICHAR_SYMBOLS) {
+                    if (input.startsWith(s, cur)) {
+                        symbol = s;
+                    }
                 }
-                token = new Builder(TypeHint.SYMBOL, line, column);
-                token.addChar(c);
+                tokens.add(new Token(input.substring(cur, cur + symbol.length()), Token.Type.SYMBOL, line, column));
+                cur += symbol.length();
+                column += symbol.length();
+                lastTokenIsValue = false;
             }
-            ++column;
         }
-        if (token != null) {
-            res.add(token.build());
-        }
-        //make it so I don't need to check for range issues
-        res.add(Token.EOF(line, column + 1));
 
-        return res;
+        //make it so I don't need to check for range issues
+        tokens.add(Token.EOF(line, column + 1));
+
+        Redilog.LOGGER.info("{}", tokens);
+        return tokens;
     }
 
     private static SymbolGraph processTokens(List<Token> tokens) throws RedilogParsingException {
@@ -112,10 +127,12 @@ public class Parser {
         while (i < tokens.size() && tokens.get(i).getType() != Token.Type.EOF) {
             String keyword = tokens.get(i).getValue(Token.Type.KEYWORD);
             if (keyword.equals("input") || keyword.equals("output")) {
+                //TODO wires
                 i = processDeclaration(graph, tokens, i);
             } else if (keyword.equals("assign")) {
                 i = processAssignment(graph, tokens, i);
             } else {
+                //TODO always statements (or other register-like behavior)
                 throw new NotImplementedException(String.format("%s handling not implemented", tokens.get(i)));
             }
         }
@@ -146,11 +163,12 @@ public class Parser {
             }
         }
         for (Token token : newVariables) {
-            Expression expression;
+            NamedExpression expression;
             String name = token.getValue(Token.Type.VARIABLE);
-            if (graph.expressions.containsKey(name)) {
-                throw new RedilogParsingException(
-                        String.format("%s already defined at %s", token, graph.expressions.get(name).declaration));
+            for (NamedExpression ne : graph.expressions) {
+                if (ne.name.equals(name)) {
+                    throw new RedilogParsingException(String.format("%s already defined at %s", token, ne.declaration));
+                }
             }
             if (variableType.equals("input")) {
                 InputExpression ie = new InputExpression(token, name, range);
@@ -161,7 +179,7 @@ public class Parser {
             } else {
                 throw new NotImplementedException(variableType + " not implemented");
             }
-            graph.expressions.put(name, expression);
+            graph.expressions.add(expression);
         }
 
         return i;
@@ -186,10 +204,12 @@ public class Parser {
         }
         Expression expression = ExpressionParser.parseExpression(graph, tokens, i, j - 1);
 
-        if (!graph.expressions.containsKey(name.getValue(Token.Type.VARIABLE))) {
-            throw new RedilogParsingException(String.format("%s not defined", name));
+        for (NamedExpression ne : graph.expressions) {
+            if (ne.name.equals(name.getValue(Token.Type.VARIABLE))) {
+                ne.setValue(expression);
+                return j + 1;
+            }
         }
-        graph.expressions.get(name.getValue(Token.Type.VARIABLE)).setValue(expression);
-        return j + 1;
+        throw new RedilogParsingException(String.format("%s not defined", name));
     }
 }

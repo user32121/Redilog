@@ -28,6 +28,10 @@ public class Vec4i {
         return new Vec4i(x + dx, y + dy, z + dz, w + dw);
     }
 
+    public Vec4i add(Vec4i v) {
+        return new Vec4i(x + v.x, y + v.y, z + v.z, w + v.w);
+    }
+
     public int getX() {
         return x;
     }

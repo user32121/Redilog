@@ -1,10 +1,10 @@
-package redilog.routing.bfs;
+package redilog.routing.steps;
 
 import org.apache.commons.lang3.NotImplementedException;
 
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3i;
-import redilog.routing.Placer.BLOCK;
+import redilog.routing.BLOCK;
 import redilog.utils.Array3D;
 import redilog.utils.Vec4i;
 
@@ -15,7 +15,7 @@ public class RepeaterCardinalStep extends CardinalStep {
     }
 
     @Override
-    public Vec4i getValidMove(Array3D<BLOCK> grid, Vec4i pos, Vec3i target) {
+    public Vec4i getValidMove(Array3D<BLOCK> grid, Vec4i pos, Vec3i target, RoutingStep prevStep) {
         Vec4i next = getNextPosition(pos);
         next.setW(0); //repeater does not provide power except in output direction
         Vec4i nextNext = getNextPosition(next);
@@ -26,6 +26,10 @@ public class RepeaterCardinalStep extends CardinalStep {
                 || !grid.isValue(nextNext.to3i(), BLOCK.AIR)
                 || !grid.isValue(nextNext.to3i().down(), BLOCK.AIR))) {
             return null;
+        }
+        //reached target
+        if (nextNext.to3i().equals(target)) {
+            return nextNext;
         }
         //make sure not adjacent to other wires
         for (Direction dir : new Direction[] { direction, direction.rotateYClockwise(),
