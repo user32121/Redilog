@@ -2,8 +2,8 @@ package redilog.routing;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
@@ -56,11 +56,20 @@ public class Placer {
                 .size((int) buildSpace.getXLength(), (int) buildSpace.getYLength(), (int) buildSpace.getZLength())
                 .fill(BLOCK.AIR).build();
 
+        if (shouldStop.get()) {
+            return grid;
+        }
         feedback.accept(Text.of("  Placing IO..."));
         placeIO(buildSpace, graph, feedback);
         //TODO repeat while adjusting buildSpace and layout to fine tune
+        if (shouldStop.get()) {
+            return grid;
+        }
         feedback.accept(Text.of("  Placing components..."));
-        placeComponents(buildSpace, grid, graph, bbpbm, world);
+        placeComponents(buildSpace, grid, graph, bbpbm, world, shouldStop);
+        if (shouldStop.get()) {
+            return grid;
+        }
         feedback.accept(Text.of("  Routing wires..."));
         //view prevents routing wires in sign space
         routeWires(new Array3DView<>(grid, 0, 0, 2, grid.getXLength(), grid.getYLength(), grid.getZLength() - 1),
@@ -74,7 +83,7 @@ public class Placer {
     }
 
     private static void placeComponents(Box buildSpace, Array3D<BLOCK> grid, LogicGraph graph,
-            BlockProgressBarManager bbpbm, World world) {
+            BlockProgressBarManager bbpbm, World world, Supplier<Boolean> shouldStop) {
         Random rng = new Random();
         //check for nodes that are not placed
         //give a random initial position
@@ -89,6 +98,9 @@ public class Placer {
         cbb.setValue(0);
         //repeatedly adjust so they are close to their target
         for (int i = 0; i < world.getGameRules().getInt(RedilogGamerules.PLACEMENT_GRAPH_ITERATIONS); i++) {
+            if (shouldStop.get()) {
+                return;
+            }
             for (Node node : graph.nodes) {
                 node.adjustPotentialPosition(buildSpace, graph.nodes, rng);
             }
@@ -108,7 +120,7 @@ public class Placer {
         cbb.setValue(0);
         for (Node node : graph.nodes) {
             if (shouldStop.get()) {
-                break;
+                return;
             }
             node.route((starts, end, startNode) -> routeWire(starts, end, grid, graph, startNode, node, feedback));
             cbb.setValue(cbb.getValue() + 1);
@@ -123,12 +135,13 @@ public class Placer {
      */
     private static void routeWire(Set<Vec4i> starts, Vec4i end, Array3D<BLOCK> grid, LogicGraph graph,
             Node startNode, Node endNode, Consumer<Text> feedback) {
-        //TODO make faster, maybe with A star
         //(4th dimension represents signal strength)
-        Queue<Vec4i> toProcess = new LinkedList<>();
         Array4D<Vec4i> visitedFrom = new Array4D.Builder<Vec4i>().size(new Vec4i(grid.getSize(), 16)).build();
         Array4D<Integer> cost = new Array4D.Builder<Integer>().size(new Vec4i(grid.getSize(), 16))
                 .fill(Integer.MAX_VALUE).build();
+        Queue<Vec4i> toProcess = new PriorityQueue<>(
+                (v1, v2) -> cost.get(v1) + 10 * v1.to3i().getManhattanDistance(end.to3i())
+                        - cost.get(v2) - 10 * v2.to3i().getManhattanDistance(end.to3i()));
         Array4D<RoutingStep> wireType = new Array4D.Builder<RoutingStep>().size(new Vec4i(grid.getSize(), 16)).build();
 
         //NOTE: since routing stores limited state, it may be possible for the wire to loop on itself and override its path
@@ -136,7 +149,8 @@ public class Placer {
             toProcess.add(pos);
             cost.set(pos, 0);
         }
-        while (!toProcess.isEmpty()) {
+        boolean terminate = false;
+        while (!toProcess.isEmpty() && !terminate) {
             Vec4i cur = toProcess.remove();
             for (RoutingStep step : RoutingStep.STEPS) {
                 Vec4i move = step.getValidMove(grid, cur, end.to3i(), wireType.get(cur));
@@ -146,6 +160,15 @@ public class Placer {
                     wireType.set(move, step);
                     if (move.getW() > 0) { //blocks with 0 power don't need to be explored
                         toProcess.add(move);
+                    }
+                    if (end.to3i().equals(move.to3i())) {
+                        //end reached, check if any paths potentially have lower cost
+                        Vec4i bestPath = toProcess.peek();
+                        if (cost.get(bestPath) + 10 * bestPath.to3i().getManhattanDistance(end.to3i()) >= cost
+                                .get(move)) {
+                            //found optimal path, terminate
+                            terminate = true;
+                        }
                     }
                 }
             }
