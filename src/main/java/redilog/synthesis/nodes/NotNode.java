@@ -31,7 +31,7 @@ public class NotNode extends ComponentNode {
         //get average positions of inputs, outputs, and self
         Vec3d avgInputs = VecUtil.avg(input1.position);
         Vec3d avgOutputs = VecUtil.avg(outputNodes.stream().map(s -> s.get()).toArray(Vec3d[]::new));
-        position = VecUtil.avg(avgInputs, avgOutputs, avgOutputs, position);
+        position = VecUtil.avg(avgInputs, avgOutputs, position);
 
         super.adjustPotentialPosition(buildSpace, otherNodes, rng);
     }

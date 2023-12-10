@@ -133,6 +133,7 @@ public class Placer {
      * @param starts any allowable starting position
      * @param end target of routing; w component indicates <i>minimum</i> signal strength needed
      */
+    //TODO sometimes fails to route even though a clear path exists (maybe detects its own wires as obstacles?)
     private static void routeWire(Set<Vec4i> starts, Vec4i end, Array3D<BLOCK> grid, LogicGraph graph,
             Node startNode, Node endNode, Consumer<Text> feedback) {
         //(4th dimension represents signal strength)
@@ -196,6 +197,7 @@ public class Placer {
                 if (endNode.isDebug()) {
                     Redilog.LOGGER.info("{}", cur);
                 }
+                //TODO wireType sometimes has a null in it, but inconsistent
                 Vec4i[] placeds = wireType.get(cur).place(visitedFrom.get(cur), grid);
                 for (Vec4i placed : placeds) {
                     starts.add(placed);
