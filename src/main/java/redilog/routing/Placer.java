@@ -75,8 +75,7 @@ public class Placer {
 
     private static void placeComponents(Box buildSpace, Array3D<BLOCK> grid, LogicGraph graph,
             BlockProgressBarManager bbpbm, World world) {
-        //TODO make better deterministic (maybe supply seed as parameter?)
-        Random rng = new Random(100);
+        Random rng = new Random();
         //check for nodes that are not placed
         //give a random initial position
         for (Node node : graph.nodes) {
