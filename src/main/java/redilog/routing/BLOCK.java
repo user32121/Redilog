@@ -10,7 +10,6 @@ import net.minecraft.util.math.Direction;
 public enum BLOCK {
     AIR(Blocks.AIR.getDefaultState()),
     STRICT_AIR(Blocks.AIR.getDefaultState(), Blocks.WHITE_STAINED_GLASS.getDefaultState()), //a block that must be air, such as above diagonal wires
-    GLASS(Blocks.GLASS.getDefaultState()), //debug block
     WIRE(Blocks.REDSTONE_WIRE.getStateManager().getStates().toArray(BlockState[]::new)),
     BLOCK(Blocks.LIGHT_BLUE_CONCRETE.getDefaultState()),
     REPEATER_NORTH(Blocks.REPEATER.getDefaultState().with(RepeaterBlock.FACING, Direction.SOUTH)),
