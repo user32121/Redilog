@@ -127,10 +127,12 @@ public class Parser {
         while (i < tokens.size() && tokens.get(i).getType() != Token.Type.EOF) {
             String keyword = tokens.get(i).getValue(Token.Type.KEYWORD);
             if (keyword.equals("input") || keyword.equals("output")) {
+                //TODO wires
                 i = processDeclaration(graph, tokens, i);
             } else if (keyword.equals("assign")) {
                 i = processAssignment(graph, tokens, i);
             } else {
+                //TODO always statements (or other register-like behavior)
                 throw new NotImplementedException(String.format("%s handling not implemented", tokens.get(i)));
             }
         }
