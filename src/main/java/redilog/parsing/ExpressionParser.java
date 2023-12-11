@@ -80,10 +80,10 @@ public class ExpressionParser {
                                     String.format("Mismatched bracket near %s", tokens.get(i)));
                         }
                         Token o2 = operators.pop();
+                        applyOperator(output, o2);
                         if (o2.getValue().equals("[")) {
                             break;
                         }
-                        applyOperator(output, o2);
                     }
                 } else {
                     throw new RedilogParsingException(String.format("Unrecognized symbol %s", tokens.get(i)));

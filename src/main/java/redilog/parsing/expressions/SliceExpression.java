@@ -9,7 +9,7 @@ public class SliceExpression extends Expression {
     public Expression input;
     public final Range<Integer> range;
 
-    public SliceExpression(Token declaration, Expression input, Expression range) throws RedilogParsingException {
+    public SliceExpression(Token declaration, Expression range, Expression input) throws RedilogParsingException {
         super(declaration);
         this.input = input;
         if (range instanceof RangeExpression re) {
