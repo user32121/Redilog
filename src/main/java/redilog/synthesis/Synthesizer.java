@@ -34,8 +34,9 @@ public class Synthesizer {
         return lGraph;
     }
 
-    private static void warnUnused(LogicGraph graph, Consumer<Text> feedback) {
+    private static void warnUnused(LogicGraph graph, Consumer<Text> feedback) throws RedilogSynthesisException {
         for (Node node : graph.nodes) {
+            //TODO sometimes inconsistently has a null node
             if (!node.used) {
                 LoggerUtil.logWarnAndCreateMessage(feedback,
                         String.format("Value of node %s is not used", node.owner.nodeAsString(node)));

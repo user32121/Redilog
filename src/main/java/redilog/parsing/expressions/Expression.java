@@ -7,6 +7,7 @@ import redilog.parsing.RedilogParsingException;
 import redilog.parsing.Token;
 import redilog.routing.RedilogPlacementException;
 import redilog.synthesis.RedilogSynthesisException;
+import redilog.synthesis.nodes.ConstantNode;
 import redilog.synthesis.nodes.Node;
 
 public abstract class Expression {
@@ -27,9 +28,8 @@ public abstract class Expression {
 
     /**
      * Gets the node at {@code index}. If it is not yet initilized, it should be initialized here.
-     * If {@code index >= nodes.size()}, returns a node that would logically be at that index
-     * (e.g. a ConstantExpression would return the node corresponding to the 2's complement expansion)
-     * @throws IndexOutOfBoundsException if {@code index < 0}
+     * If out of range, returns a {@link ConstantNode}
+     * @throws RedilogSynthesisException
      */
     public abstract Node getNode(int index);
 
@@ -41,6 +41,7 @@ public abstract class Expression {
 
     /**
      * Gets all nodes in this expresion tree. This includes all nodes in this Expression and also nodes from any inputs.
+     * @throws RedilogSynthesisException
      * @throws RedilogPlacementException
      */
     public abstract Iterable<Node> getAllNodes();

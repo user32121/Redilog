@@ -32,12 +32,14 @@ public class SliceExpression extends Expression {
         while (nodes.size() <= index) {
             nodes.add(null);
         }
-        if (index + range.minInclusive() > range.maxInclusive()) {
-            nodes.set(index, new ConstantNode(this, false));
-        } else if (input instanceof NamedExpression ne) {
-            nodes.set(index, ne.getNodeWithAddress(index + range.minInclusive()));
-        } else {
-            nodes.set(index, input.getNode(index + range.minInclusive()));
+        if (nodes.get(index) == null) {
+            if (index + range.minInclusive() > range.maxInclusive()) {
+                nodes.set(index, new ConstantNode(this, false));
+            } else if (input instanceof NamedExpression ne) {
+                nodes.set(index, ne.getNodeWithAddress(index + range.minInclusive()));
+            } else {
+                nodes.set(index, input.getNode(index + range.minInclusive()));
+            }
         }
         return nodes.get(index);
     }
