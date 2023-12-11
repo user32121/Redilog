@@ -4,6 +4,7 @@ import com.google.common.collect.Iterables;
 
 import redilog.parsing.RedilogParsingException;
 import redilog.parsing.Token;
+import redilog.synthesis.RedilogSynthesisException;
 import redilog.synthesis.nodes.Node;
 import redilog.synthesis.nodes.NotNode;
 
@@ -16,7 +17,7 @@ public class BitwiseNotExpression extends Expression {
     }
 
     @Override
-    public int resolveRange() {
+    public int resolveRange() throws RedilogSynthesisException {
         int range1 = input1.resolveRange();
         return range1;
     }
@@ -49,5 +50,10 @@ public class BitwiseNotExpression extends Expression {
             getNode(i);
         }
         return Iterables.concat(nodes, input1.getAllNodes());
+    }
+
+    @Override
+    public int evaluateAsConstant() throws RedilogParsingException {
+        return ~input1.evaluateAsConstant();
     }
 }

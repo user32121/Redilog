@@ -4,6 +4,7 @@ import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.util.dynamic.Range;
 import redilog.parsing.Token;
+import redilog.synthesis.RedilogSynthesisException;
 import redilog.synthesis.nodes.Node;
 
 /**
@@ -20,7 +21,7 @@ public abstract class NamedExpression extends Expression {
     }
 
     @Override
-    public int resolveRange() {
+    public int resolveRange() throws RedilogSynthesisException {
         if (range == null) {
             return 1;
         } else {

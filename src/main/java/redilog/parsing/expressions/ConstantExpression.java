@@ -11,21 +11,33 @@ import redilog.synthesis.nodes.Node;
  */
 public class ConstantExpression extends Expression {
 
+    public final int value;
+
     public ConstantExpression(Token declaration, int value) {
         super(declaration);
-        while (value != 0 && value != -1) {
-            nodes.add(new ConstantNode(this, (value & 1) == 1));
-            value >>= 1;
-        }
+        this.value = value;
     }
 
     @Override
     public int resolveRange() {
-        return nodes.size();
+        int value = this.value;
+        int size = 0;
+        while (value != 0 && value != -1) {
+            // nodes.add(new ConstantNode(this, (value & 1) == 1));
+            ++size;
+            value >>= 1;
+        }
+        return size;
     }
 
     @Override
     public Node getNode(int index) {
+        while (nodes.size() <= index) {
+            nodes.add(null);
+        }
+        if (nodes.get(index) == null) {
+            nodes.set(index, new ConstantNode(this, (value & (1 << index)) != 0));
+        }
         return nodes.get(index);
     }
 
@@ -37,5 +49,10 @@ public class ConstantExpression extends Expression {
     @Override
     public Iterable<Node> getAllNodes() {
         return nodes;
+    }
+
+    @Override
+    public int evaluateAsConstant() throws RedilogParsingException {
+        return value;
     }
 }

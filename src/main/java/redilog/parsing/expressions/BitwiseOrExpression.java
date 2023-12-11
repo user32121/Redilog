@@ -4,11 +4,12 @@ import com.google.common.collect.Iterables;
 
 import redilog.parsing.RedilogParsingException;
 import redilog.parsing.Token;
+import redilog.synthesis.RedilogSynthesisException;
 import redilog.synthesis.nodes.Node;
 import redilog.synthesis.nodes.OrNode;
 
 public class BitwiseOrExpression extends Expression {
-    public Expression input1, input2;
+    public final Expression input1, input2;
 
     public BitwiseOrExpression(Token declaration, Expression input1, Expression input2) {
         super(declaration);
@@ -17,7 +18,7 @@ public class BitwiseOrExpression extends Expression {
     }
 
     @Override
-    public int resolveRange() {
+    public int resolveRange() throws RedilogSynthesisException {
         int range1 = input1.resolveRange();
         int range2 = input2.resolveRange();
         return Math.max(range1, range2);
@@ -52,5 +53,10 @@ public class BitwiseOrExpression extends Expression {
             getNode(i);
         }
         return Iterables.concat(nodes, input1.getAllNodes(), input2.getAllNodes());
+    }
+
+    @Override
+    public int evaluateAsConstant() throws RedilogParsingException {
+        return input1.evaluateAsConstant() | input2.evaluateAsConstant();
     }
 }

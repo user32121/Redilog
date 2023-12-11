@@ -64,10 +64,23 @@ public class ExpressionParser {
                     while (true) {
                         if (operators.empty()) {
                             throw new RedilogParsingException(
-                                    String.format("Mismatched parentheses near %s", tokens.get(i)));
+                                    String.format("Mismatched parenthesis near %s", tokens.get(i)));
                         }
                         Token o2 = operators.pop();
                         if (o2.getValue().equals("(")) {
+                            break;
+                        }
+                        applyOperator(output, o2);
+                    }
+                } else if (o1.equals("]")) {
+                    //right bracket, terminate index operation
+                    while (true) {
+                        if (operators.empty()) {
+                            throw new RedilogParsingException(
+                                    String.format("Mismatched bracket near %s", tokens.get(i)));
+                        }
+                        Token o2 = operators.pop();
+                        if (o2.getValue().equals("[")) {
                             break;
                         }
                         applyOperator(output, o2);
@@ -80,7 +93,7 @@ public class ExpressionParser {
         while (!operators.empty()) {
             Token t = operators.pop();
             if (t.getValue().equals("(")) {
-                throw new RedilogParsingException(String.format("Mismatched parentheses, extra %s", t));
+                throw new RedilogParsingException(String.format("Mismatched parenthesis, extra %s", t));
             }
             applyOperator(output, t);
         }

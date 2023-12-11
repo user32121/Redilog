@@ -14,6 +14,7 @@ public class InputExpression extends NamedExpression {
 
     @Override
     public Node getNode(int index) {
+        //TODO return constant 0 if out of range
         if (range != null) {
             index = Math.min(index, range.maxInclusive() - range.minInclusive() + 1);
         }
@@ -34,5 +35,11 @@ public class InputExpression extends NamedExpression {
     @Override
     public Iterable<Node> getAllNodes() {
         return nodes;
+    }
+
+    @Override
+    public int evaluateAsConstant() throws RedilogParsingException {
+        throw new RedilogParsingException(
+                String.format("%s does not have a constant value because it is an input", declaration));
     }
 }
