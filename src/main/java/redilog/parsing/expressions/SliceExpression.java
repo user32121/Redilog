@@ -3,8 +3,10 @@ package redilog.parsing.expressions;
 import net.minecraft.util.dynamic.Range;
 import redilog.parsing.RedilogParsingException;
 import redilog.parsing.Token;
+import redilog.synthesis.nodes.ConstantNode;
 import redilog.synthesis.nodes.Node;
 
+//TODO nulls occuring in input and outputs when using this
 public class SliceExpression extends Expression {
     public Expression input;
     public final Range<Integer> range;
@@ -27,11 +29,17 @@ public class SliceExpression extends Expression {
 
     @Override
     public Node getNode(int index) {
-        if (input instanceof NamedExpression ne) {
-            return ne.getNodeWithAddress(index + range.minInclusive());
-        } else {
-            return input.getNode(index + range.minInclusive());
+        while (nodes.size() <= index) {
+            nodes.add(null);
         }
+        if (index + range.minInclusive() > range.maxInclusive()) {
+            nodes.set(index, new ConstantNode(this, false));
+        } else if (input instanceof NamedExpression ne) {
+            nodes.set(index, ne.getNodeWithAddress(index + range.minInclusive()));
+        } else {
+            nodes.set(index, input.getNode(index + range.minInclusive()));
+        }
+        return nodes.get(index);
     }
 
     @Override
@@ -41,7 +49,7 @@ public class SliceExpression extends Expression {
 
     @Override
     public Iterable<Node> getAllNodes() {
-        return input.getAllNodes();
+        return nodes;
     }
 
     @Override

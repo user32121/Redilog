@@ -186,9 +186,9 @@ public class Placer {
         if (bestPathEnd == -1) {
             LoggerUtil.logErrorAndCreateMessage(feedback,
                     String.format("unable to path %s to %s (%s to %s)",
-                            startNode.owner.declaration, endNode.owner.declaration, starts, end),
+                            startNode.owner.nodeAsString(startNode), endNode.owner.nodeAsString(endNode), starts, end),
                     String.format("unable to path %s to %s",
-                            startNode.owner.declaration, endNode.owner.declaration));
+                            startNode.owner.nodeAsString(startNode), endNode.owner.nodeAsString(endNode)));
         } else {
             //trace path
             Vec4i cur = new Vec4i(end.to3i(), bestPathEnd);

@@ -3,6 +3,7 @@ package redilog.parsing.expressions;
 import net.minecraft.util.dynamic.Range;
 import redilog.parsing.RedilogParsingException;
 import redilog.parsing.Token;
+import redilog.synthesis.nodes.ConstantNode;
 import redilog.synthesis.nodes.InputNode;
 import redilog.synthesis.nodes.Node;
 
@@ -14,15 +15,15 @@ public class InputExpression extends NamedExpression {
 
     @Override
     public Node getNode(int index) {
-        //TODO return constant 0 if out of range
-        if (range != null) {
-            index = Math.min(index, range.maxInclusive() - range.minInclusive() + 1);
-        }
         while (nodes.size() <= index) {
             nodes.add(null);
         }
         if (nodes.get(index) == null) {
-            nodes.set(index, new InputNode(this, String.format("%s[%s]", name, index + getRangeMin())));
+            if (range != null && index > range.maxInclusive() - range.minInclusive()) {
+                nodes.set(index, new ConstantNode(this, false));
+            } else {
+                nodes.set(index, new InputNode(this, String.format("%s[%s]", name, index + getRangeMin())));
+            }
         }
         return nodes.get(index);
     }

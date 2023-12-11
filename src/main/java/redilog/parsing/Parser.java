@@ -150,6 +150,9 @@ public class Parser {
             tokens.get(i++).require(Token.Type.SYMBOL, ":");
             int rangeMin = tokens.get(i++).parseAsInt();
             tokens.get(i++).require(Token.Type.SYMBOL, "]");
+            if (rangeMin > rangeMax) {
+                throw new RedilogParsingException(String.format("%s must be <= %s", rangeMin, rangeMax));
+            }
             range = new Range<>(rangeMin, rangeMax);
         }
         //variable names <name, token that declared it>

@@ -52,7 +52,8 @@ public abstract class Expression {
             }
         }
         throw new RuntimeException(
-                String.format("Node %s declares owner %s %s but not found in owner.nodes", node, this, declaration));
+                String.format("Node %s declares owner %s %s but not found in owner.nodes %s", node, this, declaration,
+                        nodes));
     }
 
     /**
