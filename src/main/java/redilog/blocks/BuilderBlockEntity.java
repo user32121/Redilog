@@ -65,7 +65,7 @@ public class BuilderBlockEntity extends BlockEntity implements ExtendedScreenHan
         if (currentBuildThread != null && currentBuildThread.isAlive()) {
             //cancel previous build
             LoggerUtil.logWarnAndCreateMessage(player::sendMessage, "Cancelling last build.");
-            currentBuild.shouldStop = true;
+            currentBuildThread.interrupt();
         }
         currentBuild = new BuilderRunnable(this, player, redilog, buildSpace, world);
         currentBuildThread = new Thread(currentBuild);

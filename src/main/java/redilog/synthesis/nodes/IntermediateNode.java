@@ -6,7 +6,6 @@ import java.util.Set;
 
 import org.apache.logging.log4j.util.TriConsumer;
 
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import redilog.parsing.expressions.Expression;
