@@ -30,7 +30,7 @@ public class ConstantExpression extends Expression {
     }
 
     @Override
-    public void setValue(Expression expression) throws RedilogParsingException {
+    public void setInput(Expression expression) throws RedilogParsingException {
         throw new RedilogParsingException(getClass() + " cannot be assigned an expression");
     }
 

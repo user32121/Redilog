@@ -27,7 +27,7 @@ public class InputExpression extends NamedExpression {
     }
 
     @Override
-    public void setValue(Expression expression) throws RedilogParsingException {
+    public void setInput(Expression expression) throws RedilogParsingException {
         throw new RedilogParsingException(getClass() + " cannot be assigned");
     }
 
