@@ -6,7 +6,6 @@ import redilog.parsing.Token;
 import redilog.synthesis.nodes.ConstantNode;
 import redilog.synthesis.nodes.Node;
 
-//TODO nulls occuring in input and outputs when using this
 public class SliceExpression extends Expression {
     public Expression input;
     public final Range<Integer> range;
