@@ -105,8 +105,8 @@ public abstract class ComponentNode extends Node {
         } else if (y + getComponent().blocks.getYLength() >= buildSpace.getYLength()) {
             y = buildSpace.getYLength() - getComponent().blocks.getYLength();
         }
-        if (z < 2) {
-            z = 2;
+        if (z < 3) {
+            z = 3;
         } else if (z + getComponent().blocks.getZLength() >= buildSpace.getZLength() - 3) {
             z = buildSpace.getZLength() - 3 - getComponent().blocks.getZLength();
         }

@@ -65,8 +65,8 @@ public class ConstantNode extends Node {
         } else if (y + 2 >= buildSpace.getYLength()) {
             y = buildSpace.getYLength() - 2;
         }
-        if (z < 2) {
-            z = 2;
+        if (z < 3) {
+            z = 3;
         } else if (z + 2 >= buildSpace.getZLength() - 3) {
             z = buildSpace.getZLength() - 3 - 2;
         }
