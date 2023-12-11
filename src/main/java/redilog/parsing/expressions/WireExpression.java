@@ -1,15 +1,20 @@
 package redilog.parsing.expressions;
 
+import java.util.Collections;
+
 import com.google.common.collect.Iterables;
 
 import net.minecraft.util.dynamic.Range;
 import redilog.parsing.RedilogParsingException;
 import redilog.parsing.Token;
+import redilog.synthesis.nodes.IntermediateNode;
 import redilog.synthesis.nodes.Node;
-import redilog.synthesis.nodes.OutputNode;
 
 public class WireExpression extends NamedExpression {
-    public Expression value;
+    public Expression input;
+    private boolean recursionDetectorGetInputRange = false;
+    private boolean recursionDetectorGetAllNodes = false;
+    private boolean recursionDetectorSetUsed = false;
 
     public WireExpression(Token declaration, String name, Range<Integer> range) {
         super(declaration, name, range);
@@ -24,46 +29,68 @@ public class WireExpression extends NamedExpression {
             nodes.add(null);
         }
         if (nodes.get(index) == null) {
-            Node nodeValue = value != null ? value.getNode(index) : null;
-            OutputNode node = new OutputNode(this, String.format("%s[%s]", name, index + getRangeMin()), nodeValue);
+            IntermediateNode node = new IntermediateNode(this);
             nodes.set(index, node);
+            Node nodeValue = input != null ? input.getNode(index) : null;
+            node.setInput(nodeValue);
         }
         return nodes.get(index);
     }
 
     @Override
-    public void setValue(Expression expression) throws RedilogParsingException {
-        if (value != null) {
+    public void setInput(Expression expression) throws RedilogParsingException {
+        if (input != null) {
             throw new RedilogParsingException(String.format("%s assigned twice", declaration));
         }
-        value = expression;
+        input = expression;
     }
 
     @Override
     public void setUsed(int index) {
-        super.setUsed(index);
-        if (value != null) {
-            value.setUsed(index);
+        if (recursionDetectorSetUsed) {
+            return;
         }
+        recursionDetectorSetUsed = true;
+        super.setUsed(index);
+        if (input != null) {
+            input.setUsed(index);
+        }
+        recursionDetectorSetUsed = false;
     }
 
     @Override
     public Iterable<Node> getAllNodes() {
+        if (recursionDetectorGetAllNodes) {
+            return Collections.emptyList();
+        }
+        recursionDetectorGetAllNodes = true;
         for (int i = 0; i < nodes.size(); ++i) {
             getNode(i);
         }
-        if (value == null) {
+        if (input == null) {
             return nodes;
         }
-        return Iterables.concat(nodes, value.getAllNodes());
+        Iterable<Node> it = Iterables.concat(nodes, input.getAllNodes());
+        recursionDetectorGetAllNodes = false;
+        return it;
     }
 
     @Override
     public int resolveRange() {
-        if (range == null && value != null) {
-            return Math.max(super.resolveRange(), value.resolveRange());
+        if (range == null && input != null) {
+            return Math.max(super.resolveRange(), getInputRange());
         } else {
             return super.resolveRange();
         }
+    }
+
+    private int getInputRange() {
+        if (recursionDetectorGetInputRange) {
+            return 1;
+        }
+        recursionDetectorGetInputRange = true;
+        int r = input.resolveRange();
+        recursionDetectorGetInputRange = false;
+        return r;
     }
 }

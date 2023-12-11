@@ -8,7 +8,6 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import net.minecraft.block.Block;
 import net.minecraft.entity.boss.CommandBossBar;
@@ -43,7 +42,7 @@ public class Placer {
      * @throws RedilogPlacementException
      */
     public static Array3D<BLOCK> placeAndRoute(LogicGraph graph, Box buildSpace, Consumer<Text> feedback,
-            BlockProgressBarManager bbpbm, World world, Supplier<Boolean> shouldStop)
+            BlockProgressBarManager bbpbm, World world)
             throws RedilogPlacementException {
         if (buildSpace == null || (buildSpace.getAverageSideLength() == 0)) {
             throw new RedilogPlacementException(
@@ -56,24 +55,24 @@ public class Placer {
                 .size((int) buildSpace.getXLength(), (int) buildSpace.getYLength(), (int) buildSpace.getZLength())
                 .fill(BLOCK.AIR).build();
 
-        if (shouldStop.get()) {
+        if (Thread.currentThread().isInterrupted()) {
             return grid;
         }
         feedback.accept(Text.of("  Placing IO..."));
         placeIO(buildSpace, graph, feedback);
         //TODO repeat while adjusting buildSpace and layout to fine tune
-        if (shouldStop.get()) {
+        if (Thread.currentThread().isInterrupted()) {
             return grid;
         }
         feedback.accept(Text.of("  Placing components..."));
-        placeComponents(buildSpace, grid, graph, bbpbm, world, shouldStop);
-        if (shouldStop.get()) {
+        placeComponents(buildSpace, grid, graph, bbpbm, world);
+        if (Thread.currentThread().isInterrupted()) {
             return grid;
         }
         feedback.accept(Text.of("  Routing wires..."));
         //view prevents routing wires in sign space
         routeWires(new Array3DView<>(grid, 0, 0, 2, grid.getXLength(), grid.getYLength(), grid.getZLength() - 1),
-                graph, feedback, bbpbm, shouldStop);
+                graph, feedback, bbpbm);
         return grid;
     }
 
@@ -83,7 +82,7 @@ public class Placer {
     }
 
     private static void placeComponents(Box buildSpace, Array3D<BLOCK> grid, LogicGraph graph,
-            BlockProgressBarManager bbpbm, World world, Supplier<Boolean> shouldStop) {
+            BlockProgressBarManager bbpbm, World world) {
         Random rng = new Random();
         //check for nodes that are not placed
         //give a random initial position
@@ -98,7 +97,7 @@ public class Placer {
         cbb.setValue(0);
         //repeatedly adjust so they are close to their target
         for (int i = 0; i < world.getGameRules().getInt(RedilogGamerules.PLACEMENT_GRAPH_ITERATIONS); i++) {
-            if (shouldStop.get()) {
+            if (Thread.currentThread().isInterrupted()) {
                 return;
             }
             for (Node node : graph.nodes) {
@@ -113,13 +112,13 @@ public class Placer {
     }
 
     private static void routeWires(Array3D<BLOCK> grid, LogicGraph graph, Consumer<Text> feedback,
-            BlockProgressBarManager bbpbm, Supplier<Boolean> shouldStop)
+            BlockProgressBarManager bbpbm)
             throws RedilogPlacementException {
         CommandBossBar cbb = bbpbm.getProgressBar("routing");
         cbb.setMaxValue(graph.nodes.size());
         cbb.setValue(0);
         for (Node node : graph.nodes) {
-            if (shouldStop.get()) {
+            if (Thread.currentThread().isInterrupted()) {
                 return;
             }
             node.route((starts, end, startNode) -> routeWire(starts, end, grid, graph, startNode, node, feedback));

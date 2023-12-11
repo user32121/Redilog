@@ -15,6 +15,7 @@ import redilog.parsing.expressions.Expression;
 import redilog.parsing.expressions.InputExpression;
 import redilog.parsing.expressions.NamedExpression;
 import redilog.parsing.expressions.OutputExpression;
+import redilog.parsing.expressions.WireExpression;
 
 public class Parser {
 
@@ -126,8 +127,7 @@ public class Parser {
         int i = 0;
         while (i < tokens.size() && tokens.get(i).getType() != Token.Type.EOF) {
             String keyword = tokens.get(i).getValue(Token.Type.KEYWORD);
-            if (keyword.equals("input") || keyword.equals("output")) {
-                //TODO wires
+            if (keyword.equals("input") || keyword.equals("output") || keyword.equals("wire")) {
                 i = processDeclaration(graph, tokens, i);
             } else if (keyword.equals("assign")) {
                 i = processAssignment(graph, tokens, i);
@@ -176,6 +176,9 @@ public class Parser {
             } else if (variableType.equals("output")) {
                 OutputExpression oe = new OutputExpression(token, name, range);
                 expression = oe;
+            } else if (variableType.equals("wire")) {
+                WireExpression we = new WireExpression(token, name, range);
+                expression = we;
             } else {
                 throw new NotImplementedException(variableType + " not implemented");
             }
@@ -206,7 +209,7 @@ public class Parser {
 
         for (NamedExpression ne : graph.expressions) {
             if (ne.name.equals(name.getValue(Token.Type.VARIABLE))) {
-                ne.setValue(expression);
+                ne.setInput(expression);
                 return j + 1;
             }
         }

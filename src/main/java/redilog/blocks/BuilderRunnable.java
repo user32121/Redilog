@@ -32,7 +32,6 @@ public class BuilderRunnable implements Runnable {
     public final Box buildSpace;
     public final World world;
 
-    public volatile boolean shouldStop = false;
     public volatile LogicGraph lGraph;
     public volatile Array3D<BLOCK> blocks;
     public volatile Iterator<BlockPos> poss;
@@ -51,26 +50,26 @@ public class BuilderRunnable implements Runnable {
         try {
             BlockProgressBarManager bbpbm = new BlockProgressBarManager("builder", owner.getPos(), player);
 
-            if (shouldStop) {
+            if (Thread.currentThread().isInterrupted()) {
                 return;
             }
             Redilog.LOGGER.info("Begin parsing stage");
             player.sendMessage(Text.of("Parsing..."));
             SymbolGraph sGraph = Parser.parseRedilog(redilog, player::sendMessage, bbpbm);
             Redilog.LOGGER.info("Begin synthesize stage");
-            if (shouldStop) {
+            if (Thread.currentThread().isInterrupted()) {
                 return;
             }
             player.sendMessage(Text.of("Synthesizing..."));
             lGraph = Synthesizer.synthesize(sGraph, player::sendMessage, bbpbm);
-            if (shouldStop) {
+            if (Thread.currentThread().isInterrupted()) {
                 return;
             }
             Redilog.LOGGER.info("Begin placing and routing stage");
             player.sendMessage(Text.of("Placing..."));
-            blocks = Placer.placeAndRoute(lGraph, buildSpace, player::sendMessage, bbpbm, world, this::getShouldStop);
+            blocks = Placer.placeAndRoute(lGraph, buildSpace, player::sendMessage, bbpbm, world);
             poss = BlockPos.iterate(BlockPos.ORIGIN, new BlockPos(blocks.getSize().add(-1, -1, -1))).iterator();
-            if (shouldStop) {
+            if (Thread.currentThread().isInterrupted()) {
                 return;
             }
             player.sendMessage(Text.of("  Transferring to world..."));
@@ -86,13 +85,15 @@ public class BuilderRunnable implements Runnable {
             player.sendMessage(Text.literal("An error occurred during placement.\n")
                     .append(Text.literal(e.toString()).setStyle(Style.EMPTY.withColor(Formatting.RED))));
             Redilog.LOGGER.error("An error occurred during placement", e);
-        } catch (Exception e) {
+        } catch (Exception | StackOverflowError e) {
+            //should be ok to catch StackOverflowError since can recover
             player.sendMessage(Text.of("An internal error occurred. See server log for more details."));
             Redilog.LOGGER.error("An internal error occurred", e);
         }
     }
 
     /**
+     * Performs operations that should be performed only on the main thread (such as modifying the world)
      * @return false if there are more operations to be performed.
      * (e.g. This can occur if it takes took long to place all blocks)
      */
@@ -119,9 +120,5 @@ public class BuilderRunnable implements Runnable {
             Redilog.LOGGER.error("An internal error occurred", e);
         }
         return true;
-    }
-
-    public boolean getShouldStop() {
-        return shouldStop;
     }
 }

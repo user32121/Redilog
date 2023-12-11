@@ -41,7 +41,7 @@ public class Synthesizer {
                         String.format("Value of node %s is not used", node.owner.nodeAsString(node)));
             }
             if (node instanceof OutputNode on) {
-                if (on.value == null) {
+                if (on.input == null) {
                     LoggerUtil.logWarnAndCreateMessage(feedback,
                             String.format("Output %s has no value", node.owner.nodeAsString(node)));
                 }

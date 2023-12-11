@@ -2,55 +2,65 @@ package redilog.synthesis.nodes;
 
 import java.util.Collection;
 import java.util.Random;
+import java.util.Set;
 
-import net.minecraft.util.math.BlockPos;
+import org.apache.logging.log4j.util.TriConsumer;
+
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3i;
 import redilog.parsing.expressions.Expression;
 import redilog.routing.BLOCK;
+import redilog.routing.RedilogPlacementException;
 import redilog.utils.Array3D;
 import redilog.utils.MathUtil;
 import redilog.utils.Vec4i;
 import redilog.utils.VecUtil;
 
-public abstract class ComponentNode extends Node {
+public class IntermediateNode extends Node {
+    public Node input;
 
-    public ComponentNode(Expression owner) {
+    public IntermediateNode(Expression owner) {
         super(owner);
     }
 
-    public abstract Component getComponent();
-
-    public Vec3i getInput(int index) {
-        return VecUtil.d2i(position).add(getComponent().inputs.get(index));
-    }
-
-    @Override
-    public Box getBoundingBox() {
-        return new Box(position.subtract(VecUtil.i2d(getComponent().margin)),
-                position.add(VecUtil.i2d(getComponent().blocks.getSize()))
-                        .add(VecUtil.i2d(getComponent().margin)));
+    //have to set input later to avoid recursion
+    public void setInput(Node input) {
+        if (this.input != null) {
+            throw new IllegalStateException(String.format("%s already has a value", owner.nodeAsString(this)));
+        }
+        this.input = input;
+        if (input != null) {
+            input.outputNodes.add(this::getPosition);
+        }
     }
 
     @Override
     public void placeAtPotentialPos(Array3D<BLOCK> grid, Box buildSpace) {
         clampToBuildSpace(buildSpace);
 
-        for (Vec4i output : getComponent().outputs) {
-            outputs.add(new Vec4i(VecUtil.d2i(position), 0).add(output));
-        }
-        for (BlockPos offset : BlockPos.iterate(BlockPos.ORIGIN,
-                new BlockPos(getComponent().blocks.getSize().add(-1, -1, -1)))) {
-            BLOCK b = getComponent().blocks.get(offset);
-            if (b != null) {
-                grid.set(VecUtil.d2i(position).add(offset), b);
-            }
+        grid.set(VecUtil.d2i(getPosition()).down(), BLOCK.BLOCK);
+        grid.set(VecUtil.d2i(getPosition()), BLOCK.WIRE);
+        outputs.add(new Vec4i(VecUtil.d2i(getPosition()), 8));
+    }
+
+    @Override
+    public void route(TriConsumer<Set<Vec4i>, Vec4i, Node> routeWire) throws RedilogPlacementException {
+        if (input != null) {
+            routeWire.accept(input.getOutputs(), new Vec4i(VecUtil.d2i(position), 8), input);
         }
     }
 
     @Override
+    public Box getBoundingBox() {
+        return new Box(position.add(0, -1, 0), position.add(1, 1, 1));
+    }
+
+    @Override
     public void adjustPotentialPosition(Box buildSpace, Collection<Node> otherNodes, Random rng) {
+        //get average positions of inputs, outputs, and self
+        Vec3d avgInputs = VecUtil.avg(input.position);
+        Vec3d avgOutputs = VecUtil.avg(outputNodes.stream().map(s -> s.get()).toArray(Vec3d[]::new));
+        position = VecUtil.avg(avgInputs, avgOutputs, position);
         //introduce randomness
         position = position.add(rng.nextDouble(-1, 1), rng.nextDouble(-1, 1), rng.nextDouble(-1, 1));
 
@@ -97,19 +107,23 @@ public abstract class ComponentNode extends Node {
         double z = position.z;
         if (x < 0) {
             x = 0;
-        } else if (x + getComponent().blocks.getXLength() >= buildSpace.getXLength()) {
-            x = buildSpace.getXLength() - getComponent().blocks.getXLength();
+        } else if (x + 1 >= buildSpace.getXLength()) {
+            x = buildSpace.getXLength() - 1;
         }
-        if (y < 0) {
-            y = 0;
-        } else if (y + getComponent().blocks.getYLength() >= buildSpace.getYLength()) {
-            y = buildSpace.getYLength() - getComponent().blocks.getYLength();
+        if (y < 1) {
+            y = 1;
+        } else if (y + 1 >= buildSpace.getYLength()) {
+            y = buildSpace.getYLength() - 1;
         }
         if (z < 3) {
             z = 3;
-        } else if (z + getComponent().blocks.getZLength() >= buildSpace.getZLength() - 3) {
-            z = buildSpace.getZLength() - 3 - getComponent().blocks.getZLength();
+        } else if (z + 1 >= buildSpace.getZLength() - 3) {
+            z = buildSpace.getZLength() - 3 - 1;
         }
         position = new Vec3d(x, y, z);
+    }
+
+    private Vec3d getPosition() {
+        return position;
     }
 }

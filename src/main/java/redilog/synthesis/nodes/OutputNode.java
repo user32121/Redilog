@@ -23,13 +23,13 @@ import redilog.utils.Vec4i;
 import redilog.utils.VecUtil;
 
 public class OutputNode extends IONode {
-    public final Node value;
+    public final Node input;
 
     public OutputNode(Expression owner, String name, Node value) {
         super(owner, name);
-        this.value = value;
+        this.input = value;
         if (value != null) {
-            value.outputNodes.add(() -> getPosition());
+            value.outputNodes.add(this::getPosition);
         }
     }
 
@@ -46,8 +46,8 @@ public class OutputNode extends IONode {
 
     @Override
     public void route(TriConsumer<Set<Vec4i>, Vec4i, Node> routeWire) throws RedilogPlacementException {
-        if (value != null) {
-            routeWire.accept(value.getOutputs(), new Vec4i(VecUtil.d2i(position), 1), value);
+        if (input != null) {
+            routeWire.accept(input.getOutputs(), new Vec4i(VecUtil.d2i(position), 1), input);
         }
     }
 

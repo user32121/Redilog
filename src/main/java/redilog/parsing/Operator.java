@@ -10,7 +10,7 @@ import redilog.parsing.expressions.BitwiseOrExpression;
 import redilog.parsing.expressions.Expression;
 
 public class Operator {
-    //TODO more operators (+-[]!&&||)
+    //TODO more operators (+-[]!&&||==!=><)
     public final static Map<String, Operator> OPERATORS = Map.of(
             "|", new Operator(0, true, 2,
                     (token, stack) -> stack.push(new BitwiseOrExpression(token, stack.pop(), stack.pop()))),
