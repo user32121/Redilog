@@ -146,10 +146,12 @@ public class Parser {
         Range<Integer> range = null;
         if (tokens.get(i).getType() == Token.Type.SYMBOL) {
             tokens.get(i++).require(Token.Type.SYMBOL, "[");
-            int rangeMax = tokens.get(i++).parseAsInt();
-            tokens.get(i++).require(Token.Type.SYMBOL, ":");
-            int rangeMin = tokens.get(i++).parseAsInt();
-            tokens.get(i++).require(Token.Type.SYMBOL, "]");
+            int j = findToken(tokens, i, ":");
+            int rangeMax = ExpressionParser.parseExpression(graph, tokens, i, j - 1).evaluateAsConstant();
+            i = j + 1;
+            j = findToken(tokens, i, "]");
+            int rangeMin = ExpressionParser.parseExpression(graph, tokens, i, j - 1).evaluateAsConstant();
+            i = j + 1;
             if (rangeMin > rangeMax) {
                 throw new RedilogParsingException(String.format("%s must be <= %s", rangeMin, rangeMax));
             }
@@ -197,17 +199,7 @@ public class Parser {
         Token name = tokens.get(i++);
         tokens.get(i++).require(Token.Type.SYMBOL, "=");
         //find next semicolon (or keyword that indicates missing semicolon)
-        int j = i;
-        while (true) {
-            Token token = tokens.get(j);
-            if (token.getType() == Token.Type.KEYWORD || token.getType() == Token.Type.EOF) {
-                throw new RedilogParsingException(
-                        String.format("\";\" expected between %s and %s", token, tokens.get(i - 1)));
-            } else if (token.getType() == Token.Type.SYMBOL && token.getValue().equals(";")) {
-                break;
-            }
-            ++j;
-        }
+        int j = findToken(tokens, i, ";");
         Expression expression = ExpressionParser.parseExpression(graph, tokens, i, j - 1);
 
         for (NamedExpression ne : graph.expressions) {
@@ -217,5 +209,28 @@ public class Parser {
             }
         }
         throw new RedilogParsingException(String.format("%s not defined", name));
+    }
+
+    private static int findToken(List<Token> tokens, int start, String... targets) throws RedilogParsingException {
+        int j = start;
+        boolean found = false;
+        while (!found) {
+            Token token = tokens.get(j);
+            if (token.getType() == Token.Type.KEYWORD || token.getType() == Token.Type.EOF) {
+                throw new RedilogParsingException(
+                        String.format("\";\" expected between %s and %s", token, tokens.get(start - 1)));
+            } else {
+                for (String target : targets) {
+                    if (token.getType() == Token.Type.SYMBOL && token.getValue().equals(target)) {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            if (!found) {
+                ++j;
+            }
+        }
+        return j;
     }
 }
