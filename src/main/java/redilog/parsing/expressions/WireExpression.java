@@ -77,7 +77,6 @@ public class WireExpression extends NamedExpression {
 
     @Override
     public int resolveRange() {
-        //TODO stackoverflow for self referencing expressions
         if (range == null && input != null) {
             return Math.max(super.resolveRange(), getInputRange());
         } else {
