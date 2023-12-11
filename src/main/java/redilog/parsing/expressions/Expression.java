@@ -37,7 +37,7 @@ public abstract class Expression {
         getNode(index).used = true;
     }
 
-    public abstract void setValue(Expression expression) throws RedilogParsingException;
+    public abstract void setInput(Expression expression) throws RedilogParsingException;
 
     /**
      * Gets all nodes in this expresion tree. This includes all nodes in this Expression and also nodes from any inputs.

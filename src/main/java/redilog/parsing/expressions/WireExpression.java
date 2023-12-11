@@ -5,11 +5,11 @@ import com.google.common.collect.Iterables;
 import net.minecraft.util.dynamic.Range;
 import redilog.parsing.RedilogParsingException;
 import redilog.parsing.Token;
+import redilog.synthesis.nodes.IntermediateNode;
 import redilog.synthesis.nodes.Node;
-import redilog.synthesis.nodes.OutputNode;
 
 public class WireExpression extends NamedExpression {
-    public Expression value;
+    public Expression input;
 
     public WireExpression(Token declaration, String name, Range<Integer> range) {
         super(declaration, name, range);
@@ -24,26 +24,26 @@ public class WireExpression extends NamedExpression {
             nodes.add(null);
         }
         if (nodes.get(index) == null) {
-            Node nodeValue = value != null ? value.getNode(index) : null;
-            OutputNode node = new OutputNode(this, String.format("%s[%s]", name, index + getRangeMin()), nodeValue);
+            Node nodeValue = input != null ? input.getNode(index) : null;
+            IntermediateNode node = new IntermediateNode(this, nodeValue);
             nodes.set(index, node);
         }
         return nodes.get(index);
     }
 
     @Override
-    public void setValue(Expression expression) throws RedilogParsingException {
-        if (value != null) {
+    public void setInput(Expression expression) throws RedilogParsingException {
+        if (input != null) {
             throw new RedilogParsingException(String.format("%s assigned twice", declaration));
         }
-        value = expression;
+        input = expression;
     }
 
     @Override
     public void setUsed(int index) {
         super.setUsed(index);
-        if (value != null) {
-            value.setUsed(index);
+        if (input != null) {
+            input.setUsed(index);
         }
     }
 
@@ -52,16 +52,17 @@ public class WireExpression extends NamedExpression {
         for (int i = 0; i < nodes.size(); ++i) {
             getNode(i);
         }
-        if (value == null) {
+        if (input == null) {
             return nodes;
         }
-        return Iterables.concat(nodes, value.getAllNodes());
+        return Iterables.concat(nodes, input.getAllNodes());
     }
 
     @Override
     public int resolveRange() {
-        if (range == null && value != null) {
-            return Math.max(super.resolveRange(), value.resolveRange());
+        //TODO stackoverflow for self referencing expressions
+        if (range == null && input != null) {
+            return Math.max(super.resolveRange(), input.resolveRange());
         } else {
             return super.resolveRange();
         }

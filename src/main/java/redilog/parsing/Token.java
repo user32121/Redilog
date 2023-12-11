@@ -12,7 +12,7 @@ public class Token {
         EOF,
     }
 
-    public static final Set<String> KEYWORDS = Set.of("input", "output", "assign");
+    public static final Set<String> KEYWORDS = Set.of("input", "output", "assign", "wire");
     public static final Set<String> MULTICHAR_SYMBOLS = Set.of();
 
     public static final Pattern WORD = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");

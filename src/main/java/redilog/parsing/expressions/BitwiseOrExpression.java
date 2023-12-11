@@ -35,7 +35,7 @@ public class BitwiseOrExpression extends Expression {
     }
 
     @Override
-    public void setValue(Expression expression) throws RedilogParsingException {
+    public void setInput(Expression expression) throws RedilogParsingException {
         throw new RedilogParsingException("Ambiguous input assignment to dual input " + getClass());
     }
 

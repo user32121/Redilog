@@ -33,7 +33,7 @@ public class BitwiseNotExpression extends Expression {
     }
 
     @Override
-    public void setValue(Expression expression) throws RedilogParsingException {
+    public void setInput(Expression expression) throws RedilogParsingException {
         input1 = expression;
     }
 
