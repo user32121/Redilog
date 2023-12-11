@@ -2,6 +2,7 @@ package redilog.parsing.expressions;
 
 import net.minecraft.util.dynamic.Range;
 import redilog.parsing.Token;
+import redilog.synthesis.RedilogSynthesisException;
 import redilog.synthesis.nodes.Node;
 import redilog.synthesis.nodes.OutputNode;
 
@@ -32,7 +33,7 @@ public class OutputExpression extends WireExpression {
     }
 
     @Override
-    public int resolveRange() {
+    public int resolveRange() throws RedilogSynthesisException {
         int range = super.resolveRange();
         while (nodes.size() < range) {
             nodes.add(null);

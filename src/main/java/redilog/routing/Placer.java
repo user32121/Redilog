@@ -22,6 +22,7 @@ import redilog.init.Redilog;
 import redilog.init.RedilogGamerules;
 import redilog.routing.steps.RoutingStep;
 import redilog.synthesis.LogicGraph;
+import redilog.synthesis.RedilogSynthesisException;
 import redilog.synthesis.nodes.IONode;
 import redilog.synthesis.nodes.InputNode;
 import redilog.synthesis.nodes.Node;
@@ -131,6 +132,7 @@ public class Placer {
      * Constructs a path from one of starts to end.
      * @param starts any allowable starting position
      * @param end target of routing; w component indicates <i>minimum</i> signal strength needed
+     * @throws RedilogSynthesisException
      */
     //TODO sometimes fails to route even though a clear path exists (maybe detects its own wires as obstacles?)
     private static void routeWire(Set<Vec4i> starts, Vec4i end, Array3D<BLOCK> grid, LogicGraph graph,
@@ -186,9 +188,9 @@ public class Placer {
         if (bestPathEnd == -1) {
             LoggerUtil.logErrorAndCreateMessage(feedback,
                     String.format("unable to path %s to %s (%s to %s)",
-                            startNode.owner.declaration, endNode.owner.declaration, starts, end),
+                            startNode.owner.nodeAsString(startNode), endNode.owner.nodeAsString(endNode), starts, end),
                     String.format("unable to path %s to %s",
-                            startNode.owner.declaration, endNode.owner.declaration));
+                            startNode.owner.nodeAsString(startNode), endNode.owner.nodeAsString(endNode)));
         } else {
             //trace path
             Vec4i cur = new Vec4i(end.to3i(), bestPathEnd);

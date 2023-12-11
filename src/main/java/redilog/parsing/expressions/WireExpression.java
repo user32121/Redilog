@@ -7,14 +7,12 @@ import com.google.common.collect.Iterables;
 import net.minecraft.util.dynamic.Range;
 import redilog.parsing.RedilogParsingException;
 import redilog.parsing.Token;
+import redilog.synthesis.RedilogSynthesisException;
 import redilog.synthesis.nodes.IntermediateNode;
 import redilog.synthesis.nodes.Node;
 
 public class WireExpression extends NamedExpression {
     public Expression input;
-    private boolean recursionDetectorGetInputRange = false;
-    private boolean recursionDetectorGetAllNodes = false;
-    private boolean recursionDetectorSetUsed = false;
 
     public WireExpression(Token declaration, String name, Range<Integer> range) {
         super(declaration, name, range);
@@ -45,6 +43,8 @@ public class WireExpression extends NamedExpression {
         input = expression;
     }
 
+    private boolean recursionDetectorSetUsed = false;
+
     @Override
     public void setUsed(int index) {
         if (recursionDetectorSetUsed) {
@@ -57,6 +57,8 @@ public class WireExpression extends NamedExpression {
         }
         recursionDetectorSetUsed = false;
     }
+
+    private boolean recursionDetectorGetAllNodes = false;
 
     @Override
     public Iterable<Node> getAllNodes() {
@@ -76,7 +78,7 @@ public class WireExpression extends NamedExpression {
     }
 
     @Override
-    public int resolveRange() {
+    public int resolveRange() throws RedilogSynthesisException {
         if (range == null && input != null) {
             return Math.max(super.resolveRange(), getInputRange());
         } else {
@@ -84,7 +86,9 @@ public class WireExpression extends NamedExpression {
         }
     }
 
-    private int getInputRange() {
+    private boolean recursionDetectorGetInputRange = false;
+
+    private int getInputRange() throws RedilogSynthesisException {
         if (recursionDetectorGetInputRange) {
             return 1;
         }
@@ -92,5 +96,19 @@ public class WireExpression extends NamedExpression {
         int r = input.resolveRange();
         recursionDetectorGetInputRange = false;
         return r;
+    }
+
+    private boolean recursionDetectorEvaluateAsConstant = false;
+
+    @Override
+    public int evaluateAsConstant() throws RedilogParsingException {
+        if (recursionDetectorEvaluateAsConstant) {
+            throw new RedilogParsingException(
+                    String.format("%s does not have a constant value because it is recursive", declaration));
+        }
+        recursionDetectorEvaluateAsConstant = true;
+        int value = input.evaluateAsConstant();
+        recursionDetectorEvaluateAsConstant = false;
+        return value;
     }
 }
