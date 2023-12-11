@@ -17,13 +17,20 @@ import redilog.utils.Vec4i;
 import redilog.utils.VecUtil;
 
 public class IntermediateNode extends Node {
-    public final Node input;
+    public Node input;
 
-    public IntermediateNode(Expression owner, Node value) {
+    public IntermediateNode(Expression owner) {
         super(owner);
-        this.input = value;
-        if (value != null) {
-            value.outputNodes.add(this::getPosition);
+    }
+
+    //have to set input later to avoid recursion
+    public void setInput(Node input) {
+        if (this.input != null) {
+            throw new IllegalStateException(String.format("%s already has a value", owner.nodeAsString(this)));
+        }
+        this.input = input;
+        if (input != null) {
+            input.outputNodes.add(this::getPosition);
         }
     }
 
@@ -108,8 +115,8 @@ public class IntermediateNode extends Node {
         } else if (y + 1 >= buildSpace.getYLength()) {
             y = buildSpace.getYLength() - 1;
         }
-        if (z < 2) {
-            z = 2;
+        if (z < 3) {
+            z = 3;
         } else if (z + 1 >= buildSpace.getZLength() - 3) {
             z = buildSpace.getZLength() - 3 - 1;
         }

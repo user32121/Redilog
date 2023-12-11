@@ -14,6 +14,7 @@ import redilog.init.Redilog;
 
 public class BuilderScreen extends HandledScreen<BuilderScreenHandler> {
 
+    //TODO key repeat
     private EditBoxWidget redilogEditBox;
     private ButtonWidget saveButton;
     private ButtonWidget buildButton;

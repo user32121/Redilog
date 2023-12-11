@@ -1,5 +1,7 @@
 package redilog.parsing.expressions;
 
+import java.util.Collections;
+
 import com.google.common.collect.Iterables;
 
 import net.minecraft.util.dynamic.Range;
@@ -10,6 +12,9 @@ import redilog.synthesis.nodes.Node;
 
 public class WireExpression extends NamedExpression {
     public Expression input;
+    private boolean recursionDetectorGetInputRange = false;
+    private boolean recursionDetectorGetAllNodes = false;
+    private boolean recursionDetectorSetUsed = false;
 
     public WireExpression(Token declaration, String name, Range<Integer> range) {
         super(declaration, name, range);
@@ -24,9 +29,10 @@ public class WireExpression extends NamedExpression {
             nodes.add(null);
         }
         if (nodes.get(index) == null) {
-            Node nodeValue = input != null ? input.getNode(index) : null;
-            IntermediateNode node = new IntermediateNode(this, nodeValue);
+            IntermediateNode node = new IntermediateNode(this);
             nodes.set(index, node);
+            Node nodeValue = input != null ? input.getNode(index) : null;
+            node.setInput(nodeValue);
         }
         return nodes.get(index);
     }
@@ -41,30 +47,51 @@ public class WireExpression extends NamedExpression {
 
     @Override
     public void setUsed(int index) {
+        if (recursionDetectorSetUsed) {
+            return;
+        }
+        recursionDetectorSetUsed = true;
         super.setUsed(index);
         if (input != null) {
             input.setUsed(index);
         }
+        recursionDetectorSetUsed = false;
     }
 
     @Override
     public Iterable<Node> getAllNodes() {
+        if (recursionDetectorGetAllNodes) {
+            return Collections.emptyList();
+        }
+        recursionDetectorGetAllNodes = true;
         for (int i = 0; i < nodes.size(); ++i) {
             getNode(i);
         }
         if (input == null) {
             return nodes;
         }
-        return Iterables.concat(nodes, input.getAllNodes());
+        Iterable<Node> it = Iterables.concat(nodes, input.getAllNodes());
+        recursionDetectorGetAllNodes = false;
+        return it;
     }
 
     @Override
     public int resolveRange() {
         //TODO stackoverflow for self referencing expressions
         if (range == null && input != null) {
-            return Math.max(super.resolveRange(), input.resolveRange());
+            return Math.max(super.resolveRange(), getInputRange());
         } else {
             return super.resolveRange();
         }
+    }
+
+    private int getInputRange() {
+        if (recursionDetectorGetInputRange) {
+            return 1;
+        }
+        recursionDetectorGetInputRange = true;
+        int r = input.resolveRange();
+        recursionDetectorGetInputRange = false;
+        return r;
     }
 }
